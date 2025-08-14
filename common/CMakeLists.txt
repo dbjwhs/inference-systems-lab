@@ -1,3 +1,12 @@
+# MIT License
+# Copyright (c) 2025 dbjwhs
+#
+# This software is provided "as is" without warranty of any kind, express or implied.
+# The authors are not liable for any damages arising from the use of this software.
+
+cmake_minimum_required(VERSION 3.20)
+project(common)
+
 # Common utilities and abstractions library
 
 # Create common library
@@ -11,31 +20,11 @@ target_include_directories(common PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
+# Set C++23 standard
+target_compile_features(common PUBLIC cxx_std_23)
+
+# Find and link threads
+find_package(Threads REQUIRED)
 target_link_libraries(common
     Threads::Threads
-)
-
-# Common tests
-add_executable(common_tests
-    tests/test_logging.cpp
-    tests/test_utils.cpp
-)
-
-target_link_libraries(common_tests
-    common
-    gtest_main
-    gtest
-)
-
-add_test(NAME CommonTests COMMAND common_tests)
-
-# Common benchmarks
-add_executable(common_benchmarks
-    benchmarks/bench_logging.cpp
-    benchmarks/bench_utils.cpp
-)
-
-target_link_libraries(common_benchmarks
-    common
-    benchmark::benchmark
 )

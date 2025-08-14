@@ -1,15 +1,152 @@
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
+
 // Common logging utilities for the Inference Systems Laboratory
 #pragma once
+
+#include <fstream>
+#include <mutex>
+#include <memory>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <filesystem>
+#include <chrono>
+#include <iomanip>
+#include <thread>
+#include <atomic>
+#include <format>
 
 namespace inference_lab {
 namespace common {
 
-// Placeholder logging interface
-// TODO: Design high-performance logging system with:
-// - Zero-copy string handling using std::string_view
-// - Structured logging with metadata
-// - Async logging for performance-critical paths
-// - Integration with distributed tracing
+enum class LogLevel {
+    DEBUG = 0,
+    INFO = 1,
+    NORMAL = 2,
+    WARNING = 3,
+    ERROR = 4,
+    CRITICAL = 5
+};
+
+class Logger {
+private:
+    // shared_ptr to maintain the singleton
+    inline static std::shared_ptr<Logger> m_instance;
+    inline static std::mutex m_instance_mutex; // mutex for thread-safe initialization
+
+    // helper method to handle the common logging logic
+    void write_log_message(const LogLevel level, const std::string& message);
+
+    // helper to build the log prefix
+    static std::stringstream create_log_prefix(LogLevel level);
+
+    // constructor is now private to control instantiation
+    explicit Logger(const std::string& path);
+
+public:
+    // raii class for temporarily disabling stderr output
+    class StderrSuppressionGuard {
+    public:
+        StderrSuppressionGuard();
+        ~StderrSuppressionGuard();
+
+    private:
+        bool m_was_enabled;
+    };
+
+    // private method to get or create the instance
+    static std::shared_ptr<Logger> getOrCreateInstance(const std::string& path = "../custom.log");
+
+    // returns a reference for backward compatibility but uses shared_ptr internally
+    static Logger& getInstance();
+
+    // custom path version of getinstance
+    static Logger& getInstance(const std::string& custom_path);
+
+    // new method for code that explicitly wants to manage the shared_ptr
+    static std::shared_ptr<Logger> getInstancePtr();
+
+    // with custom path for the shared_ptr version
+    static std::shared_ptr<Logger> getInstancePtr(const std::string& custom_path);
+
+    // destructor
+    ~Logger();
+
+    // std::print-based logging methods for C++23
+    template<typename... Args>
+    void print_log(const LogLevel level, std::format_string<Args...> format, Args&&... args) {
+        if (!is_level_enabled(level)) {
+            return;
+        }
+        auto prefix = create_log_prefix(level);
+        auto formatted_message = std::format("{}{}\n", prefix.str(), std::format(format, std::forward<Args>(args)...));
+        write_log_message(level, formatted_message);
+    }
+
+    // std::print-based logging with depth for C++23
+    template<typename... Args>
+    void print_log_with_depth(const LogLevel level, const int depth, std::format_string<Args...> format, Args&&... args) {
+        if (!is_level_enabled(level)) {
+            return;
+        }
+        auto prefix = create_log_prefix(level);
+        auto formatted_message = std::format("{}{}{}\n", prefix.str(), getIndentation(depth), std::format(format, std::forward<Args>(args)...));
+        write_log_message(level, formatted_message);
+    }
+
+    // enable/disable specific log level
+    void setLevelEnabled(LogLevel level, bool enabled);
+
+    // check if a specific log level is enabled
+    bool isLevelEnabled(LogLevel level) const;
+
+    // disable stderr output
+    void disableStderr();
+
+    // enable stderr output
+    void enableStderr();
+
+    // get current stderr output state
+    bool isStderrEnabled() const;
+
+    // enable/disable file output
+    void setFileOutputEnabled(bool enabled);
+
+    // check if file output is enabled
+    bool isFileOutputEnabled() const;
+
+private:
+    std::ofstream m_log_file;
+    std::mutex m_mutex;
+    std::atomic<bool> m_stderr_enabled{true};
+    std::atomic<bool> m_file_output_enabled{true};
+    std::atomic<bool> m_enabled_levels[6]{true, true, true, true, true, true}; // one for each log level
+
+    // check if a level is enabled (internal helper)
+    bool is_level_enabled(LogLevel level) const;
+
+    // utility function for expression tree visualization
+    static std::string getIndentation(const int depth);
+
+    // convert log level to string
+    static std::string log_level_to_string(const LogLevel level);
+
+    // get current utc timestamp
+    static std::string get_utc_timestamp();
+};
+
+// C++23 std::print-based logging macros
+#define LOG_BASE_PRINT(level, message, ...) Logger::getInstance().print_log(level, message, ##__VA_ARGS__)
+#define LOG_INFO_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::INFO, message, ##__VA_ARGS__)
+#define LOG_NORMAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::NORMAL, message, ##__VA_ARGS__)
+#define LOG_WARNING_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::WARNING, message, ##__VA_ARGS__)
+#define LOG_DEBUG_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::DEBUG, message, ##__VA_ARGS__)
+#define LOG_ERROR_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::ERROR, message, ##__VA_ARGS__)
+#define LOG_CRITICAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::CRITICAL, message, ##__VA_ARGS__)
 
 } // namespace common
 } // namespace inference_lab
