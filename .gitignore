@@ -1,3 +1,13 @@
+# Build directories
+build/
+builds/
+out/
+cmake-build-*/
+.vs/
+Debug/
+Release/
+x64/
+
 # Prerequisites
 *.d
 
@@ -6,6 +16,8 @@
 *.lo
 *.o
 *.obj
+*.ko
+*.elf
 
 # Precompiled Headers
 *.gch
@@ -13,12 +25,16 @@
 
 # Linker files
 *.ilk
+*.map
+*.exp
 
 # Debugger Files
 *.pdb
+*.idb
 
 # Compiled Dynamic libraries
 *.so
+*.so.*
 *.dylib
 *.dll
 
@@ -36,6 +52,112 @@
 *.exe
 *.out
 *.app
+*.i*86
+*.x86_64
+*.hex
 
-# debug information files
+# Debug files
+*.dSYM/
+*.su
 *.dwo
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# Conan
+conandata.yml
+conanfile.txt
+conaninfo.txt
+conanbuildinfo.*
+
+# Package managers
+vcpkg_installed/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Log files
+*.log
+
+# Profiling
+*.prof
+*.gprof
+callgrind.out.*
+cachegrind.out.*
+massif.out.*
+
+# Testing
+Testing/
+test_detail.xml
+googletest-*
+
+# Benchmarking results
+benchmark_results/
+*.json
+perf.data*
+
+# Documentation build
+docs/html/
+docs/latex/
+docs/xml/
+
+# Jupyter notebooks (if any Python analysis)
+.ipynb_checkpoints/
+
+# Clang tools
+.clang-format
+.clang-tidy
+compile_flags.txt
+
+# Address Sanitizer
+*.asan
+*.msan
+*.tsan
+*.ubsan
+
+# Coverage
+*.gcov
+*.gcda
+*.gcno
+coverage/
+*.info
+
+# Valgrind
+*.valgrind
+vgcore.*
+
+# Core dumps
+core
+core.*
+
+# Local environment
+.env
+.env.local
