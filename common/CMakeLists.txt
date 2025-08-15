@@ -13,6 +13,8 @@ project(common)
 add_library(common STATIC
     src/logging.cpp
     src/utils.cpp
+    src/inference_types.cpp
+    src/inference_builders.cpp
 )
 
 target_include_directories(common PUBLIC
@@ -66,3 +68,12 @@ target_link_libraries(logging_tests
 
 # Add test to CTest
 add_test(NAME LoggingUnitTests COMMAND logging_tests)
+
+# Inference types demo
+add_executable(inference_types_demo
+    examples/inference_types_demo.cpp
+)
+
+target_link_libraries(inference_types_demo
+    common
+)
