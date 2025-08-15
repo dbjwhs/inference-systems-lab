@@ -41,12 +41,14 @@ std::stringstream Logger::create_log_prefix(LogLevel level) {
     return message;
 }
 
-Logger::Logger(const std::string& path) {
+Logger::Logger(const std::string& path, bool append) {
     if (!std::filesystem::exists(std::filesystem::path(path).parent_path())) {
         throw std::runtime_error("Invalid path provided: " + path);
     }
 
-    m_log_file.open(path, std::ios::app);
+    // Choose file open mode based on append parameter
+    std::ios::openmode mode = append ? std::ios::app : std::ios::out;
+    m_log_file.open(path, mode);
     if (!m_log_file.is_open()) {
         throw std::runtime_error("Failed to open log file: " + path);
     }
@@ -68,10 +70,10 @@ Logger::StderrSuppressionGuard::~StderrSuppressionGuard() {
     }
 }
 
-std::shared_ptr<Logger> Logger::getOrCreateInstance(const std::string& path) {
+std::shared_ptr<Logger> Logger::getOrCreateInstance(const std::string& path, bool append) {
     std::lock_guard<std::mutex> lock(m_instance_mutex);
     if (!m_instance) {
-        m_instance = std::shared_ptr<Logger>(new Logger(path));
+        m_instance = std::shared_ptr<Logger>(new Logger(path, append));
     }
     return m_instance;
 }
@@ -80,16 +82,16 @@ Logger& Logger::getInstance() {
     return *getOrCreateInstance();
 }
 
-Logger& Logger::getInstance(const std::string& custom_path) {
-    return *getOrCreateInstance(custom_path);
+Logger& Logger::getInstance(const std::string& custom_path, bool append) {
+    return *getOrCreateInstance(custom_path, append);
 }
 
 std::shared_ptr<Logger> Logger::getInstancePtr() {
     return getOrCreateInstance();
 }
 
-std::shared_ptr<Logger> Logger::getInstancePtr(const std::string& custom_path) {
-    return getOrCreateInstance(custom_path);
+std::shared_ptr<Logger> Logger::getInstancePtr(const std::string& custom_path, bool append) {
+    return getOrCreateInstance(custom_path, append);
 }
 
 Logger::~Logger() {

@@ -116,14 +116,9 @@ int main() {
     try {
         std::cout << "Starting logging system tests...\n";
         
-        // Clean up any existing log file
+        // Initialize logger with custom path and truncate mode for clean test start
         const std::string log_file = "../test_custom.log";
-        if (std::filesystem::exists(log_file)) {
-            std::filesystem::remove(log_file);
-        }
-        
-        // Initialize logger with custom path
-        auto& logger = Logger::getInstance(log_file);
+        auto& logger = Logger::getInstance(log_file, false); // false = truncate existing file
         
         std::cout << "Logger initialized successfully\n";
         std::cout << "Log file: " << log_file << "\n";

@@ -45,7 +45,7 @@ private:
     static std::stringstream create_log_prefix(LogLevel level);
 
     // constructor is now private to control instantiation
-    explicit Logger(const std::string& path);
+    explicit Logger(const std::string& path, bool append = true);
 
 public:
     // raii class for temporarily disabling stderr output
@@ -59,19 +59,19 @@ public:
     };
 
     // private method to get or create the instance
-    static std::shared_ptr<Logger> getOrCreateInstance(const std::string& path = "../custom.log");
+    static std::shared_ptr<Logger> getOrCreateInstance(const std::string& path = "../custom.log", bool append = true);
 
     // returns a reference for backward compatibility but uses shared_ptr internally
     static Logger& getInstance();
 
     // custom path version of getinstance
-    static Logger& getInstance(const std::string& custom_path);
+    static Logger& getInstance(const std::string& custom_path, bool append = true);
 
     // new method for code that explicitly wants to manage the shared_ptr
     static std::shared_ptr<Logger> getInstancePtr();
 
     // with custom path for the shared_ptr version
-    static std::shared_ptr<Logger> getInstancePtr(const std::string& custom_path);
+    static std::shared_ptr<Logger> getInstancePtr(const std::string& custom_path, bool append = true);
 
     // destructor
     ~Logger();
