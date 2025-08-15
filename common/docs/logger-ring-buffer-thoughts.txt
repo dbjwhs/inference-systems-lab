@@ -1,0 +1,33 @@
+Do I need thread-safe ring buffer implementation for my logging class.
+
+Below is my thoughts, so currently not needed but keep this for history and future work.
+
+  Current mutex-based approach pros:
+  - Simple and reliable
+  - Immediate disk persistence (good for crash recovery)
+  - Easy to debug and reason about
+  - Sufficient for most applications
+
+  Thread-safe ring buffer pros:
+  - Much better performance for high-frequency logging
+  - Reduces lock contention between threads
+  - Allows batch I/O operations
+  - Decouples logging calls from disk I/O latency
+
+  When you'd benefit from a ring buffer:
+  - High-frequency logging (thousands of messages/second)
+  - Many threads logging simultaneously
+  - Performance-critical applications where logging overhead matters
+  - When I/O latency is causing bottlenecks
+
+  When your current approach is fine:
+  - Moderate logging frequency
+  - Small number of logging threads
+  - Applications where logging isn't a performance bottleneck
+  - When you need guaranteed immediate persistence
+
+  Questions to consider:
+  1. How frequently will you be logging? (messages per second)
+  2. How many threads will be logging simultaneously?
+  3. Is logging performance critical for your inference systems?
+  4. Do you need immediate disk persistence or can you tolerate buffered writes?
