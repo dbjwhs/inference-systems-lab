@@ -4,7 +4,7 @@
 // This software is provided "as is" without warranty of any kind, express or implied.
 // The authors are not liable for any damages arising from the use of this software.
 
-// Test program for the logging functionality
+// Demo program for the logging functionality
 
 #include "../src/logging.hpp"
 #include <iostream>
@@ -97,18 +97,18 @@ void test_multithreaded_logging() {
     std::vector<std::thread> threads;
     
     // Create multiple threads that log simultaneously
-    for (int i = 0; i < 5; ++i) {
-        threads.emplace_back([i]() {
-            for (int j = 0; j < 3; ++j) {
-                LOG_INFO_PRINT("Thread {} message {}", i, j);
+    for (int ndx = 0; ndx < 5; ++ndx) {
+        threads.emplace_back([ndx]() {
+            for (int jdx = 0; jdx < 3; ++jdx) {
+                LOG_INFO_PRINT("Thread {} message {}", ndx, jdx);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         });
     }
     
     // Wait for all threads to complete
-    for (auto& t : threads) {
-        t.join();
+    for (auto& thrds : threads) {
+        thrds.join();
     }
 }
 
@@ -118,7 +118,7 @@ int main() {
         
         // Initialize logger with custom path and truncate mode for clean test start
         const std::string log_file = "../test_custom.log";
-        auto& logger = Logger::getInstance(log_file, false); // false = truncate existing file
+        const auto& logger = Logger::getInstance(log_file, false); // false = truncate existing file
         
         std::cout << "Logger initialized successfully\n";
         std::cout << "Log file: " << log_file << "\n";

@@ -29,11 +29,11 @@ target_link_libraries(common
     Threads::Threads
 )
 
-# Test executable
-add_executable(test_logging
-    examples/test_logging.cpp
+# Demo executable
+add_executable(demo_logging
+    examples/demo_logging.cpp
 )
 
-target_link_libraries(test_logging
+target_link_libraries(demo_logging
     common
 )
