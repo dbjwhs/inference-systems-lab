@@ -28,3 +28,12 @@ find_package(Threads REQUIRED)
 target_link_libraries(common
     Threads::Threads
 )
+
+# Test executable
+add_executable(test_logging
+    examples/test_logging.cpp
+)
+
+target_link_libraries(test_logging
+    common
+)
