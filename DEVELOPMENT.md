@@ -1,0 +1,215 @@
+# Development Guide for inference-systems-lab
+
+## Quick Start for New Tasks
+
+**When asking Claude Code for the next coding assignment, this context applies:**
+
+### Core Requirements
+- **C++17 or greater** for all C++ code
+- **Strongly typed Python** with type hints for utility scripts
+- **Comprehensive testing** required for all code, including examples
+- **Performance focus** - measure and optimize critical paths
+- Developer has extensive experience (coding since 1980) - assume advanced knowledge
+
+## Development Environment Setup
+
+### Required Tools
+```bash
+# C++ Development
+cmake >= 3.20
+clang++ >= 12 or g++ >= 10  # C++17 support
+clang-format                 # Code formatting
+clang-tidy                   # Static analysis
+valgrind                     # Memory checking
+perf                         # Performance profiling
+
+# Python Development (for tooling)
+python >= 3.8
+mypy                         # Type checking
+black                        # Code formatting
+pytest                       # Testing framework
+
+# Testing Tools
+catch2                       # C++ unit testing
+google-benchmark             # C++ benchmarking
+lcov                        # Coverage reporting
+```
+
+### Build Instructions
+```bash
+# Standard build
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+
+# Debug build with sanitizers
+mkdir build-debug && cd build-debug
+cmake .. -DCMAKE_BUILD_TYPE=Debug \
+         -DSANITIZE_ADDRESS=ON \
+         -DSANITIZE_UNDEFINED=ON
+make -j$(nproc)
+
+# Run tests
+ctest --output-on-failure
+
+# Run benchmarks
+./benchmarks/run_all_benchmarks
+```
+
+## Project Architecture Principles
+
+### Memory Management
+- Use RAII everywhere
+- Prefer stack allocation
+- When heap is needed, use smart pointers
+- Consider custom allocators for hot paths
+- Document ownership clearly
+
+### Concurrency Model
+- Lock-free data structures where possible
+- Clear documentation of thread safety
+- Use `std::atomic` for simple shared state
+- Prefer message passing over shared memory
+
+### Error Handling Strategy
+```cpp
+// Preferred: Result type for expected errors
+template<typename T, typename Error>
+using Result = std::expected<T, Error>;  // or custom implementation
+
+// Avoid exceptions except for truly exceptional cases
+// Never use raw error codes
+```
+
+### Testing Philosophy
+- **Test-first development encouraged**
+- Every bug fix requires a regression test
+- Performance tests prevent degradation
+- Property-based testing for algorithms
+
+## Code Review Checklist
+
+Before submitting code, verify:
+
+- [ ] All tests pass (`ctest --output-on-failure`)
+- [ ] No memory leaks (`valgrind --leak-check=full`)
+- [ ] No undefined behavior (run with sanitizers)
+- [ ] Performance benchmarks included for critical paths
+- [ ] Documentation updated
+- [ ] Code formatted (`clang-format -i src/*.cpp`)
+- [ ] Static analysis clean (`clang-tidy`)
+
+## Performance Guidelines
+
+### Measurement First
+```cpp
+// Always benchmark before optimizing
+BENCHMARK(ForwardChaining_SimpleRules) {
+    KnowledgeBase kb;
+    // ... setup ...
+    return kb.infer();
+}
+```
+
+### Cache-Friendly Design
+- Keep hot data together
+- Minimize pointer chasing
+- Use contiguous containers when possible
+- Consider data-oriented design for performance-critical sections
+
+### SIMD Considerations
+- Design data structures to be SIMD-friendly
+- Use aligned allocations for vectorizable data
+- Document vectorization opportunities
+
+## Module Development Order
+
+Recommended implementation sequence:
+
+1. **common/** - Foundation utilities
+   - Result/Error types
+   - Logging infrastructure
+   - Serialization framework
+   - Basic data structures
+
+2. **engines/** - Core inference
+   - Forward chaining engine
+   - Backward chaining engine
+   - RETE network
+   - Rule optimization
+
+3. **performance/** - Measurement tools
+   - Micro-benchmarking framework
+   - Profiling integration
+   - Cache analysis tools
+
+4. **distributed/** - Distribution layer
+   - Network abstraction
+   - Consensus protocols
+   - Distributed state machine
+
+5. **integration/** - System integration
+   - End-to-end scenarios
+   - Real-world applications
+
+## Debugging Tips
+
+### Performance Issues
+```bash
+# CPU profiling
+perf record -g ./your_binary
+perf report
+
+# Cache analysis
+valgrind --tool=cachegrind ./your_binary
+
+# Lock contention
+perf record -e sched:sched_switch -g ./your_binary
+```
+
+### Memory Issues
+```bash
+# Memory leaks
+valgrind --leak-check=full --show-leak-kinds=all ./your_binary
+
+# Address sanitizer (compile-time flag)
+-fsanitize=address
+
+# Undefined behavior sanitizer
+-fsanitize=undefined
+```
+
+## Common Patterns
+
+### Factory Pattern for Engines
+```cpp
+template<typename RuleType>
+class EngineFactory {
+    static auto create(EngineType type) -> std::unique_ptr<Engine<RuleType>>;
+};
+```
+
+### Builder Pattern for Complex Objects
+```cpp
+KnowledgeBase kb = KnowledgeBaseBuilder()
+    .with_rules(rules)
+    .with_facts(initial_facts)
+    .with_inference_strategy(ForwardChaining{})
+    .build();
+```
+
+## Getting Help
+
+- Check module-specific README files
+- Review existing code in `common/` for patterns
+- Run tests to understand expected behavior
+- Use benchmarks to verify performance assumptions
+
+## Note for Claude Code
+
+When implementing new features:
+1. Always include comprehensive tests
+2. Use C++17 features appropriately
+3. Add benchmarks for performance-critical code
+4. Follow the patterns established in existing code
+5. Document design decisions and trade-offs
