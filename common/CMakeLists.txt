@@ -37,3 +37,22 @@ add_executable(demo_logging
 target_link_libraries(demo_logging
     common
 )
+
+# Enable testing
+enable_testing()
+
+# Find Google Test
+find_package(GTest REQUIRED)
+
+# Unit tests
+add_executable(logging_tests
+    tests/test_logging_unit.cpp
+)
+
+target_link_libraries(logging_tests
+    common
+    GTest::gtest_main
+)
+
+# Add test to CTest
+add_test(NAME LoggingUnitTests COMMAND logging_tests)
