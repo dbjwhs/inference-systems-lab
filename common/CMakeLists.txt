@@ -17,16 +17,26 @@ add_library(common STATIC
 
 target_include_directories(common PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>  # For generated Cap'n Proto headers
     $<INSTALL_INTERFACE:include>
 )
 
 # Set C++23 standard
 target_compile_features(common PUBLIC cxx_std_23)
 
-# Find and link threads
+# Find dependencies
 find_package(Threads REQUIRED)
+find_package(CapnProto REQUIRED)
+
+# Generate C++ code from Cap'n Proto schemas
+capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS schemas/inference_types.capnp)
+
+# Add generated sources to the library
+target_sources(common PRIVATE ${CAPNP_SRCS})
+
 target_link_libraries(common
     Threads::Threads
+    CapnProto::capnp
 )
 
 # Demo executable
