@@ -48,13 +48,14 @@
   - [ ] Write tests in `common/tests/test_types.cpp`
 
 ### Serialization Framework
-- [ ] Implement `common/src/serialization.hpp`
-  - [ ] Define Serializable concept
-  - [ ] Binary serialization for POD types
-  - [ ] Support for standard containers
-  - [ ] Custom type registration
+- [ ] Integrate Cap'n Proto for serialization
+  - [ ] Add Cap'n Proto as CMake dependency
+  - [ ] Create schema definitions in `common/schemas/`
+  - [ ] Implement C++ wrappers in `common/src/serialization.hpp`
+  - [ ] Support for inference engine data types (facts, rules, results)
+  - [ ] Schema versioning and evolution support
   - [ ] Write tests in `common/tests/test_serialization.cpp`
-  - [ ] Benchmark serialization performance
+  - [ ] Benchmark serialization performance vs alternatives
 
 ### Data Structures
 - [ ] Implement `common/src/containers.hpp` - Cache-friendly containers
