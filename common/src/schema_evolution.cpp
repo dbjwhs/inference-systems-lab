@@ -334,12 +334,12 @@ std::string SchemaEvolutionManager::generateCompatibilityMatrix() const {
     return oss.str();
 }
 
-bool SchemaEvolutionManager::applyDefaultValuesMigration(const SchemaVersion& sourceVersion) const {
+bool SchemaEvolutionManager::applyDefaultValuesMigration([[maybe_unused]] const SchemaVersion& sourceVersion) const {
     // Implementation for default values migration
     return true; // Placeholder
 }
 
-bool SchemaEvolutionManager::applyTransformationMigration(const SchemaVersion& sourceVersion) const {
+bool SchemaEvolutionManager::applyTransformationMigration([[maybe_unused]] const SchemaVersion& sourceVersion) const {
     // Implementation for transformation migration
     return true; // Placeholder
 }
@@ -403,7 +403,7 @@ SchemaRegistry& SchemaRegistry::getInstance() {
     return instance;
 }
 
-void SchemaRegistry::registerSchema(const SchemaVersion& version, const std::string& schemaHash) {
+void SchemaRegistry::registerSchema(const SchemaVersion& version, [[maybe_unused]] const std::string& schemaHash) {
     auto it = std::find(registeredVersions_.begin(), registeredVersions_.end(), version);
     if (it == registeredVersions_.end()) {
         registeredVersions_.push_back(version);

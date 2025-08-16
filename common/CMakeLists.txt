@@ -54,8 +54,7 @@ target_link_libraries(demo_logging
 # Enable testing
 enable_testing()
 
-# Find Google Test
-find_package(GTest REQUIRED)
+# Google Test is provided via FetchContent from root CMakeLists.txt
 
 # Unit tests
 add_executable(logging_tests
@@ -64,7 +63,8 @@ add_executable(logging_tests
 
 target_link_libraries(logging_tests
     common
-    GTest::gtest_main
+    gtest
+    gtest_main
 )
 
 # Add test to CTest
@@ -77,7 +77,8 @@ add_executable(result_tests
 
 target_link_libraries(result_tests
     common
-    GTest::gtest_main
+    gtest
+    gtest_main
 )
 
 # Add Result tests to CTest
@@ -90,7 +91,8 @@ add_executable(serialization_tests
 
 target_link_libraries(serialization_tests
     common
-    GTest::gtest_main
+    gtest
+    gtest_main
 )
 
 # Add Serialization tests to CTest

@@ -169,6 +169,10 @@ private:
 };
 
 // C++17 compatible template-based logging macros
+// Accept GNU extension for broader compatibility but suppress warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+
 #define LOG_BASE_PRINT(level, message, ...) Logger::getInstance().print_log(level, message, ##__VA_ARGS__)
 #define LOG_INFO_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::INFO, message, ##__VA_ARGS__)
 #define LOG_NORMAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::NORMAL, message, ##__VA_ARGS__)
@@ -176,6 +180,8 @@ private:
 #define LOG_DEBUG_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::DEBUG, message, ##__VA_ARGS__)
 #define LOG_ERROR_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::ERROR, message, ##__VA_ARGS__)
 #define LOG_CRITICAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::CRITICAL, message, ##__VA_ARGS__)
+
+#pragma GCC diagnostic pop
 
 } // namespace common
 } // namespace inference_lab
