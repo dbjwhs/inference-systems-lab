@@ -215,6 +215,39 @@ private:
  * @tparam T The type of the successful value
  * @tparam E The type of the error value
  */
+// Internal discriminated wrappers to avoid std::variant ambiguity when T == E
+namespace detail {
+    template<typename T>
+    struct ValueWrapper {
+        T value;
+        template<typename U>
+        constexpr ValueWrapper(U&& v) : value(std::forward<U>(v)) {}
+        
+        constexpr bool operator==(const ValueWrapper& other) const {
+            return value == other.value;
+        }
+        
+        constexpr bool operator!=(const ValueWrapper& other) const {
+            return !(*this == other);
+        }
+    };
+    
+    template<typename E>
+    struct ErrorWrapper {
+        E error;
+        template<typename U>
+        constexpr ErrorWrapper(U&& e) : error(std::forward<U>(e)) {}
+        
+        constexpr bool operator==(const ErrorWrapper& other) const {
+            return error == other.error;
+        }
+        
+        constexpr bool operator!=(const ErrorWrapper& other) const {
+            return !(*this == other);
+        }
+    };
+}
+
 template<typename T, typename E>
 class Result {
 public:
@@ -227,13 +260,13 @@ public:
      * @brief Construct a successful Result from an Ok wrapper
      * @param ok The Ok wrapper containing the successful value
      */
-    constexpr Result(Ok<T> ok) : data_(std::move(ok.value_)) {}
+    constexpr Result(Ok<T> ok) : data_(detail::ValueWrapper<T>{std::move(ok.value_)}) {}
     
     /**
      * @brief Construct an error Result from an Err wrapper
      * @param err The Err wrapper containing the error value
      */
-    constexpr Result(Err<E> err) : data_(std::move(err.error_)) {}
+    constexpr Result(Err<E> err) : data_(detail::ErrorWrapper<E>{std::move(err.error_)}) {}
     
     /**
      * @brief Copy constructor
@@ -273,7 +306,7 @@ public:
      * @return true if this Result contains a value, false if it contains an error
      */
     constexpr bool is_ok() const noexcept {
-        return std::holds_alternative<T>(data_);
+        return std::holds_alternative<detail::ValueWrapper<T>>(data_);
     }
     
     /**
@@ -281,7 +314,7 @@ public:
      * @return true if this Result contains an error, false if it contains a value
      */
     constexpr bool is_err() const noexcept {
-        return std::holds_alternative<E>(data_);
+        return std::holds_alternative<detail::ErrorWrapper<E>>(data_);
     }
     
     /**
@@ -303,7 +336,7 @@ public:
         if (is_err()) {
             throw std::runtime_error("Called unwrap() on an error Result");
         }
-        return std::get<T>(data_);
+        return std::get<detail::ValueWrapper<T>>(data_).value;
     }
     
     /**
@@ -315,7 +348,7 @@ public:
         if (is_err()) {
             throw std::runtime_error("Called unwrap() on an error Result");
         }
-        return std::get<T>(std::move(data_));
+        return std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value);
     }
     
     /**
@@ -327,7 +360,7 @@ public:
         if (is_ok()) {
             throw std::runtime_error("Called unwrap_err() on a successful Result");
         }
-        return std::get<E>(data_);
+        return std::get<detail::ErrorWrapper<E>>(data_).error;
     }
     
     /**
@@ -339,7 +372,7 @@ public:
         if (is_ok()) {
             throw std::runtime_error("Called unwrap_err() on a successful Result");
         }
-        return std::get<E>(std::move(data_));
+        return std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error);
     }
     
     /**
@@ -348,7 +381,7 @@ public:
      * @return The successful value or the default value
      */
     constexpr T unwrap_or(const T& default_value) const& {
-        return is_ok() ? std::get<T>(data_) : default_value;
+        return is_ok() ? std::get<detail::ValueWrapper<T>>(data_).value : default_value;
     }
     
     /**
@@ -357,7 +390,7 @@ public:
      * @return The successful value or the default value
      */
     constexpr T unwrap_or(T&& default_value) && {
-        return is_ok() ? std::get<T>(std::move(data_)) : std::move(default_value);
+        return is_ok() ? std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value) : std::move(default_value);
     }
     
     /**
@@ -369,7 +402,7 @@ public:
     constexpr T unwrap_or_else(F&& f) const& {
         static_assert(std::is_invocable_r_v<T, F, const E&>, 
                      "Function must be callable with const E& and return T");
-        return is_ok() ? std::get<T>(data_) : std::invoke(std::forward<F>(f), std::get<E>(data_));
+        return is_ok() ? std::get<detail::ValueWrapper<T>>(data_).value : std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error);
     }
     
     /**
@@ -381,7 +414,7 @@ public:
     constexpr T unwrap_or_else(F&& f) && {
         static_assert(std::is_invocable_r_v<T, F, E&&>, 
                      "Function must be callable with E&& and return T");
-        return is_ok() ? std::get<T>(std::move(data_)) : std::invoke(std::forward<F>(f), std::get<E>(std::move(data_)));
+        return is_ok() ? std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value) : std::invoke(std::forward<F>(f), std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error));
     }
     
     // Optional conversion methods
@@ -391,7 +424,7 @@ public:
      * @return std::optional containing the value if successful, std::nullopt if error
      */
     constexpr std::optional<T> ok() const& {
-        return is_ok() ? std::optional<T>(std::get<T>(data_)) : std::nullopt;
+        return is_ok() ? std::optional<T>(std::get<detail::ValueWrapper<T>>(data_).value) : std::nullopt;
     }
     
     /**
@@ -399,7 +432,7 @@ public:
      * @return std::optional containing the value if successful, std::nullopt if error
      */
     constexpr std::optional<T> ok() && {
-        return is_ok() ? std::optional<T>(std::get<T>(std::move(data_))) : std::nullopt;
+        return is_ok() ? std::optional<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)) : std::nullopt;
     }
     
     /**
@@ -407,7 +440,7 @@ public:
      * @return std::optional containing the error if failed, std::nullopt if successful
      */
     constexpr std::optional<E> err() const& {
-        return is_err() ? std::optional<E>(std::get<E>(data_)) : std::nullopt;
+        return is_err() ? std::optional<E>(std::get<detail::ErrorWrapper<E>>(data_).error) : std::nullopt;
     }
     
     /**
@@ -415,7 +448,7 @@ public:
      * @return std::optional containing the error if failed, std::nullopt if successful
      */
     constexpr std::optional<E> err() && {
-        return is_err() ? std::optional<E>(std::get<E>(std::move(data_))) : std::nullopt;
+        return is_err() ? std::optional<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error)) : std::nullopt;
     }
     
     // Monadic operations
@@ -438,9 +471,9 @@ public:
                      "Function must be callable with const T&");
         
         if (is_ok()) {
-            return Ok<U>(std::invoke(std::forward<F>(f), std::get<T>(data_)));
+            return Result<U, E>(Ok<U>(std::invoke(std::forward<F>(f), std::get<detail::ValueWrapper<T>>(data_).value)));
         } else {
-            return Err<E>(std::get<E>(data_));
+            return Result<U, E>(Err<E>(std::get<detail::ErrorWrapper<E>>(data_).error));
         }
     }
     
@@ -458,9 +491,9 @@ public:
                      "Function must be callable with T&&");
         
         if (is_ok()) {
-            return Ok<U>(std::invoke(std::forward<F>(f), std::get<T>(std::move(data_))));
+            return Result<U, E>(Ok<U>(std::invoke(std::forward<F>(f), std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value))));
         } else {
-            return Err<E>(std::get<E>(std::move(data_)));
+            return Result<U, E>(Err<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error)));
         }
     }
     
@@ -482,9 +515,9 @@ public:
                      "Function must be callable with const E&");
         
         if (is_ok()) {
-            return Ok<T>(std::get<T>(data_));
+            return Result<T, U>(Ok<T>(std::get<detail::ValueWrapper<T>>(data_).value));
         } else {
-            return Err<U>(std::invoke(std::forward<F>(f), std::get<E>(data_)));
+            return Result<T, U>(Err<U>(std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error)));
         }
     }
     
@@ -502,9 +535,9 @@ public:
                      "Function must be callable with E&&");
         
         if (is_ok()) {
-            return Ok<T>(std::get<T>(std::move(data_)));
+            return Result<T, U>(Ok<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)));
         } else {
-            return Err<U>(std::invoke(std::forward<F>(f), std::get<E>(std::move(data_))));
+            return Result<T, U>(Err<U>(std::invoke(std::forward<F>(f), std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error))));
         }
     }
     
@@ -532,10 +565,10 @@ public:
                      "Function must be callable with const T&");
         
         if (is_ok()) {
-            return std::invoke(std::forward<F>(f), std::get<T>(data_));
+            return std::invoke(std::forward<F>(f), std::get<detail::ValueWrapper<T>>(data_).value);
         } else {
             using U = detail::result_value_type_t<result_type>;
-            return Err<E>(std::get<E>(data_));
+            return result_type(Err<E>(std::get<detail::ErrorWrapper<E>>(data_).error));
         }
     }
     
@@ -557,10 +590,10 @@ public:
                      "Function must be callable with T&&");
         
         if (is_ok()) {
-            return std::invoke(std::forward<F>(f), std::get<T>(std::move(data_)));
+            return std::invoke(std::forward<F>(f), std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value));
         } else {
             using U = detail::result_value_type_t<result_type>;
-            return Err<E>(std::get<E>(std::move(data_)));
+            return result_type(Err<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error)));
         }
     }
     
@@ -587,9 +620,9 @@ public:
         
         if (is_ok()) {
             using F_error = detail::result_error_type_t<result_type>;
-            return Ok<T>(std::get<T>(data_));
+            return result_type(Ok<T>(std::get<detail::ValueWrapper<T>>(data_).value));
         } else {
-            return std::invoke(std::forward<F>(f), std::get<E>(data_));
+            return std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error);
         }
     }
     
@@ -612,9 +645,9 @@ public:
         
         if (is_ok()) {
             using F_error = detail::result_error_type_t<result_type>;
-            return Ok<T>(std::get<T>(std::move(data_)));
+            return result_type(Ok<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)));
         } else {
-            return std::invoke(std::forward<F>(f), std::get<E>(std::move(data_)));
+            return std::invoke(std::forward<F>(f), std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error));
         }
     }
     
@@ -675,7 +708,7 @@ public:
     }
 
 private:
-    std::variant<T, E> data_;  ///< Internal storage using std::variant
+    std::variant<detail::ValueWrapper<T>, detail::ErrorWrapper<E>> data_;  ///< Internal storage using discriminated wrappers
 };
 
 // Convenience factory functions
@@ -703,6 +736,30 @@ constexpr auto make_err(E&& error) {
 }
 
 /**
+ * @brief Create a successful Result with explicit error type
+ * @tparam E The error type to use
+ * @tparam T The type of the value (deduced)
+ * @param value The successful value
+ * @return Result<T, E> containing the value
+ */
+template<typename E, typename T>
+constexpr auto make_result_ok(T&& value) -> Result<std::decay_t<T>, E> {
+    return Result<std::decay_t<T>, E>(Ok<std::decay_t<T>>(std::forward<T>(value)));
+}
+
+/**
+ * @brief Create an error Result with explicit value type
+ * @tparam T The value type to use
+ * @tparam E The type of the error (deduced)
+ * @param error The error value
+ * @return Result<T, E> containing the error
+ */
+template<typename T, typename E>
+constexpr auto make_result_err(E&& error) -> Result<T, std::decay_t<E>> {
+    return Result<T, std::decay_t<E>>(Err<std::decay_t<E>>(std::forward<E>(error)));
+}
+
+/**
  * @brief Try to execute a function and wrap exceptions in Result
  * 
  * This utility function allows integration with exception-throwing code
@@ -714,18 +771,19 @@ constexpr auto make_err(E&& error) {
  * @return Result containing the function result or caught exception
  */
 template<typename E = std::exception, typename F>
-auto try_call(F&& f) -> Result<std::invoke_result_t<F>, E> {
+auto try_call(F&& f) -> Result<std::conditional_t<std::is_void_v<std::invoke_result_t<F>>, std::monostate, std::invoke_result_t<F>>, E> {
     using T = std::invoke_result_t<F>;
+    using ReturnType = std::conditional_t<std::is_void_v<T>, std::monostate, T>;
     
     try {
         if constexpr (std::is_void_v<T>) {
             std::invoke(std::forward<F>(f));
-            return Ok<std::monostate>(std::monostate{});
+            return Result<ReturnType, E>(Ok<ReturnType>(std::monostate{}));
         } else {
-            return Ok<T>(std::invoke(std::forward<F>(f)));
+            return Result<ReturnType, E>(Ok<ReturnType>(std::invoke(std::forward<F>(f))));
         }
     } catch (const E& e) {
-        return Err<E>(e);
+        return Result<ReturnType, E>(Err<E>(e));
     }
 }
 
@@ -752,23 +810,17 @@ constexpr auto combine(Results&&... results) {
     
     // Check if any Result contains an error
     if (!(results.is_ok() && ...)) {
-        // Find and return the first error
-        auto get_first_error = [](auto&& first, auto&&... rest) -> Result<value_tuple, first_error_type> {
-            if (!first.is_ok()) {
-                return Err<first_error_type>(std::forward<decltype(first)>(first).unwrap_err());
-            }
-            if constexpr (sizeof...(rest) > 0) {
-                return get_first_error(std::forward<decltype(rest)>(rest)...);
-            } else {
-                // This should never be reached due to the outer condition check
-                return Err<first_error_type>(first_error_type{});
-            }
+        // Find and return the first error using a helper function
+        auto get_first_error = [](auto&&... args) -> Result<value_tuple, first_error_type> {
+            Result<value_tuple, first_error_type> result{Err<first_error_type>(first_error_type{})};
+            ((args.is_err() ? (result = Result<value_tuple, first_error_type>(Err<first_error_type>(args.unwrap_err())), true) : false) || ...);
+            return result;
         };
-        return get_first_error(std::forward<Results>(results)...);
+        return get_first_error(results...);
     }
     
     // All Results are successful, extract values into tuple
-    return Ok<value_tuple>(std::make_tuple(std::forward<Results>(results).unwrap()...));
+    return Result<value_tuple, first_error_type>(Ok<value_tuple>(std::make_tuple(std::forward<Results>(results).unwrap()...)));
 }
 
 } // namespace inference_lab::common
