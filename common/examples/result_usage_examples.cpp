@@ -354,8 +354,8 @@ auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, Net
 /**
  * @brief Retry logic with exponential backoff
  */
-template<typename F>
-auto retry_with_backoff(F&& operation, int max_retries = 3) -> decltype(operation()) {
+template<typename OperationType>
+auto retry_with_backoff(OperationType&& operation, int max_retries = 3) -> decltype(operation()) {
     for (int attempt = 0; attempt < max_retries; ++attempt) {
         auto result = operation();
         

@@ -63,13 +63,13 @@
 namespace inference_lab::common {
 
 // Forward declarations
-template<typename T, typename E>
+template<typename ValueType, typename ErrorType>
 class Result;
 
-template<typename T>
+template<typename ValueType>
 class Ok;
 
-template<typename E>
+template<typename ErrorType>
 class Err;
 
 // Helper concepts for SFINAE and better error messages

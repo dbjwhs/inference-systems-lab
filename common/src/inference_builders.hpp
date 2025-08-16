@@ -418,10 +418,10 @@ inline Fact fact(const std::string& predicate) {
  * This template function allows creating facts with any number of arguments
  * in a single call, e.g., fact("livesIn", "socrates", "athens")
  */
-template<typename... Args>
-inline Fact fact(const std::string& predicate, Args&&... args) {
+template<typename... ArgumentTypes>
+inline Fact fact(const std::string& predicate, ArgumentTypes&&... args) {
     FactBuilder builder(predicate);
-    (builder.withArg(std::forward<Args>(args)), ...);
+    (builder.withArg(std::forward<ArgumentTypes>(args)), ...);
     return builder.build();
 }
 
@@ -456,10 +456,10 @@ inline QueryBuilder findAll(const std::string& predicate) {
  * @param args Arguments for the goal
  * @return QueryBuilder for further configuration
  */
-template<typename... Args>
-inline QueryBuilder findAll(const std::string& predicate, Args&&... args) {
+template<typename... ArgumentTypes>
+inline QueryBuilder findAll(const std::string& predicate, ArgumentTypes&&... args) {
     auto builder = QueryBuilder::findAll().goal(predicate);
-    (builder.withArg(std::forward<Args>(args)), ...);
+    (builder.withArg(std::forward<ArgumentTypes>(args)), ...);
     return builder;
 }
 
@@ -479,10 +479,10 @@ inline QueryBuilder prove(const std::string& predicate) {
  * @param args Arguments for the goal
  * @return QueryBuilder for further configuration
  */
-template<typename... Args>
-inline QueryBuilder prove(const std::string& predicate, Args&&... args) {
+template<typename... ArgumentTypes>
+inline QueryBuilder prove(const std::string& predicate, ArgumentTypes&&... args) {
     auto builder = QueryBuilder::prove().goal(predicate);
-    (builder.withArg(std::forward<Args>(args)), ...);
+    (builder.withArg(std::forward<ArgumentTypes>(args)), ...);
     return builder;
 }
 
