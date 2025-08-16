@@ -107,8 +107,8 @@ void test_multithreaded_logging() {
     }
     
     // Wait for all threads to complete
-    for (auto& thrds : threads) {
-        thrds.join();
+    for (auto& thrd : threads) {
+        thrd.join();
     }
 }
 

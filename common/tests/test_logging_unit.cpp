@@ -320,8 +320,8 @@ TEST_F(LoggerTest, ThreadSafety) {
         }
     
     // Wait for all threads to complete
-    for (auto& thrds : threads) {
-        thrds.join();
+    for (auto& thrd : threads) {
+        thrd.join();
     }
     
     // Verify all messages were logged successfully (no crashes)
