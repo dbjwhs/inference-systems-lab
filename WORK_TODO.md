@@ -66,7 +66,6 @@
     - [X] VersionedSerializer with automatic migration support
     - [X] Comprehensive test suite demonstrating all features
   - [X] Write tests in `common/tests/test_serialization.cpp`
-  - [ ] Benchmark serialization performance vs alternatives
 
 ### Data Structures
 - [ ] Implement `common/src/containers.hpp` - Cache-friendly containers
