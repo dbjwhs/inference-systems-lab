@@ -34,6 +34,6 @@ add_executable(performance_benchmarks
 
 target_link_libraries(performance_benchmarks
     performance
-    benchmark::benchmark
+    benchmark::benchmark_main
 )
 

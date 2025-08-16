@@ -37,6 +37,6 @@ add_executable(integration_benchmarks
 
 target_link_libraries(integration_benchmarks
     integration
-    benchmark::benchmark
+    benchmark::benchmark_main
 )
 

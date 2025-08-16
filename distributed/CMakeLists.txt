@@ -34,6 +34,6 @@ add_executable(distributed_benchmarks
 
 target_link_libraries(distributed_benchmarks
     distributed
-    benchmark::benchmark
+    benchmark::benchmark_main
 )
 

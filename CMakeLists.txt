@@ -54,16 +54,22 @@ find_package(Threads REQUIRED)
 # Optional packages for enhanced development
 find_package(PkgConfig QUIET)
 
-# Google Test and Benchmark (downloaded via FetchContent)
+# Google Test and Benchmark - prefer system-installed version for ABI compatibility
 include(FetchContent)
 
-# Google Test
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        release-1.12.1
-)
-FetchContent_MakeAvailable(googletest)
+# Try to find system-installed GoogleTest first (better ABI compatibility on Apple Silicon)
+find_package(GTest QUIET)
+if(NOT GTest_FOUND)
+    message(STATUS "System GoogleTest not found, using FetchContent")
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        release-1.12.1
+    )
+    FetchContent_MakeAvailable(googletest)
+else()
+    message(STATUS "Using system-installed GoogleTest: ${GTEST_VERSION}")
+endif()
 
 # Google Benchmark
 FetchContent_Declare(
