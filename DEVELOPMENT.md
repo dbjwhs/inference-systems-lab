@@ -11,6 +11,15 @@
 - **Performance focus** - measure and optimize critical paths
 - Developer has extensive experience (coding since 1980) - assume advanced knowledge
 
+## Template naming
+- use Modern C++ Template Parameter Naming (2025) using concept-constrained parameters with descriptive names, such as
+```cpp
+template<std::copyable ElementType>
+  instead of the traditional template<typename T>.
+```
+
+- This modern pattern emerged from C++20 concepts and represents current best practice because it provides self-documenting interfaces, significantly better compiler error messages, enables aggressive optimizations, and makes code intent crystal clear - major codebases like Google's, Microsoft's, and LLVM have adopted this approach as of 2023-2024, making concept-constrained descriptive naming the gold standard for new C++ code in 2025, though traditional T naming remains acceptable for simple generic utilities.
+
 ## Development Environment Setup
 
 ### Required Tools
