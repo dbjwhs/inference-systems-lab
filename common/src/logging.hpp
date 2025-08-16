@@ -18,7 +18,6 @@
 #include <iomanip>
 #include <thread>
 #include <atomic>
-#include <format>
 
 namespace inference_lab {
 namespace common {
@@ -76,26 +75,28 @@ public:
     // destructor
     ~Logger();
 
-    // std::print-based logging methods for C++23
+    // Template-based logging methods for C++17 compatibility
     template<typename... Args>
-    void print_log(const LogLevel level, std::format_string<Args...> format, Args&&... args) {
+    void print_log(const LogLevel level, const std::string& format, Args&&... args) {
         if (!is_level_enabled(level)) {
             return;
         }
         auto prefix = create_log_prefix(level);
-        auto formatted_message = std::format("{}{}\n", prefix.str(), std::format(format, std::forward<Args>(args)...));
-        write_log_message(level, formatted_message);
+        auto formatted_message = format_message(format, std::forward<Args>(args)...);
+        auto full_message = prefix.str() + formatted_message + "\n";
+        write_log_message(level, full_message);
     }
 
-    // std::print-based logging with depth for C++23
+    // Template-based logging with depth for C++17 compatibility
     template<typename... Args>
-    void print_log_with_depth(const LogLevel level, const int depth, std::format_string<Args...> format, Args&&... args) {
+    void print_log_with_depth(const LogLevel level, const int depth, const std::string& format, Args&&... args) {
         if (!is_level_enabled(level)) {
             return;
         }
         auto prefix = create_log_prefix(level);
-        auto formatted_message = std::format("{}{}{}\n", prefix.str(), getIndentation(depth), std::format(format, std::forward<Args>(args)...));
-        write_log_message(level, formatted_message);
+        auto formatted_message = format_message(format, std::forward<Args>(args)...);
+        auto full_message = prefix.str() + getIndentation(depth) + formatted_message + "\n";
+        write_log_message(level, full_message);
     }
 
     // enable/disable specific log level
@@ -137,9 +138,37 @@ private:
 
     // get current utc timestamp
     static std::string get_utc_timestamp();
+
+    // C++17 compatible format message helper
+    template<typename... Args>
+    static std::string format_message(const std::string& format, Args&&... args) {
+        // Simple string substitution approach for C++17
+        // For more complex formatting, consider using fmtlib or similar
+        std::ostringstream oss;
+        format_message_impl(oss, format, std::forward<Args>(args)...);
+        return oss.str();
+    }
+
+    // Helper for formatting - base case
+    static void format_message_impl(std::ostringstream& oss, const std::string& format) {
+        oss << format;
+    }
+
+    // Helper for formatting - recursive case
+    template<typename T, typename... Args>
+    static void format_message_impl(std::ostringstream& oss, const std::string& format, T&& value, Args&&... args) {
+        // Simple approach: replace first {} with the value
+        size_t pos = format.find("{}");
+        if (pos != std::string::npos) {
+            oss << format.substr(0, pos) << std::forward<T>(value);
+            format_message_impl(oss, format.substr(pos + 2), std::forward<Args>(args)...);
+        } else {
+            oss << format;
+        }
+    }
 };
 
-// C++23 std::print-based logging macros
+// C++17 compatible template-based logging macros
 #define LOG_BASE_PRINT(level, message, ...) Logger::getInstance().print_log(level, message, ##__VA_ARGS__)
 #define LOG_INFO_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::INFO, message, ##__VA_ARGS__)
 #define LOG_NORMAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::NORMAL, message, ##__VA_ARGS__)

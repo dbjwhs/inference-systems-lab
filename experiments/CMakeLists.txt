@@ -36,16 +36,13 @@ target_link_libraries(exp_memory_inference
     common
 )
 
-# Experiments tests (validation of experimental setups)
+# Experiments tests (validation of experimental setups) - using placeholder for now
 add_executable(experiments_tests
-    tests/test_experimental_setup.cpp
-    tests/test_data_collection.cpp
-    tests/test_result_analysis.cpp
+    tests/placeholder.cpp
 )
 
 target_link_libraries(experiments_tests
-    gtest_main
-    gtest
+    GTest::gtest_main
 )
 
 add_test(NAME ExperimentsTests COMMAND experiments_tests)

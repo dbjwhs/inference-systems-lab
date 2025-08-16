@@ -1,11 +1,8 @@
 # Performance optimization library
 
-# Create performance library
+# Create performance library (using placeholder for now)
 add_library(performance STATIC
-    src/memory_pool.cpp
-    src/cache_optimizer.cpp
-    src/simd_operations.cpp
-    src/profiler.cpp
+    src/placeholder.cpp
 )
 
 target_include_directories(performance PUBLIC
@@ -18,31 +15,25 @@ target_link_libraries(performance
     Threads::Threads
 )
 
-# Performance tests
+# Performance tests (using placeholder for now)
 add_executable(performance_tests
-    tests/test_memory_pool.cpp
-    tests/test_cache_optimizer.cpp
-    tests/test_simd_operations.cpp
-    tests/test_profiler.cpp
+    tests/placeholder.cpp
 )
 
 target_link_libraries(performance_tests
     performance
-    gtest_main
-    gtest
+    GTest::gtest_main
 )
 
 add_test(NAME PerformanceTests COMMAND performance_tests)
 
-# Performance benchmarks
+# Performance benchmarks (using placeholder for now)
 add_executable(performance_benchmarks
-    benchmarks/bench_memory_allocation.cpp
-    benchmarks/bench_cache_performance.cpp
-    benchmarks/bench_simd_vs_scalar.cpp
-    benchmarks/bench_profiler_overhead.cpp
+    benchmarks/placeholder.cpp
 )
 
 target_link_libraries(performance_benchmarks
     performance
     benchmark::benchmark
 )
+

@@ -24,6 +24,7 @@
 
 #include "../src/result.hpp"
 #include <benchmark/benchmark.h>
+#include <iostream>
 #include <random>
 #include <vector>
 #include <string>
@@ -277,7 +278,11 @@ static void BM_Result_Complex_Chain(benchmark::State& state) {
         auto complex = result
             .map([](int x) { return x + 10; })
             .and_then([](int x) -> Result<int, BenchError> {
-                return x > 20 ? Err(BenchError::ProcessingFailed) : Ok(x);
+                if (x > 20) {
+                    return Err(BenchError::ProcessingFailed);
+                } else {
+                    return Ok(x);
+                }
             })
             .map([](int x) { return x * 3; })
             .or_else([](BenchError) -> Result<int, BenchError> {

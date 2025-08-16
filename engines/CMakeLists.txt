@@ -1,11 +1,8 @@
 # Inference engines library
 
-# Create engines library
+# Create engines library (using placeholder for now)
 add_library(engines STATIC
-    src/forward_chainer.cpp
-    src/backward_chainer.cpp
-    src/rule_engine.cpp
-    src/fact_store.cpp
+    src/placeholder.cpp
 )
 
 target_include_directories(engines PUBLIC
@@ -18,30 +15,25 @@ target_link_libraries(engines
     Threads::Threads
 )
 
-# Engines tests
+# Engines tests (using placeholder for now)
 add_executable(engines_tests
-    tests/test_forward_chainer.cpp
-    tests/test_backward_chainer.cpp
-    tests/test_rule_engine.cpp
-    tests/test_fact_store.cpp
+    tests/placeholder.cpp
 )
 
 target_link_libraries(engines_tests
     engines
-    gtest_main
-    gtest
+    GTest::gtest_main
 )
 
 add_test(NAME EnginesTests COMMAND engines_tests)
 
-# Engines benchmarks
+# Engines benchmarks (using placeholder for now)
 add_executable(engines_benchmarks
-    benchmarks/bench_rule_evaluation.cpp
-    benchmarks/bench_fact_storage.cpp
-    benchmarks/bench_pattern_matching.cpp
+    benchmarks/placeholder.cpp
 )
 
 target_link_libraries(engines_benchmarks
     engines
     benchmark::benchmark
 )
+

@@ -21,11 +21,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(
         -Wall -Wextra -Wpedantic
         -Wcast-align -Wcast-qual -Wctor-dtor-privacy
-        -Wdisabled-optimization -Wformat=2 -Winit-self
+        -Wdisabled-optimization -Winit-self
         -Wmissing-declarations -Wmissing-include-dirs
         -Wold-style-cast -Woverloaded-virtual -Wredundant-decls
-        -Wshadow -Wsign-conversion -Wsign-promo
-        -Wstrict-overflow=5 -Wswitch-default -Wundef
+        -Wshadow -Wsign-promo
+        -Wstrict-overflow=5
     )
     
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")

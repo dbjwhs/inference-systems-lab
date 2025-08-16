@@ -24,8 +24,8 @@ target_include_directories(common PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Set C++23 standard
-target_compile_features(common PUBLIC cxx_std_23)
+# Set C++17 standard (consistent with main project)
+target_compile_features(common PUBLIC cxx_std_17)
 
 # Find dependencies
 find_package(Threads REQUIRED)
@@ -70,6 +70,32 @@ target_link_libraries(logging_tests
 # Add test to CTest
 add_test(NAME LoggingUnitTests COMMAND logging_tests)
 
+# Result type tests
+add_executable(result_tests
+    tests/test_result.cpp
+)
+
+target_link_libraries(result_tests
+    common
+    GTest::gtest_main
+)
+
+# Add Result tests to CTest
+add_test(NAME ResultUnitTests COMMAND result_tests)
+
+# Serialization tests
+add_executable(serialization_tests
+    tests/test_serialization.cpp
+)
+
+target_link_libraries(serialization_tests
+    common
+    GTest::gtest_main
+)
+
+# Add Serialization tests to CTest
+add_test(NAME SerializationUnitTests COMMAND serialization_tests)
+
 # Inference types demo
 add_executable(inference_types_demo
     examples/inference_types_demo.cpp
@@ -87,3 +113,52 @@ add_executable(schema_evolution_demo
 target_link_libraries(schema_evolution_demo
     common
 )
+
+# Result usage examples
+add_executable(result_usage_examples
+    examples/result_usage_examples.cpp
+)
+
+target_link_libraries(result_usage_examples
+    common
+)
+
+# Result benchmarks (only if Google Benchmark is available)
+if(TARGET benchmark::benchmark)
+    add_executable(result_benchmarks
+        benchmarks/result_benchmarks.cpp
+    )
+
+    target_link_libraries(result_benchmarks
+        common
+        benchmark::benchmark
+    )
+
+    # Create benchmark alias for the main benchmarks target
+    add_custom_target(common_benchmarks DEPENDS result_benchmarks)
+else()
+    # If building standalone, try to find benchmark package
+    find_package(benchmark QUIET)
+    if(benchmark_FOUND)
+        add_executable(result_benchmarks
+            benchmarks/result_benchmarks.cpp
+        )
+
+        target_link_libraries(result_benchmarks
+            common
+            benchmark::benchmark
+        )
+
+        add_custom_target(common_benchmarks DEPENDS result_benchmarks)
+    else()
+        message(STATUS "Google Benchmark not found - benchmarks will not be built")
+        message(STATUS "To build benchmarks, either:")
+        message(STATUS "  1. Build from main project directory, or")
+        message(STATUS "  2. Install Google Benchmark system-wide")
+        
+        # Create empty benchmark target for compatibility
+        add_custom_target(common_benchmarks
+            COMMAND ${CMAKE_COMMAND} -E echo "Benchmarks not available - Google Benchmark not found"
+        )
+    endif()
+endif()
