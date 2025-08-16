@@ -306,7 +306,7 @@ TEST_F(LoggerTest, ThreadSafety) {
     // Create multiple threads that log simultaneously
     threads.reserve(num_threads);
     for (int ndx = 0; ndx < num_threads; ++ndx) {
-            threads.emplace_back([&logger, &successful_logs, ndx, messages_per_thread]() {
+            threads.emplace_back([&logger, &successful_logs, ndx]() {
                 for (int j = 0; j < messages_per_thread; ++j) {
                     try {
                         logger.print_log(LogLevel::INFO, "Thread {} message {}", ndx, j);
