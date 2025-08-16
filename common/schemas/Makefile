@@ -165,6 +165,32 @@ logging_tests/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/logging_tests.dir/build.make CMakeFiles/logging_tests.dir/build
 .PHONY : logging_tests/fast
 
+#=============================================================================
+# Target rules for targets named inference_types_demo
+
+# Build rule for target.
+inference_types_demo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 inference_types_demo
+.PHONY : inference_types_demo
+
+# fast build rule for target.
+inference_types_demo/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/inference_types_demo.dir/build.make CMakeFiles/inference_types_demo.dir/build
+.PHONY : inference_types_demo/fast
+
+#=============================================================================
+# Target rules for targets named schema_evolution_demo
+
+# Build rule for target.
+schema_evolution_demo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 schema_evolution_demo
+.PHONY : schema_evolution_demo
+
+# fast build rule for target.
+schema_evolution_demo/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/schema_evolution_demo.dir/build.make CMakeFiles/schema_evolution_demo.dir/build
+.PHONY : schema_evolution_demo/fast
+
 examples/demo_logging.o: examples/demo_logging.cpp.o
 .PHONY : examples/demo_logging.o
 
@@ -188,6 +214,54 @@ examples/demo_logging.s: examples/demo_logging.cpp.s
 examples/demo_logging.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/demo_logging.dir/build.make CMakeFiles/demo_logging.dir/examples/demo_logging.cpp.s
 .PHONY : examples/demo_logging.cpp.s
+
+examples/inference_types_demo.o: examples/inference_types_demo.cpp.o
+.PHONY : examples/inference_types_demo.o
+
+# target to build an object file
+examples/inference_types_demo.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/inference_types_demo.dir/build.make CMakeFiles/inference_types_demo.dir/examples/inference_types_demo.cpp.o
+.PHONY : examples/inference_types_demo.cpp.o
+
+examples/inference_types_demo.i: examples/inference_types_demo.cpp.i
+.PHONY : examples/inference_types_demo.i
+
+# target to preprocess a source file
+examples/inference_types_demo.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/inference_types_demo.dir/build.make CMakeFiles/inference_types_demo.dir/examples/inference_types_demo.cpp.i
+.PHONY : examples/inference_types_demo.cpp.i
+
+examples/inference_types_demo.s: examples/inference_types_demo.cpp.s
+.PHONY : examples/inference_types_demo.s
+
+# target to generate assembly for a file
+examples/inference_types_demo.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/inference_types_demo.dir/build.make CMakeFiles/inference_types_demo.dir/examples/inference_types_demo.cpp.s
+.PHONY : examples/inference_types_demo.cpp.s
+
+examples/schema_evolution_demo.o: examples/schema_evolution_demo.cpp.o
+.PHONY : examples/schema_evolution_demo.o
+
+# target to build an object file
+examples/schema_evolution_demo.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/schema_evolution_demo.dir/build.make CMakeFiles/schema_evolution_demo.dir/examples/schema_evolution_demo.cpp.o
+.PHONY : examples/schema_evolution_demo.cpp.o
+
+examples/schema_evolution_demo.i: examples/schema_evolution_demo.cpp.i
+.PHONY : examples/schema_evolution_demo.i
+
+# target to preprocess a source file
+examples/schema_evolution_demo.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/schema_evolution_demo.dir/build.make CMakeFiles/schema_evolution_demo.dir/examples/schema_evolution_demo.cpp.i
+.PHONY : examples/schema_evolution_demo.cpp.i
+
+examples/schema_evolution_demo.s: examples/schema_evolution_demo.cpp.s
+.PHONY : examples/schema_evolution_demo.s
+
+# target to generate assembly for a file
+examples/schema_evolution_demo.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/schema_evolution_demo.dir/build.make CMakeFiles/schema_evolution_demo.dir/examples/schema_evolution_demo.cpp.s
+.PHONY : examples/schema_evolution_demo.cpp.s
 
 schemas/inference_types.capnp.o: schemas/inference_types.capnp.c++.o
 .PHONY : schemas/inference_types.capnp.o
@@ -213,6 +287,54 @@ schemas/inference_types.capnp.c++.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/schemas/inference_types.capnp.c++.s
 .PHONY : schemas/inference_types.capnp.c++.s
 
+src/inference_builders.o: src/inference_builders.cpp.o
+.PHONY : src/inference_builders.o
+
+# target to build an object file
+src/inference_builders.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/inference_builders.cpp.o
+.PHONY : src/inference_builders.cpp.o
+
+src/inference_builders.i: src/inference_builders.cpp.i
+.PHONY : src/inference_builders.i
+
+# target to preprocess a source file
+src/inference_builders.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/inference_builders.cpp.i
+.PHONY : src/inference_builders.cpp.i
+
+src/inference_builders.s: src/inference_builders.cpp.s
+.PHONY : src/inference_builders.s
+
+# target to generate assembly for a file
+src/inference_builders.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/inference_builders.cpp.s
+.PHONY : src/inference_builders.cpp.s
+
+src/inference_types.o: src/inference_types.cpp.o
+.PHONY : src/inference_types.o
+
+# target to build an object file
+src/inference_types.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/inference_types.cpp.o
+.PHONY : src/inference_types.cpp.o
+
+src/inference_types.i: src/inference_types.cpp.i
+.PHONY : src/inference_types.i
+
+# target to preprocess a source file
+src/inference_types.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/inference_types.cpp.i
+.PHONY : src/inference_types.cpp.i
+
+src/inference_types.s: src/inference_types.cpp.s
+.PHONY : src/inference_types.s
+
+# target to generate assembly for a file
+src/inference_types.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/inference_types.cpp.s
+.PHONY : src/inference_types.cpp.s
+
 src/logging.o: src/logging.cpp.o
 .PHONY : src/logging.o
 
@@ -236,6 +358,30 @@ src/logging.s: src/logging.cpp.s
 src/logging.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/logging.cpp.s
 .PHONY : src/logging.cpp.s
+
+src/schema_evolution.o: src/schema_evolution.cpp.o
+.PHONY : src/schema_evolution.o
+
+# target to build an object file
+src/schema_evolution.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/schema_evolution.cpp.o
+.PHONY : src/schema_evolution.cpp.o
+
+src/schema_evolution.i: src/schema_evolution.cpp.i
+.PHONY : src/schema_evolution.i
+
+# target to preprocess a source file
+src/schema_evolution.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/schema_evolution.cpp.i
+.PHONY : src/schema_evolution.cpp.i
+
+src/schema_evolution.s: src/schema_evolution.cpp.s
+.PHONY : src/schema_evolution.s
+
+# target to generate assembly for a file
+src/schema_evolution.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/common.dir/build.make CMakeFiles/common.dir/src/schema_evolution.cpp.s
+.PHONY : src/schema_evolution.cpp.s
 
 src/utils.o: src/utils.cpp.o
 .PHONY : src/utils.o
@@ -296,16 +442,33 @@ help:
 	@echo "... test"
 	@echo "... common"
 	@echo "... demo_logging"
+	@echo "... inference_types_demo"
 	@echo "... logging_tests"
+	@echo "... schema_evolution_demo"
 	@echo "... examples/demo_logging.o"
 	@echo "... examples/demo_logging.i"
 	@echo "... examples/demo_logging.s"
+	@echo "... examples/inference_types_demo.o"
+	@echo "... examples/inference_types_demo.i"
+	@echo "... examples/inference_types_demo.s"
+	@echo "... examples/schema_evolution_demo.o"
+	@echo "... examples/schema_evolution_demo.i"
+	@echo "... examples/schema_evolution_demo.s"
 	@echo "... schemas/inference_types.capnp.o"
 	@echo "... schemas/inference_types.capnp.i"
 	@echo "... schemas/inference_types.capnp.s"
+	@echo "... src/inference_builders.o"
+	@echo "... src/inference_builders.i"
+	@echo "... src/inference_builders.s"
+	@echo "... src/inference_types.o"
+	@echo "... src/inference_types.i"
+	@echo "... src/inference_types.s"
 	@echo "... src/logging.o"
 	@echo "... src/logging.i"
 	@echo "... src/logging.s"
+	@echo "... src/schema_evolution.o"
+	@echo "... src/schema_evolution.i"
+	@echo "... src/schema_evolution.s"
 	@echo "... src/utils.o"
 	@echo "... src/utils.i"
 	@echo "... src/utils.s"

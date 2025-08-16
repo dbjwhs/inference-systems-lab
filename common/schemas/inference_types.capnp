@@ -8,9 +8,75 @@
 
 # Core inference engine data types schema
 # Defines serializable structures for facts, rules, queries, and results
+# Schema version: 1.0.0
 
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("inference_lab::common::schemas");
+
+# Schema versioning and evolution support
+struct SchemaVersion {
+    major @0 :UInt32;
+    minor @1 :UInt32; 
+    patch @2 :UInt32;
+    
+    # Semantic version string (e.g., "1.2.3")
+    versionString @3 :Text;
+    
+    # Compatibility information
+    minCompatibleMajor @4 :UInt32;
+    minCompatibleMinor @5 :UInt32;
+    
+    # Schema hash for integrity checking
+    schemaHash @6 :Text;
+}
+
+# Schema evolution metadata
+struct SchemaEvolution {
+    # Current schema version
+    currentVersion @0 :SchemaVersion;
+    
+    # List of supported versions for backward compatibility
+    supportedVersions @1 :List(SchemaVersion);
+    
+    # Migration paths available
+    migrationPaths @2 :List(MigrationPath);
+    
+    # Schema evolution timestamp
+    evolutionTimestamp @3 :UInt64;
+}
+
+# Describes how to migrate between schema versions
+struct MigrationPath {
+    fromVersion @0 :SchemaVersion;
+    toVersion @1 :SchemaVersion;
+    
+    # Migration strategy
+    strategy @2 :MigrationStrategy;
+    
+    # Whether this migration is reversible
+    reversible @3 :Bool = false;
+    
+    # Migration metadata
+    description @4 :Text;
+    warnings @5 :List(Text);
+}
+
+enum MigrationStrategy {
+    # Direct field mapping (no data loss)
+    directMapping @0;
+    
+    # Field transformation required
+    transformation @1;
+    
+    # Default values for new fields
+    defaultValues @2;
+    
+    # Custom migration logic required
+    customLogic @3;
+    
+    # Data may be lost in migration
+    lossy @4;
+}
 
 # Basic data types that can appear in facts and rules
 struct Value {
@@ -52,6 +118,9 @@ struct Fact {
     
     # Optional metadata
     metadata @5 :List(Field);
+    
+    # Schema version this fact was created with
+    schemaVersion @6 :SchemaVersion;
 }
 
 # Represents a rule in the inference engine
@@ -77,6 +146,9 @@ struct Rule {
     
     # Optional metadata
     metadata @6 :List(Field);
+    
+    # Schema version this rule was created with
+    schemaVersion @7 :SchemaVersion;
 }
 
 # A condition within a rule
@@ -207,8 +279,138 @@ struct KnowledgeBase {
     # All rules in the knowledge base
     rules @1 :List(Rule);
     
-    # Metadata about the knowledge base
+    # Deprecated: Legacy version field (use schemaEvolution instead)
     version @2 :UInt64;
     timestamp @3 :UInt64;
     metadata @4 :List(Field);
+    
+    # Schema evolution information
+    schemaEvolution @5 :SchemaEvolution;
+    
+    # Data format version (separate from schema version)
+    dataFormatVersion @6 :UInt32 = 1;
+    
+    # Integrity information
+    checksum @7 :Text;
+    
+    # Compression information if applicable
+    compressionInfo @8 :CompressionInfo;
+}
+
+# Compression metadata for serialized data
+struct CompressionInfo {
+    algorithm @0 :CompressionAlgorithm;
+    originalSize @1 :UInt64;
+    compressedSize @2 :UInt64;
+    compressionRatio @3 :Float64;
+}
+
+enum CompressionAlgorithm {
+    none @0;
+    gzip @1;
+    lz4 @2;
+    zstd @3;
+}
+
+# Backward compatibility support structures
+struct CompatibilityLayer {
+    # Source version being migrated from
+    sourceVersion @0 :SchemaVersion;
+    
+    # Target version being migrated to  
+    targetVersion @1 :SchemaVersion;
+    
+    # Field mappings for compatibility
+    fieldMappings @2 :List(FieldMapping);
+    
+    # Default values for new fields
+    defaultValues @3 :List(DefaultValue);
+    
+    # Transformation rules
+    transformationRules @4 :List(TransformationRule);
+    
+    # Compatibility warnings
+    warnings @5 :List(Text);
+}
+
+# Maps fields between schema versions
+struct FieldMapping {
+    sourceField @0 :Text;
+    targetField @1 :Text;
+    mappingType @2 :FieldMappingType;
+    
+    # Optional transformation expression
+    transformation @3 :Text;
+}
+
+enum FieldMappingType {
+    direct @0;        # Direct 1:1 mapping
+    renamed @1;       # Field was renamed
+    split @2;         # One field split into multiple
+    merged @3;        # Multiple fields merged into one
+    transformed @4;   # Data transformation required
+    deprecated @5;    # Field no longer exists
+}
+
+# Default values for new fields in schema evolution
+struct DefaultValue {
+    fieldName @0 :Text;
+    fieldType @1 :Text;
+    defaultValue @2 :Value;
+    description @3 :Text;
+}
+
+# Transformation rules for complex field evolution
+struct TransformationRule {
+    ruleId @0 :UInt64;
+    name @1 :Text;
+    description @2 :Text;
+    
+    # Input fields required for transformation
+    inputFields @3 :List(Text);
+    
+    # Output fields produced by transformation
+    outputFields @4 :List(Text);
+    
+    # Transformation logic (implementation-specific)
+    logic @5 :Text;
+    
+    # Whether this transformation is reversible
+    reversible @6 :Bool = false;
+}
+
+# Version compatibility matrix
+struct CompatibilityMatrix {
+    # Current schema version
+    currentVersion @0 :SchemaVersion;
+    
+    # Supported compatibility relationships
+    compatibilityEntries @1 :List(CompatibilityEntry);
+    
+    # Matrix generation timestamp
+    generatedAt @2 :UInt64;
+}
+
+struct CompatibilityEntry {
+    version @0 :SchemaVersion;
+    compatibility @1 :CompatibilityLevel;
+    migrationPath @2 :MigrationPath;
+    notes @3 :Text;
+}
+
+enum CompatibilityLevel {
+    # Fully compatible - no migration needed
+    fullCompatible @0;
+    
+    # Forward compatible - newer can read older
+    forwardCompatible @1;
+    
+    # Backward compatible - older can read newer  
+    backwardCompatible @2;
+    
+    # Compatible with migration
+    migrationRequired @3;
+    
+    # Incompatible
+    incompatible @4;
 }

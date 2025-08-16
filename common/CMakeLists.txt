@@ -15,6 +15,7 @@ add_library(common STATIC
     src/utils.cpp
     src/inference_types.cpp
     src/inference_builders.cpp
+    src/schema_evolution.cpp
 )
 
 target_include_directories(common PUBLIC
@@ -75,5 +76,14 @@ add_executable(inference_types_demo
 )
 
 target_link_libraries(inference_types_demo
+    common
+)
+
+# Schema evolution demo
+add_executable(schema_evolution_demo
+    examples/schema_evolution_demo.cpp
+)
+
+target_link_libraries(schema_evolution_demo
     common
 )

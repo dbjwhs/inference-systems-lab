@@ -258,6 +258,9 @@ public:
     /** @brief Get all metadata as a key-value map */
     const std::unordered_map<std::string, Value>& getMetadata() const { return metadata_; }
     
+    /** @brief Get the schema version this fact was created with (returns empty string if not set) */
+    std::string getSchemaVersionString() const { return schemaVersionString_; }
+    
     // Metadata management methods
     
     /**
@@ -306,6 +309,7 @@ private:
     double confidence_;                                     ///< Confidence level (0.0 to 1.0)
     uint64_t timestamp_;                                    ///< Creation timestamp in milliseconds
     std::unordered_map<std::string, Value> metadata_;      ///< Additional metadata key-value pairs
+    std::string schemaVersionString_;                       ///< Schema version this fact was created with (as string)
 };
 
 /**
@@ -391,6 +395,9 @@ public:
     /** @brief Get the overall confidence level */
     double getConfidence() const { return confidence_; }
     
+    /** @brief Get the schema version this rule was created with (returns empty string if not set) */
+    std::string getSchemaVersionString() const { return schemaVersionString_; }
+    
     /**
      * @brief Generate human-readable string representation
      * @return String in the format "name: IF condition1 AND condition2 THEN conclusion1"
@@ -413,6 +420,7 @@ private:
     int32_t priority_;                                      ///< Priority for conflict resolution
     double confidence_;                                     ///< Overall confidence level
     std::unordered_map<std::string, Value> metadata_;      ///< Additional metadata (currently unused)
+    std::string schemaVersionString_;                       ///< Schema version this rule was created with (as string)
 };
 
 /**
@@ -549,6 +557,80 @@ public:
     
     /** @brief Convert a Query to JSON-like string representation */
     static std::string toJson(const Query& query);
+};
+
+/**
+ * @class VersionedSerializer
+ * @brief Enhanced serializer with schema versioning and migration support
+ * 
+ * This class extends the basic Serializer with awareness of schema versions
+ * and automatic migration capabilities. It can read data created with older
+ * schema versions and automatically migrate it to the current format.
+ */
+class VersionedSerializer {
+public:
+    /**
+     * @brief Serialize data with current schema version metadata
+     * @param fact Fact to serialize
+     * @return Binary data with embedded schema version information
+     */
+    static std::vector<uint8_t> serializeWithVersion(const Fact& fact);
+    
+    /**
+     * @brief Serialize data with current schema version metadata
+     * @param rule Rule to serialize
+     * @return Binary data with embedded schema version information
+     */
+    static std::vector<uint8_t> serializeWithVersion(const Rule& rule);
+    
+    /**
+     * @brief Serialize a complete knowledge base with schema evolution metadata
+     * @param facts All facts in the knowledge base
+     * @param rules All rules in the knowledge base
+     * @param metadata Additional metadata
+     * @return Binary data with complete versioning information
+     */
+    static std::vector<uint8_t> serializeKnowledgeBase(
+        const std::vector<Fact>& facts,
+        const std::vector<Rule>& rules,
+        const std::unordered_map<std::string, Value>& metadata = {});
+    
+    /**
+     * @brief Deserialize with automatic migration support
+     * @param data Binary data that may be from an older schema version
+     * @return Fact migrated to current schema version, or nullopt if failed
+     */
+    static std::optional<Fact> deserializeFactWithMigration(const std::vector<uint8_t>& data);
+    
+    /**
+     * @brief Deserialize with automatic migration support
+     * @param data Binary data that may be from an older schema version
+     * @return Rule migrated to current schema version, or nullopt if failed
+     */
+    static std::optional<Rule> deserializeRuleWithMigration(const std::vector<uint8_t>& data);
+    
+    /**
+     * @brief Deserialize a complete knowledge base with migration
+     * @param data Binary data from any supported schema version
+     * @return Tuple of (facts, rules, metadata) migrated to current version
+     */
+    static std::optional<std::tuple<std::vector<Fact>, std::vector<Rule>, 
+                                   std::unordered_map<std::string, Value>>>
+        deserializeKnowledgeBase(const std::vector<uint8_t>& data);
+    
+    /**
+     * @brief Check if data can be read by examining its schema version
+     * @param data Binary data to check
+     * @return Schema version string of the data, or empty string if unreadable
+     */
+    static std::string detectSchemaVersionString(const std::vector<uint8_t>& data);
+    
+    /**
+     * @brief Validate data integrity including schema version compatibility
+     * @param data Binary data to validate
+     * @return Vector of validation errors (empty if valid)
+     */
+    static std::vector<std::string> validateData(const std::vector<uint8_t>& data);
 };
 
 } // namespace inference_lab::common
