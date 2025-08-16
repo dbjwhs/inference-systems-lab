@@ -356,8 +356,6 @@ auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, Net
  */
 template<typename F>
 auto retry_with_backoff(F&& operation, int max_retries = 3) -> decltype(operation()) {
-    using ReturnType = decltype(operation());
-    
     for (int attempt = 0; attempt < max_retries; ++attempt) {
         auto result = operation();
         

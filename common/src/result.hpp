@@ -567,7 +567,6 @@ public:
         if (is_ok()) {
             return std::invoke(std::forward<F>(f), std::get<detail::ValueWrapper<T>>(data_).value);
         } else {
-            using U = detail::result_value_type_t<result_type>;
             return result_type(Err<E>(std::get<detail::ErrorWrapper<E>>(data_).error));
         }
     }
@@ -592,7 +591,6 @@ public:
         if (is_ok()) {
             return std::invoke(std::forward<F>(f), std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value));
         } else {
-            using U = detail::result_value_type_t<result_type>;
             return result_type(Err<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error)));
         }
     }
@@ -619,7 +617,6 @@ public:
                      "Function must be callable with const E&");
         
         if (is_ok()) {
-            using F_error = detail::result_error_type_t<result_type>;
             return result_type(Ok<T>(std::get<detail::ValueWrapper<T>>(data_).value));
         } else {
             return std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error);
@@ -644,7 +641,6 @@ public:
                      "Function must be callable with E&&");
         
         if (is_ok()) {
-            using F_error = detail::result_error_type_t<result_type>;
             return result_type(Ok<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)));
         } else {
             return std::invoke(std::forward<F>(f), std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error));
@@ -813,7 +809,8 @@ constexpr auto combine(Results&&... results) {
         // Find and return the first error using a helper function
         auto get_first_error = [](auto&&... args) -> Result<value_tuple, first_error_type> {
             Result<value_tuple, first_error_type> result{Err<first_error_type>(first_error_type{})};
-            ((args.is_err() ? (result = Result<value_tuple, first_error_type>(Err<first_error_type>(args.unwrap_err())), true) : false) || ...);
+            // Use fold expression to find first error - boolean values are intentionally unused
+            (void)((args.is_err() ? (result = Result<value_tuple, first_error_type>(Err<first_error_type>(args.unwrap_err())), true) : false) || ...);
             return result;
         };
         return get_first_error(results...);

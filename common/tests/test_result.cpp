@@ -120,7 +120,7 @@ protected:
     /**
      * @brief Helper function that returns an error result
      */
-    auto failing_operation(int input) -> Result<int, TestError> {
+    auto failing_operation([[maybe_unused]] int input) -> Result<int, TestError> {
         return Err(TestError::NetworkFailure);
     }
     
@@ -312,6 +312,10 @@ TEST_F(ResultTest, MoveValueExtraction) {
     MoveOnlyType extracted = std::move(success).unwrap();
     EXPECT_EQ(extracted.value, 42);
     EXPECT_FALSE(extracted.moved_from);
+    
+    // Test that failure result is properly recognized as error
+    EXPECT_TRUE(failure.is_err());
+    EXPECT_FALSE(failure.is_ok());
     
     // Test move unwrap_or
     Result<MoveOnlyType, TestError> failure2 = Err(TestError::ParseError);
@@ -524,7 +528,7 @@ TEST_F(ResultTest, OrElseOperations) {
     Result<int, TestError> failure = Err(TestError::NetworkFailure);
     
     // Test success preservation
-    auto success_or_else = success.or_else([](TestError err) -> Result<int, TestError> {
+    auto success_or_else = success.or_else([](TestError err [[maybe_unused]]) -> Result<int, TestError> {
         return Ok(999); // Should not be called
     });
     
@@ -846,7 +850,7 @@ TEST_F(ResultTest, EdgeCases) {
     // Test error early termination in long chains
     auto error_chain = make_result_ok<TestError>(1)
         .map([](int x) { return x + 1; })
-        .and_then([](int x) -> Result<int, TestError> { 
+        .and_then([](int x [[maybe_unused]]) -> Result<int, TestError> { 
             return Err(TestError::InvalidInput); // Error here
         })
         .map([](int x) { return x * 1000; }) // Should not execute
@@ -876,7 +880,7 @@ TEST_F(ResultTest, ThreadSafety) {
     std::vector<std::thread> threads;
     
     for (int t = 0; t < num_threads; ++t) {
-        threads.emplace_back([&shared_result, &success_count, &total_sum, operations_per_thread]() {
+        threads.emplace_back([&shared_result, &success_count, &total_sum]() {
             for (int i = 0; i < operations_per_thread; ++i) {
                 // These operations should be thread-safe on const Result
                 if (shared_result.is_ok()) {
