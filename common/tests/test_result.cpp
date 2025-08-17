@@ -934,9 +934,9 @@ TEST_F(ResultTest, TypeSafetyConstraints) {
     EXPECT_TRUE(valid_or_else.is_err());
 
     // Test type trait helpers
-    static_assert(detail::is_result_v<Result<int, TestError>>);
-    static_assert(!detail::is_result_v<int>);
-    static_assert(!detail::is_result_v<std::optional<int>>);
+    static_assert(detail::IS_RESULT_V<Result<int, TestError>>);
+    static_assert(!detail::IS_RESULT_V<int>);
+    static_assert(!detail::IS_RESULT_V<std::optional<int>>);
 
     // Test that Result types maintain their template parameters correctly
     using IntStringResult = Result<int, std::string>;

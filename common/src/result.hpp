@@ -79,13 +79,13 @@ namespace detail {
  * @brief Concept to check if a type is a Result type
  */
 template <typename T>
-struct is_result : std::false_type {};
+struct IsResult : std::false_type {};
 
 template <typename T, typename E>
-struct is_result<Result<T, E>> : std::true_type {};
+struct IsResult<Result<T, E>> : std::true_type {};
 
 template <typename T>
-inline constexpr bool is_result_v = is_result<T>::value;
+inline constexpr bool IS_RESULT_V = IsResult<T>::value;
 
 /**
  * @brief Concept to check if a callable returns a Result type
@@ -94,7 +94,7 @@ template <typename F, typename T>
 using invoke_result_t = std::invoke_result_t<F, T>;
 
 template <typename F, typename T>
-inline constexpr bool returns_result_v = is_result_v<invoke_result_t<F, T>>;
+inline constexpr bool RETURNS_RESULT_V = IS_RESULT_V<invoke_result_t<F, T>>;
 
 /**
  * @brief Helper to extract the value type from a Result return type
@@ -148,13 +148,13 @@ class Ok {
      * @brief Get the wrapped value
      * @return Reference to the wrapped value
      */
-    constexpr const T& value() const& { return value_; }
+    constexpr auto value() const& -> const T& { return value_; }
 
     /**
      * @brief Get the wrapped value (move version)
      * @return Moved wrapped value
      */
-    constexpr T&& value() && { return std::move(value_); }
+    constexpr auto value() && -> T&& { return std::move(value_); }
 
   private:
     T value_;
@@ -185,13 +185,13 @@ class Err {
      * @brief Get the wrapped error
      * @return Reference to the wrapped error
      */
-    constexpr const E& error() const& { return error_; }
+    constexpr auto error() const& -> const E& { return error_; }
 
     /**
      * @brief Get the wrapped error (move version)
      * @return Moved wrapped error
      */
-    constexpr E&& error() && { return std::move(error_); }
+    constexpr auto error() && -> E&& { return std::move(error_); }
 
   private:
     E error_;
@@ -219,24 +219,28 @@ class Err {
 namespace detail {
 template <typename T>
 struct ValueWrapper {
-    T value;
+    T value_;
     template <typename U>
-    constexpr ValueWrapper(U&& v) : value(std::forward<U>(v)) {}
+    constexpr explicit ValueWrapper(U&& v) : value_(std::forward<U>(v)) {}
 
-    constexpr bool operator==(const ValueWrapper& other) const { return value == other.value; }
+    constexpr auto operator==(const ValueWrapper& other) const -> bool {
+        return value_ == other.value_;
+    }
 
-    constexpr bool operator!=(const ValueWrapper& other) const { return !(*this == other); }
+    constexpr auto operator!=(const ValueWrapper& other) const -> bool { return !(*this == other); }
 };
 
 template <typename E>
 struct ErrorWrapper {
-    E error;
+    E error_;
     template <typename U>
-    constexpr ErrorWrapper(U&& e) : error(std::forward<U>(e)) {}
+    constexpr explicit ErrorWrapper(U&& e) : error_(std::forward<U>(e)) {}
 
-    constexpr bool operator==(const ErrorWrapper& other) const { return error == other.error; }
+    constexpr auto operator==(const ErrorWrapper& other) const -> bool {
+        return error_ == other.error_;
+    }
 
-    constexpr bool operator!=(const ErrorWrapper& other) const { return !(*this == other); }
+    constexpr auto operator!=(const ErrorWrapper& other) const -> bool { return !(*this == other); }
 };
 }  // namespace detail
 
@@ -277,14 +281,14 @@ class Result {
      * @param other The Result to copy from
      * @return Reference to this Result
      */
-    constexpr Result& operator=(const Result& other) = default;
+    constexpr auto operator=(const Result& other) -> Result& = default;
 
     /**
      * @brief Move assignment operator
      * @param other The Result to move from
      * @return Reference to this Result
      */
-    constexpr Result& operator=(Result&& other) noexcept = default;
+    constexpr auto operator=(Result&& other) noexcept -> Result& = default;
 
     /**
      * @brief Destructor
@@ -297,7 +301,7 @@ class Result {
      * @brief Check if this Result contains a successful value
      * @return true if this Result contains a value, false if it contains an error
      */
-    constexpr bool is_ok() const noexcept {
+    constexpr auto is_ok() const noexcept -> bool {
         return std::holds_alternative<detail::ValueWrapper<T>>(data_);
     }
 
@@ -305,7 +309,7 @@ class Result {
      * @brief Check if this Result contains an error
      * @return true if this Result contains an error, false if it contains a value
      */
-    constexpr bool is_err() const noexcept {
+    constexpr auto is_err() const noexcept -> bool {
         return std::holds_alternative<detail::ErrorWrapper<E>>(data_);
     }
 
@@ -322,11 +326,11 @@ class Result {
      * @return Reference to the successful value
      * @throws std::runtime_error if this Result contains an error
      */
-    constexpr const T& unwrap() const& {
+    constexpr auto unwrap() const& -> const T& {
         if (is_err()) {
             throw std::runtime_error("Called unwrap() on an error Result");
         }
-        return std::get<detail::ValueWrapper<T>>(data_).value;
+        return std::get<detail::ValueWrapper<T>>(data_).value_;
     }
 
     /**
@@ -334,11 +338,11 @@ class Result {
      * @return Moved successful value
      * @throws std::runtime_error if this Result contains an error
      */
-    constexpr T&& unwrap() && {
+    constexpr auto unwrap() && -> T&& {
         if (is_err()) {
             throw std::runtime_error("Called unwrap() on an error Result");
         }
-        return std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value);
+        return std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_);
     }
 
     /**
@@ -346,11 +350,11 @@ class Result {
      * @return Reference to the error value
      * @throws std::runtime_error if this Result contains a successful value
      */
-    constexpr const E& unwrap_err() const& {
+    constexpr auto unwrap_err() const& -> const E& {
         if (is_ok()) {
             throw std::runtime_error("Called unwrap_err() on a successful Result");
         }
-        return std::get<detail::ErrorWrapper<E>>(data_).error;
+        return std::get<detail::ErrorWrapper<E>>(data_).error_;
     }
 
     /**
@@ -359,11 +363,11 @@ class Result {
      * @return Moved error value
      * @throws std::runtime_error if this Result contains a successful value
      */
-    constexpr E&& unwrap_err() && {
+    constexpr auto unwrap_err() && -> E&& {
         if (is_ok()) {
             throw std::runtime_error("Called unwrap_err() on a successful Result");
         }
-        return std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error);
+        return std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error_);
     }
 
     /**
@@ -371,8 +375,8 @@ class Result {
      * @param default_value The value to return if this Result contains an error
      * @return The successful value or the default value
      */
-    constexpr T unwrap_or(const T& default_value) const& {
-        return is_ok() ? std::get<detail::ValueWrapper<T>>(data_).value : default_value;
+    constexpr auto unwrap_or(const T& default_value) const& -> T {
+        return is_ok() ? std::get<detail::ValueWrapper<T>>(data_).value_ : default_value;
     }
 
     /**
@@ -380,8 +384,8 @@ class Result {
      * @param default_value The value to return if this Result contains an error
      * @return The successful value or the default value
      */
-    constexpr T unwrap_or(T&& default_value) && {
-        return is_ok() ? std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)
+    constexpr auto unwrap_or(T&& default_value) && -> T {
+        return is_ok() ? std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_)
                        : std::move(default_value);
     }
 
@@ -391,12 +395,12 @@ class Result {
      * @return The successful value or the computed value
      */
     template <typename F>
-    constexpr T unwrap_or_else(F&& f) const& {
+    constexpr auto unwrap_or_else(F&& f) const& -> T {
         static_assert(std::is_invocable_r_v<T, F, const E&>,
                       "Function must be callable with const E& and return T");
-        return is_ok() ? std::get<detail::ValueWrapper<T>>(data_).value
+        return is_ok() ? std::get<detail::ValueWrapper<T>>(data_).value_
                        : std::invoke(std::forward<F>(f),
-                                     std::get<detail::ErrorWrapper<E>>(data_).error);
+                                     std::get<detail::ErrorWrapper<E>>(data_).error_);
     }
 
     /**
@@ -405,13 +409,13 @@ class Result {
      * @return The successful value or the computed value
      */
     template <typename F>
-    constexpr T unwrap_or_else(F&& f) && {
+    constexpr auto unwrap_or_else(F&& f) && -> T {
         static_assert(std::is_invocable_r_v<T, F, E&&>,
                       "Function must be callable with E&& and return T");
-        return is_ok() ? std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)
+        return is_ok() ? std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_)
                        : std::invoke(
                              std::forward<F>(f),
-                             std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error));
+                             std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error_));
     }
 
     // Optional conversion methods
@@ -421,7 +425,7 @@ class Result {
      * @return std::optional containing the value if successful, std::nullopt if error
      */
     constexpr std::optional<T> ok() const& {
-        return is_ok() ? std::optional<T>(std::get<detail::ValueWrapper<T>>(data_).value)
+        return is_ok() ? std::optional<T>(std::get<detail::ValueWrapper<T>>(data_).value_)
                        : std::nullopt;
     }
 
@@ -431,7 +435,7 @@ class Result {
      */
     constexpr std::optional<T> ok() && {
         return is_ok() ? std::optional<T>(
-                             std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value))
+                             std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_))
                        : std::nullopt;
     }
 
@@ -440,7 +444,7 @@ class Result {
      * @return std::optional containing the error if failed, std::nullopt if successful
      */
     constexpr std::optional<E> err() const& {
-        return is_err() ? std::optional<E>(std::get<detail::ErrorWrapper<E>>(data_).error)
+        return is_err() ? std::optional<E>(std::get<detail::ErrorWrapper<E>>(data_).error_)
                         : std::nullopt;
     }
 
@@ -451,7 +455,7 @@ class Result {
      */
     constexpr std::optional<E> err() && {
         return is_err() ? std::optional<E>(
-                              std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error))
+                              std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error_))
                         : std::nullopt;
     }
 
@@ -475,9 +479,9 @@ class Result {
 
         if (is_ok()) {
             return Result<U, E>(Ok<U>(
-                std::invoke(std::forward<F>(f), std::get<detail::ValueWrapper<T>>(data_).value)));
+                std::invoke(std::forward<F>(f), std::get<detail::ValueWrapper<T>>(data_).value_)));
         } else {
-            return Result<U, E>(Err<E>(std::get<detail::ErrorWrapper<E>>(data_).error));
+            return Result<U, E>(Err<E>(std::get<detail::ErrorWrapper<E>>(data_).error_));
         }
     }
 
@@ -494,12 +498,12 @@ class Result {
         static_assert(std::is_invocable_v<F, T&&>, "Function must be callable with T&&");
 
         if (is_ok()) {
-            return Result<U, E>(Ok<U>(
-                std::invoke(std::forward<F>(f),
-                            std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value))));
+            return Result<U, E>(Ok<U>(std::invoke(
+                std::forward<F>(f),
+                std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_))));
         } else {
             return Result<U, E>(
-                Err<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error)));
+                Err<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error_)));
         }
     }
 
@@ -520,10 +524,10 @@ class Result {
         static_assert(std::is_invocable_v<F, const E&>, "Function must be callable with const E&");
 
         if (is_ok()) {
-            return Result<T, U>(Ok<T>(std::get<detail::ValueWrapper<T>>(data_).value));
+            return Result<T, U>(Ok<T>(std::get<detail::ValueWrapper<T>>(data_).value_));
         } else {
             return Result<T, U>(Err<U>(
-                std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error)));
+                std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error_)));
         }
     }
 
@@ -541,11 +545,11 @@ class Result {
 
         if (is_ok()) {
             return Result<T, U>(
-                Ok<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)));
+                Ok<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_)));
         } else {
-            return Result<T, U>(Err<U>(
-                std::invoke(std::forward<F>(f),
-                            std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error))));
+            return Result<T, U>(Err<U>(std::invoke(
+                std::forward<F>(f),
+                std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error_))));
         }
     }
 
@@ -565,15 +569,15 @@ class Result {
     template <typename F>
     constexpr auto and_then(F&& f) const& -> std::invoke_result_t<F, const T&> {
         using result_type = std::invoke_result_t<F, const T&>;
-        static_assert(detail::is_result_v<result_type>, "Function must return a Result type");
+        static_assert(detail::IS_RESULT_V<result_type>, "Function must return a Result type");
         static_assert(std::is_same_v<E, detail::result_error_type_t<result_type>>,
                       "Function must return a Result with the same error type");
         static_assert(std::is_invocable_v<F, const T&>, "Function must be callable with const T&");
 
         if (is_ok()) {
-            return std::invoke(std::forward<F>(f), std::get<detail::ValueWrapper<T>>(data_).value);
+            return std::invoke(std::forward<F>(f), std::get<detail::ValueWrapper<T>>(data_).value_);
         } else {
-            return result_type(Err<E>(std::get<detail::ErrorWrapper<E>>(data_).error));
+            return result_type(Err<E>(std::get<detail::ErrorWrapper<E>>(data_).error_));
         }
     }
 
@@ -587,7 +591,7 @@ class Result {
     template <typename F>
     constexpr auto and_then(F&& f) && -> std::invoke_result_t<F, T&&> {
         using result_type = std::invoke_result_t<F, T&&>;
-        static_assert(detail::is_result_v<result_type>, "Function must return a Result type");
+        static_assert(detail::IS_RESULT_V<result_type>, "Function must return a Result type");
         static_assert(std::is_same_v<E, detail::result_error_type_t<result_type>>,
                       "Function must return a Result with the same error type");
         static_assert(std::is_invocable_v<F, T&&>, "Function must be callable with T&&");
@@ -595,10 +599,10 @@ class Result {
         if (is_ok()) {
             return std::invoke(
                 std::forward<F>(f),
-                std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value));
+                std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_));
         } else {
             return result_type(
-                Err<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error)));
+                Err<E>(std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error_)));
         }
     }
 
@@ -616,15 +620,15 @@ class Result {
     template <typename F>
     constexpr auto or_else(F&& f) const& -> std::invoke_result_t<F, const E&> {
         using result_type = std::invoke_result_t<F, const E&>;
-        static_assert(detail::is_result_v<result_type>, "Function must return a Result type");
+        static_assert(detail::IS_RESULT_V<result_type>, "Function must return a Result type");
         static_assert(std::is_same_v<T, detail::result_value_type_t<result_type>>,
                       "Function must return a Result with the same value type");
         static_assert(std::is_invocable_v<F, const E&>, "Function must be callable with const E&");
 
         if (is_ok()) {
-            return result_type(Ok<T>(std::get<detail::ValueWrapper<T>>(data_).value));
+            return result_type(Ok<T>(std::get<detail::ValueWrapper<T>>(data_).value_));
         } else {
-            return std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error);
+            return std::invoke(std::forward<F>(f), std::get<detail::ErrorWrapper<E>>(data_).error_);
         }
     }
 
@@ -638,18 +642,18 @@ class Result {
     template <typename F>
     constexpr auto or_else(F&& f) && -> std::invoke_result_t<F, E&&> {
         using result_type = std::invoke_result_t<F, E&&>;
-        static_assert(detail::is_result_v<result_type>, "Function must return a Result type");
+        static_assert(detail::IS_RESULT_V<result_type>, "Function must return a Result type");
         static_assert(std::is_same_v<T, detail::result_value_type_t<result_type>>,
                       "Function must return a Result with the same value type");
         static_assert(std::is_invocable_v<F, E&&>, "Function must be callable with E&&");
 
         if (is_ok()) {
             return result_type(
-                Ok<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value)));
+                Ok<T>(std::move(std::get<detail::ValueWrapper<T>>(std::move(data_)).value_)));
         } else {
             return std::invoke(
                 std::forward<F>(f),
-                std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error));
+                std::move(std::get<detail::ErrorWrapper<E>>(std::move(data_)).error_));
         }
     }
 
