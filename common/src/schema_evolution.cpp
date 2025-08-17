@@ -20,9 +20,9 @@ SchemaVersion::SchemaVersion(uint32_t major,
                              uint32_t minor,
                              uint32_t patch,
                              const std::string& schemaHash)
-    : major_(major), minor_(minor), patch_(patch), schemaHash_(schemaHash) {}
+    : major_(major), minor_(minor), patch_(patch), schema_hash_(schemaHash) {}
 
-std::optional<SchemaVersion> SchemaVersion::fromString(const std::string& versionString) {
+std::optional<SchemaVersion> SchemaVersion::from_string(const std::string& versionString) {
     std::regex versionRegex(R"((\d+)\.(\d+)\.(\d+))");
     std::smatch matches;
 
@@ -39,26 +39,26 @@ std::optional<SchemaVersion> SchemaVersion::fromString(const std::string& versio
     return std::nullopt;
 }
 
-std::string SchemaVersion::getVersionString() const {
+std::string SchemaVersion::get_version_string() const {
     std::ostringstream oss;
     oss << major_ << "." << minor_ << "." << patch_;
     return oss.str();
 }
 
-bool SchemaVersion::isCompatibleWith(const SchemaVersion& other) const {
+bool SchemaVersion::is_compatible_with(const SchemaVersion& other) const {
     // Same major version means compatible
     return major_ == other.major_;
 }
 
-bool SchemaVersion::isForwardCompatibleWith(const SchemaVersion& older) const {
+bool SchemaVersion::is_forward_compatible_with(const SchemaVersion& older) const {
     // Can read older data if major version is same and this version is newer or equal
     return major_ == older.major_ &&
            (minor_ > older.minor_ || (minor_ == older.minor_ && patch_ >= older.patch_));
 }
 
-bool SchemaVersion::isBackwardCompatibleWith(const SchemaVersion& newer) const {
+bool SchemaVersion::is_backward_compatible_with(const SchemaVersion& newer) const {
     // Newer version can read this data if major is same and newer is actually newer
-    return newer.isForwardCompatibleWith(*this);
+    return newer.is_forward_compatible_with(*this);
 }
 
 bool SchemaVersion::operator==(const SchemaVersion& other) const {
@@ -89,11 +89,11 @@ bool SchemaVersion::operator>=(const SchemaVersion& other) const {
     return *this > other || *this == other;
 }
 
-std::string SchemaVersion::toString() const {
+std::string SchemaVersion::to_string() const {
     std::ostringstream oss;
-    oss << getVersionString();
-    if (!schemaHash_.empty()) {
-        oss << " [" << schemaHash_.substr(0, 8) << "...]";
+    oss << get_version_string();
+    if (!schema_hash_.empty()) {
+        oss << " [" << schema_hash_.substr(0, 8) << "...]";
     }
     return oss.str();
 }
@@ -102,16 +102,16 @@ SchemaVersion::SchemaVersion(schemas::SchemaVersion::Reader reader)
     : major_(reader.getMajor()),
       minor_(reader.getMinor()),
       patch_(reader.getPatch()),
-      schemaHash_(reader.getSchemaHash()) {}
+      schema_hash_(reader.getSchemaHash()) {}
 
-void SchemaVersion::writeTo(schemas::SchemaVersion::Builder builder) const {
+void SchemaVersion::write_to(schemas::SchemaVersion::Builder builder) const {
     builder.setMajor(major_);
     builder.setMinor(minor_);
     builder.setPatch(patch_);
-    builder.setVersionString(getVersionString());
+    builder.setVersionString(get_version_string());
     builder.setMinCompatibleMajor(major_);  // For now, only same major version is compatible
     builder.setMinCompatibleMinor(0);
-    builder.setSchemaHash(schemaHash_);
+    builder.setSchemaHash(schema_hash_);
 }
 
 // MigrationPath implementation
@@ -120,23 +120,23 @@ MigrationPath::MigrationPath(const SchemaVersion& fromVersion,
                              Strategy strategy,
                              bool reversible,
                              const std::string& description)
-    : fromVersion_(fromVersion),
-      toVersion_(toVersion),
+    : from_version_(fromVersion),
+      to_version_(toVersion),
       strategy_(strategy),
       reversible_(reversible),
       description_(description) {}
 
-void MigrationPath::addWarning(const std::string& warning) {
+void MigrationPath::add_warning(const std::string& warning) {
     warnings_.push_back(warning);
 }
 
-bool MigrationPath::canMigrate(const SchemaVersion& from, const SchemaVersion& to) const {
-    return fromVersion_ == from && toVersion_ == to;
+bool MigrationPath::can_migrate(const SchemaVersion& from, const SchemaVersion& to) const {
+    return from_version_ == from && to_version_ == to;
 }
 
-std::string MigrationPath::toString() const {
+std::string MigrationPath::to_string() const {
     std::ostringstream oss;
-    oss << fromVersion_.toString() << " -> " << toVersion_.toString();
+    oss << from_version_.to_string() << " -> " << to_version_.to_string();
     oss << " (" << static_cast<int>(strategy_) << ")";
     if (reversible_)
         oss << " [reversible]";
@@ -146,8 +146,8 @@ std::string MigrationPath::toString() const {
 }
 
 MigrationPath::MigrationPath(schemas::MigrationPath::Reader reader)
-    : fromVersion_(reader.getFromVersion()),
-      toVersion_(reader.getToVersion()),
+    : from_version_(reader.getFromVersion()),
+      to_version_(reader.getToVersion()),
       strategy_(static_cast<Strategy>(reader.getStrategy())),
       reversible_(reader.getReversible()),
       description_(reader.getDescription()) {
@@ -157,9 +157,9 @@ MigrationPath::MigrationPath(schemas::MigrationPath::Reader reader)
     }
 }
 
-void MigrationPath::writeTo(schemas::MigrationPath::Builder builder) const {
-    fromVersion_.writeTo(builder.initFromVersion());
-    toVersion_.writeTo(builder.initToVersion());
+void MigrationPath::write_to(schemas::MigrationPath::Builder builder) const {
+    from_version_.write_to(builder.initFromVersion());
+    to_version_.write_to(builder.initToVersion());
     builder.setStrategy(static_cast<schemas::MigrationStrategy>(strategy_));
     builder.setReversible(reversible_);
     builder.setDescription(description_);
@@ -172,32 +172,32 @@ void MigrationPath::writeTo(schemas::MigrationPath::Builder builder) const {
 
 // SchemaEvolutionManager implementation
 SchemaEvolutionManager::SchemaEvolutionManager(const SchemaVersion& currentVersion)
-    : currentVersion_(currentVersion) {}
+    : current_version_(currentVersion) {}
 
-void SchemaEvolutionManager::registerMigrationPath(const MigrationPath& path) {
-    migrationPaths_.push_back(path);
+void SchemaEvolutionManager::register_migration_path(const MigrationPath& path) {
+    migration_paths_.push_back(path);
 
     // Update index for quick lookup
-    std::string key =
-        path.getFromVersion().getVersionString() + "->" + path.getToVersion().getVersionString();
-    pathIndex_[key] = migrationPaths_.size() - 1;
+    std::string key = path.get_from_version().get_version_string() + "->" +
+                      path.get_to_version().get_version_string();
+    path_index_[key] = migration_paths_.size() - 1;
 }
 
-bool SchemaEvolutionManager::canReadVersion(const SchemaVersion& dataVersion) const {
+bool SchemaEvolutionManager::can_read_version(const SchemaVersion& dataVersion) const {
     // Can always read current version
-    if (dataVersion == currentVersion_) {
+    if (dataVersion == current_version_) {
         return true;
     }
 
     // Check if migration path exists
-    return findMigrationPath(dataVersion).has_value();
+    return find_migration_path(dataVersion).has_value();
 }
 
-std::optional<MigrationPath> SchemaEvolutionManager::findMigrationPath(
+std::optional<MigrationPath> SchemaEvolutionManager::find_migration_path(
     const SchemaVersion& fromVersion) const {
     // Direct migration to current version
-    for (const auto& path : migrationPaths_) {
-        if (path.canMigrate(fromVersion, currentVersion_)) {
+    for (const auto& path : migration_paths_) {
+        if (path.can_migrate(fromVersion, current_version_)) {
             return path;
         }
     }
@@ -207,13 +207,13 @@ std::optional<MigrationPath> SchemaEvolutionManager::findMigrationPath(
     return std::nullopt;
 }
 
-std::vector<SchemaVersion> SchemaEvolutionManager::getSupportedVersions() const {
+std::vector<SchemaVersion> SchemaEvolutionManager::get_supported_versions() const {
     std::vector<SchemaVersion> versions;
-    versions.push_back(currentVersion_);
+    versions.push_back(current_version_);
 
-    for (const auto& path : migrationPaths_) {
-        if (path.getToVersion() == currentVersion_) {
-            versions.push_back(path.getFromVersion());
+    for (const auto& path : migration_paths_) {
+        if (path.get_to_version() == current_version_) {
+            versions.push_back(path.get_from_version());
         }
     }
 
@@ -224,45 +224,45 @@ std::vector<SchemaVersion> SchemaEvolutionManager::getSupportedVersions() const 
     return versions;
 }
 
-std::vector<std::string> SchemaEvolutionManager::validateEvolution(
+std::vector<std::string> SchemaEvolutionManager::validate_evolution(
     const schemas::SchemaEvolution::Reader& evolution) const {
     std::vector<std::string> errors;
 
     SchemaVersion currentVer(evolution.getCurrentVersion());
 
     // Validate current version
-    auto versionErrors = VersionValidator::validateVersion(currentVer);
+    auto versionErrors = VersionValidator::validate_version(currentVer);
     errors.insert(errors.end(), versionErrors.begin(), versionErrors.end());
 
     // Validate migration paths
     auto migrationPaths = evolution.getMigrationPaths();
     for (const auto& pathReader : migrationPaths) {
         MigrationPath path(pathReader);
-        auto pathErrors = VersionValidator::validateMigrationPath(path);
+        auto pathErrors = VersionValidator::validate_migration_path(path);
         errors.insert(errors.end(), pathErrors.begin(), pathErrors.end());
     }
 
     return errors;
 }
 
-schemas::SchemaEvolution::Builder SchemaEvolutionManager::createEvolutionMetadata(
+schemas::SchemaEvolution::Builder SchemaEvolutionManager::create_evolution_metadata(
     capnp::MessageBuilder& message) const {
     auto builder = message.getRoot<schemas::SchemaEvolution>();
 
     // Set current version
-    currentVersion_.writeTo(builder.initCurrentVersion());
+    current_version_.write_to(builder.initCurrentVersion());
 
     // Set supported versions
-    auto supportedVersions = getSupportedVersions();
+    auto supportedVersions = get_supported_versions();
     auto supportedBuilder = builder.initSupportedVersions(supportedVersions.size());
     for (size_t i = 0; i < supportedVersions.size(); ++i) {
-        supportedVersions[i].writeTo(supportedBuilder[i]);
+        supportedVersions[i].write_to(supportedBuilder[i]);
     }
 
     // Set migration paths
-    auto pathsBuilder = builder.initMigrationPaths(migrationPaths_.size());
-    for (size_t i = 0; i < migrationPaths_.size(); ++i) {
-        migrationPaths_[i].writeTo(pathsBuilder[i]);
+    auto pathsBuilder = builder.initMigrationPaths(migration_paths_.size());
+    for (size_t i = 0; i < migration_paths_.size(); ++i) {
+        migration_paths_[i].write_to(pathsBuilder[i]);
     }
 
     // Set timestamp
@@ -271,23 +271,23 @@ schemas::SchemaEvolution::Builder SchemaEvolutionManager::createEvolutionMetadat
     return builder;
 }
 
-std::optional<Fact> SchemaEvolutionManager::migrateFact(const Fact& fact,
-                                                        const SchemaVersion& sourceVersion) const {
-    if (sourceVersion == currentVersion_) {
+std::optional<Fact> SchemaEvolutionManager::migrate_fact(const Fact& fact,
+                                                         const SchemaVersion& sourceVersion) const {
+    if (sourceVersion == current_version_) {
         return fact;  // No migration needed
     }
 
-    auto migrationPath = findMigrationPath(sourceVersion);
+    auto migrationPath = find_migration_path(sourceVersion);
     if (!migrationPath) {
         return std::nullopt;  // No migration path available
     }
 
     // For now, implement basic migration strategies
-    switch (migrationPath->getStrategy()) {
-        case MigrationPath::Strategy::DirectMapping:
+    switch (migrationPath->get_strategy()) {
+        case MigrationPath::Strategy::DIRECT_MAPPING:
             return fact;  // No changes needed
 
-        case MigrationPath::Strategy::DefaultValues:
+        case MigrationPath::Strategy::DEFAULT_VALUES:
             // Add default schema version if not present
             return fact;  // Return as-is for now
 
@@ -296,23 +296,23 @@ std::optional<Fact> SchemaEvolutionManager::migrateFact(const Fact& fact,
     }
 }
 
-std::optional<Rule> SchemaEvolutionManager::migrateRule(const Rule& rule,
-                                                        const SchemaVersion& sourceVersion) const {
-    if (sourceVersion == currentVersion_) {
+std::optional<Rule> SchemaEvolutionManager::migrate_rule(const Rule& rule,
+                                                         const SchemaVersion& sourceVersion) const {
+    if (sourceVersion == current_version_) {
         return rule;  // No migration needed
     }
 
-    auto migrationPath = findMigrationPath(sourceVersion);
+    auto migrationPath = find_migration_path(sourceVersion);
     if (!migrationPath) {
         return std::nullopt;  // No migration path available
     }
 
     // For now, implement basic migration strategies
-    switch (migrationPath->getStrategy()) {
-        case MigrationPath::Strategy::DirectMapping:
+    switch (migrationPath->get_strategy()) {
+        case MigrationPath::Strategy::DIRECT_MAPPING:
             return rule;  // No changes needed
 
-        case MigrationPath::Strategy::DefaultValues:
+        case MigrationPath::Strategy::DEFAULT_VALUES:
             // Add default schema version if not present
             return rule;  // Return as-is for now
 
@@ -321,59 +321,59 @@ std::optional<Rule> SchemaEvolutionManager::migrateRule(const Rule& rule,
     }
 }
 
-std::string SchemaEvolutionManager::generateCompatibilityMatrix() const {
+std::string SchemaEvolutionManager::generate_compatibility_matrix() const {
     std::ostringstream oss;
     auto supportedVersions = getSupportedVersions();
 
     oss << "Schema Compatibility Matrix\n";
-    oss << "Current version: " << currentVersion_.toString() << "\n\n";
+    oss << "Current version: " << current_version_.to_string() << "\n\n";
 
     oss << "Supported versions:\n";
     for (const auto& version : supportedVersions) {
-        oss << "  " << version.toString();
-        if (version == currentVersion_) {
+        oss << "  " << version.to_string();
+        if (version == current_version_) {
             oss << " (current)";
         }
         oss << "\n";
     }
 
     oss << "\nMigration paths:\n";
-    for (const auto& path : migrationPaths_) {
-        oss << "  " << path.toString() << "\n";
+    for (const auto& path : migration_paths_) {
+        oss << "  " << path.to_string() << "\n";
     }
 
     return oss.str();
 }
 
-bool SchemaEvolutionManager::applyDefaultValuesMigration(
+bool SchemaEvolutionManager::apply_default_values_migration(
     [[maybe_unused]] const SchemaVersion& sourceVersion) const {
     // Implementation for default values migration
     return true;  // Placeholder
 }
 
-bool SchemaEvolutionManager::applyTransformationMigration(
+bool SchemaEvolutionManager::apply_transformation_migration(
     [[maybe_unused]] const SchemaVersion& sourceVersion) const {
     // Implementation for transformation migration
     return true;  // Placeholder
 }
 
 // VersionValidator implementation
-std::vector<std::string> VersionValidator::validateVersion(const SchemaVersion& version) {
+std::vector<std::string> VersionValidator::validate_version(const SchemaVersion& version) {
     std::vector<std::string> errors;
 
     // Validate semantic versioning rules
-    if (version.getMajor() == 0 && version.getMinor() == 0 && version.getPatch() == 0) {
+    if (version.get_major() == 0 && version.get_minor() == 0 && version.get_patch() == 0) {
         errors.push_back("Version 0.0.0 is not valid");
     }
 
     return errors;
 }
 
-std::vector<std::string> VersionValidator::validateMigrationPath(const MigrationPath& path) {
+std::vector<std::string> VersionValidator::validate_migration_path(const MigrationPath& path) {
     std::vector<std::string> errors;
 
-    const auto& from = path.getFromVersion();
-    const auto& to = path.getToVersion();
+    const auto& from = path.get_from_version();
+    const auto& to = path.get_to_version();
 
     // Validate version ordering
     if (from >= to) {
@@ -427,11 +427,11 @@ void SchemaRegistry::registerSchema(const SchemaVersion& version,
 }
 
 const SchemaVersion& SchemaRegistry::getCurrentSchema() const {
-    return currentVersion_;
+    return current_version_;
 }
 
 void SchemaRegistry::setCurrentSchema(const SchemaVersion& version) {
-    currentVersion_ = version;
+    current_version_ = version;
 }
 
 bool SchemaRegistry::isRegistered(const SchemaVersion& version) const {

@@ -13,17 +13,17 @@ namespace inference_lab::common {
 // Logger implementation
 
 void Logger::write_log_message(const LogLevel LEVEL, const std::string& message) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex_);
 
     // write to file if file logging is enabled for this level
-    if (is_level_enabled(LEVEL) && m_file_output_enabled) {
-        m_log_file << message;
-        m_log_file.flush();
+    if (is_level_enabled(LEVEL) && m_file_output_enabled_) {
+        m_log_file_ << message;
+        m_log_file_.flush();
     }
 
     // write to console if console logging is enabled for this level
     if (is_level_enabled(LEVEL)) {
-        if ((LEVEL == LogLevel::CRITICAL || LEVEL == LogLevel::ERROR) && m_stderr_enabled) {
+        if ((LEVEL == LogLevel::CRITICAL || LEVEL == LogLevel::ERROR) && m_stderr_enabled_) {
             std::cerr << message;
         } else {  // info, normal, debug
             std::cout << message;
@@ -45,29 +45,29 @@ Logger::Logger(const std::string& path, bool append) {
 
     // Choose file open mode based on append parameter
     std::ios::openmode mode = append ? std::ios::app : std::ios::out;
-    m_log_file.open(path, mode);
-    if (!m_log_file.is_open()) {
+    m_log_file_.open(path, mode);
+    if (!m_log_file_.is_open()) {
         throw std::runtime_error("Failed to open log file: " + path);
     }
 
     // initialize enabled levels - all levels enabled by default
     for (int ndx = 0; ndx < static_cast<int>(LogLevel::CRITICAL) + 1; ++ndx) {
-        m_enabled_levels[ndx] = true;
+        m_enabled_levels_[ndx] = true;
     }
 }
 
 Logger::StderrSuppressionGuard::StderrSuppressionGuard()
-    : m_was_enabled(Logger::getInstance().isStderrEnabled()) {
-    Logger::getInstance().disableStderr();
+    : m_was_enabled_(Logger::get_instance().is_stderr_enabled()) {
+    Logger::get_instance().disable_stderr();
 }
 
 Logger::StderrSuppressionGuard::~StderrSuppressionGuard() {
-    if (m_was_enabled) {
-        Logger::getInstance().enableStderr();
+    if (m_was_enabled_) {
+        Logger::get_instance().enable_stderr();
     }
 }
 
-std::shared_ptr<Logger> Logger::getOrCreateInstance(const std::string& path, bool append) {
+std::shared_ptr<Logger> Logger::get_or_create_instance(const std::string& path, bool append) {
     std::lock_guard<std::mutex> lock(m_instance_mutex);
     if (!m_instance) {
         m_instance = std::shared_ptr<Logger>(new Logger(path, append));
@@ -75,68 +75,64 @@ std::shared_ptr<Logger> Logger::getOrCreateInstance(const std::string& path, boo
     return m_instance;
 }
 
-auto Logger::getInstance() -> Logger& {
-    return *getOrCreateInstance();
+auto Logger::get_instance() -> Logger& {
+    return *get_or_create_instance();
 }
 
-auto Logger::getInstance(const std::string& custom_path, bool append) -> Logger& {
-    return *getOrCreateInstance(custom_path, append);
+auto Logger::get_instance(const std::string& custom_path, bool append) -> Logger& {
+    return *get_or_create_instance(custom_path, append);
 }
 
-std::shared_ptr<Logger> Logger::getInstancePtr() {
-    return getOrCreateInstance();
+std::shared_ptr<Logger> Logger::get_instance_ptr() {
+    return get_or_create_instance();
 }
 
-std::shared_ptr<Logger> Logger::getInstancePtr(const std::string& custom_path, bool append) {
-    return getOrCreateInstance(custom_path, append);
+std::shared_ptr<Logger> Logger::get_instance_ptr(const std::string& custom_path, bool append) {
+    return get_or_create_instance(custom_path, append);
 }
 
 Logger::~Logger() {
-    if (m_log_file.is_open()) {
-        m_log_file.close();
+    if (m_log_file_.is_open()) {
+        m_log_file_.close();
     }
 }
 
-void Logger::setLevelEnabled(LogLevel level, bool enabled) {
+void Logger::set_level_enabled(LogLevel level, bool enabled) {
     int const level_index = static_cast<int>(level);
     if (level_index >= 0 && level_index <= static_cast<int>(LogLevel::CRITICAL)) {
-        getInstance().m_enabled_levels[level_index] = enabled;
+        get_instance().m_enabled_levels_[level_index] = enabled;
     }
 }
 
-bool Logger::isLevelEnabled(LogLevel level) {
-    return is_level_enabled(level);
+void Logger::disable_stderr() {
+    m_stderr_enabled_ = false;
 }
 
-void Logger::disableStderr() {
-    m_stderr_enabled = false;
+void Logger::enable_stderr() {
+    m_stderr_enabled_ = true;
 }
 
-void Logger::enableStderr() {
-    m_stderr_enabled = true;
+auto Logger::is_stderr_enabled() const -> bool {
+    return m_stderr_enabled_;
 }
 
-auto Logger::isStderrEnabled() const -> bool {
-    return m_stderr_enabled;
+void Logger::set_file_output_enabled(bool enabled) {
+    m_file_output_enabled_ = enabled;
 }
 
-void Logger::setFileOutputEnabled(bool enabled) {
-    m_file_output_enabled = enabled;
+auto Logger::is_file_output_enabled() const -> bool {
+    return m_file_output_enabled_;
 }
 
-auto Logger::isFileOutputEnabled() const -> bool {
-    return m_file_output_enabled;
-}
-
-bool Logger::is_level_enabled(LogLevel level) {
+auto Logger::is_level_enabled(LogLevel level) -> bool {
     if (const int LEVEL_INDEX = static_cast<int>(level);
         LEVEL_INDEX >= 0 && LEVEL_INDEX <= static_cast<int>(LogLevel::CRITICAL)) {
-        return getInstance().m_enabled_levels[LEVEL_INDEX];
+        return get_instance().m_enabled_levels_[LEVEL_INDEX];
     }
     return false;
 }
 
-std::string Logger::getIndentation(const int DEPTH) {
+std::string Logger::get_indentation(const int DEPTH) {
     return std::string(DEPTH * 2, ' ');
 }
 

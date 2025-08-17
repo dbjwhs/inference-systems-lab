@@ -31,11 +31,11 @@ static void test_basic_logging() {
 static void test_level_control() {
     std::cout << "\n=== Testing Level Control ===\n";
 
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Disable debug and info levels
-    logger.setLevelEnabled(LogLevel::DEBUG, false);
-    logger.setLevelEnabled(LogLevel::INFO, false);
+    Logger::set_level_enabled(LogLevel::DEBUG, false);
+    Logger::set_level_enabled(LogLevel::INFO, false);
 
     std::cout << "Debug and Info disabled - these should not appear:\n";
     LOG_DEBUG_PRINT("This debug message should NOT appear");
@@ -43,8 +43,8 @@ static void test_level_control() {
     LOG_NORMAL_PRINT("This normal message SHOULD appear");
 
     // Re-enable them
-    logger.setLevelEnabled(LogLevel::DEBUG, true);
-    logger.setLevelEnabled(LogLevel::INFO, true);
+    Logger::set_level_enabled(LogLevel::DEBUG, true);
+    Logger::set_level_enabled(LogLevel::INFO, true);
 
     std::cout << "Debug and Info re-enabled - these should appear:\n";
     LOG_DEBUG_PRINT("This debug message should appear now");
@@ -68,15 +68,15 @@ static void test_stderr_suppression() {
 static void test_file_output_control() {
     std::cout << "\n=== Testing File Output Control ===\n";
 
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Disable file output
-    logger.setFileOutputEnabled(false);
+    logger.set_file_output_enabled(false);
     std::cout << "File output disabled - this message only goes to console:\n";
     LOG_NORMAL_PRINT("Console only message");
 
     // Re-enable file output
-    logger.setFileOutputEnabled(true);
+    logger.set_file_output_enabled(true);
     std::cout << "File output re-enabled - this message goes to both:\n";
     LOG_NORMAL_PRINT("Console and file message");
 }
@@ -84,7 +84,7 @@ static void test_file_output_control() {
 static void test_depth_logging() {
     std::cout << "\n=== Testing Depth Logging ===\n";
 
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     logger.print_log_with_depth(LogLevel::INFO, 0, "Root level message");
     logger.print_log_with_depth(LogLevel::INFO, 1, "Depth 1 message");
@@ -120,13 +120,13 @@ auto main() -> int {
         // Initialize logger with custom path and truncate mode for clean test start
         const std::string LOG_FILE = "../test_custom.log";
         const auto& logger =
-            Logger::getInstance(LOG_FILE, false);  // false = truncate existing file
+            Logger::get_instance(LOG_FILE, false);  // false = truncate existing file
 
         std::cout << "Logger initialized successfully\n";
         std::cout << "Log file: " << LOG_FILE << "\n";
-        std::cout << "File output enabled: " << (logger.isFileOutputEnabled() ? "Yes" : "No")
+        std::cout << "File output enabled: " << (logger.is_file_output_enabled() ? "Yes" : "No")
                   << "\n";
-        std::cout << "Stderr enabled: " << (logger.isStderrEnabled() ? "Yes" : "No") << "\n";
+        std::cout << "Stderr enabled: " << (logger.is_stderr_enabled() ? "Yes" : "No") << "\n";
 
         // Run tests
         test_basic_logging();

@@ -70,7 +70,7 @@ class LoggerTest : public ::testing::Test {
 
         // Initialize the singleton Logger with our test file and truncate mode
         // This creates the singleton instance that all tests will use
-        Logger::getInstance(test_log_file_, false);
+        Logger::get_instance(test_log_file_, false);
     }
 
     /**
@@ -119,22 +119,22 @@ class LoggerTest : public ::testing::Test {
  * @brief Validates singleton pattern implementation
  *
  * This test ensures that:
- * - Multiple calls to getInstance() return the same Logger instance
+ * - Multiple calls to get_instance() return the same Logger instance
  * - Reference-based and shared_ptr-based access methods are consistent
  * - Memory addresses are identical, confirming true singleton behavior
  *
  * Validates: Singleton pattern correctness and memory consistency
  */
 TEST_F(LoggerTest, SingletonBehavior) {
-    // Test that getInstance returns the same instance
-    auto& logger1 = Logger::getInstance();
-    auto& logger2 = Logger::getInstance();
+    // Test that get_instance returns the same instance
+    auto& logger1 = Logger::get_instance();
+    auto& logger2 = Logger::get_instance();
 
     EXPECT_EQ(&logger1, &logger2);
 
     // Test shared_ptr version
-    const auto PTR1 = Logger::getInstancePtr();
-    const auto PTR2 = Logger::getInstancePtr();
+    const auto PTR1 = Logger::get_instance_ptr();
+    const auto PTR2 = Logger::get_instance_ptr();
 
     EXPECT_EQ(PTR1, PTR2);
 }
@@ -153,7 +153,7 @@ TEST_F(LoggerTest, SingletonBehavior) {
  */
 TEST_F(LoggerTest, BasicLoggingFunctionality) {
     // Test that logger basic functionality works
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Test that logging methods don't crash and work correctly
     EXPECT_NO_THROW(logger.print_log(LogLevel::INFO, "Test message"));
@@ -161,11 +161,11 @@ TEST_F(LoggerTest, BasicLoggingFunctionality) {
     EXPECT_NO_THROW(logger.print_log_with_depth(LogLevel::DEBUG, 1, "Depth test"));
 
     // Test file output state can be controlled
-    EXPECT_TRUE(logger.isFileOutputEnabled());
-    logger.setFileOutputEnabled(false);
-    EXPECT_FALSE(logger.isFileOutputEnabled());
-    logger.setFileOutputEnabled(true);
-    EXPECT_TRUE(logger.isFileOutputEnabled());
+    EXPECT_TRUE(logger.is_file_output_enabled());
+    logger.set_file_output_enabled(false);
+    EXPECT_FALSE(logger.is_file_output_enabled());
+    logger.set_file_output_enabled(true);
+    EXPECT_TRUE(logger.is_file_output_enabled());
 }
 
 /**
@@ -181,30 +181,30 @@ TEST_F(LoggerTest, BasicLoggingFunctionality) {
  * Validates: Dynamic log level filtering, state persistence, and isolation
  */
 TEST_F(LoggerTest, LogLevelControl) {
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Test initial state - all levels should be enabled
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::DEBUG));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::INFO));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::NORMAL));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::WARNING));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::ERROR));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::CRITICAL));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::DEBUG));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::INFO));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::NORMAL));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::WARNING));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::ERROR));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::CRITICAL));
 
     // Disable specific levels
-    logger.setLevelEnabled(LogLevel::DEBUG, false);
-    logger.setLevelEnabled(LogLevel::INFO, false);
+    Logger::set_level_enabled(LogLevel::DEBUG, false);
+    Logger::set_level_enabled(LogLevel::INFO, false);
 
-    EXPECT_FALSE(logger.isLevelEnabled(LogLevel::DEBUG));
-    EXPECT_FALSE(logger.isLevelEnabled(LogLevel::INFO));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::NORMAL));
+    EXPECT_FALSE(Logger::is_level_enabled(LogLevel::DEBUG));
+    EXPECT_FALSE(Logger::is_level_enabled(LogLevel::INFO));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::NORMAL));
 
     // Re-enable levels for other tests
-    logger.setLevelEnabled(LogLevel::DEBUG, true);
-    logger.setLevelEnabled(LogLevel::INFO, true);
+    Logger::set_level_enabled(LogLevel::DEBUG, true);
+    Logger::set_level_enabled(LogLevel::INFO, true);
 
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::DEBUG));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::INFO));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::DEBUG));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::INFO));
 }
 
 /**
@@ -219,17 +219,17 @@ TEST_F(LoggerTest, LogLevelControl) {
  * Validates: File output state management and dynamic control
  */
 TEST_F(LoggerTest, FileOutputControl) {
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Test initial state
-    EXPECT_TRUE(logger.isFileOutputEnabled());
+    EXPECT_TRUE(logger.is_file_output_enabled());
 
     // Test disable/enable
-    logger.setFileOutputEnabled(false);
-    EXPECT_FALSE(logger.isFileOutputEnabled());
+    logger.set_file_output_enabled(false);
+    EXPECT_FALSE(logger.is_file_output_enabled());
 
-    logger.setFileOutputEnabled(true);
-    EXPECT_TRUE(logger.isFileOutputEnabled());
+    logger.set_file_output_enabled(true);
+    EXPECT_TRUE(logger.is_file_output_enabled());
 }
 
 /**
@@ -244,17 +244,17 @@ TEST_F(LoggerTest, FileOutputControl) {
  * Validates: Stderr output state management and manual control methods
  */
 TEST_F(LoggerTest, StderrControl) {
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Test initial state
-    EXPECT_TRUE(logger.isStderrEnabled());
+    EXPECT_TRUE(logger.is_stderr_enabled());
 
     // Test disable/enable
-    logger.disableStderr();
-    EXPECT_FALSE(logger.isStderrEnabled());
+    logger.disable_stderr();
+    EXPECT_FALSE(logger.is_stderr_enabled());
 
-    logger.enableStderr();
-    EXPECT_TRUE(logger.isStderrEnabled());
+    logger.enable_stderr();
+    EXPECT_TRUE(logger.is_stderr_enabled());
 }
 
 /**
@@ -269,18 +269,18 @@ TEST_F(LoggerTest, StderrControl) {
  * Validates: RAII pattern implementation, automatic state restoration, and scoped stderr control
  */
 TEST_F(LoggerTest, StderrSuppressionGuard) {
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Initial state should be enabled
-    EXPECT_TRUE(logger.isStderrEnabled());
+    EXPECT_TRUE(logger.is_stderr_enabled());
 
     {
         Logger::StderrSuppressionGuard const GUARD;
-        EXPECT_FALSE(logger.isStderrEnabled());
+        EXPECT_FALSE(logger.is_stderr_enabled());
     }
 
     // Should be restored after guard destruction
-    EXPECT_TRUE(logger.isStderrEnabled());
+    EXPECT_TRUE(logger.is_stderr_enabled());
 }
 
 /**
@@ -299,7 +299,7 @@ TEST_F(LoggerTest, StderrSuppressionGuard) {
  * Validates: Thread safety, concurrent access protection, and exception safety under load
  */
 TEST_F(LoggerTest, ThreadSafety) {
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     std::vector<std::thread> threads;
     const int NUM_THREADS = 5;
@@ -348,7 +348,7 @@ TEST_F(LoggerTest, ThreadSafety) {
  * Validates: C++23 std::format integration, type safety, and formatting correctness
  */
 TEST_F(LoggerTest, LogFormatting) {
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Test various formatting - verify they don't crash with complex formats
     EXPECT_NO_THROW(logger.print_log(LogLevel::INFO, "Simple message"));
@@ -409,24 +409,24 @@ TEST_F(LoggerTest, MacroFunctionality) {
  * and dynamic filtering behavior
  */
 TEST_F(LoggerTest, LevelFiltering) {
-    auto& logger = Logger::getInstance();
+    auto& logger = Logger::get_instance();
 
     // Test that disabled levels don't cause crashes
-    logger.setLevelEnabled(LogLevel::DEBUG, false);
+    Logger::set_level_enabled(LogLevel::DEBUG, false);
     EXPECT_NO_THROW(LOG_DEBUG_PRINT("This debug should be filtered"));
-    EXPECT_FALSE(logger.isLevelEnabled(LogLevel::DEBUG));
+    EXPECT_FALSE(Logger::is_level_enabled(LogLevel::DEBUG));
 
-    logger.setLevelEnabled(LogLevel::INFO, false);
+    Logger::set_level_enabled(LogLevel::INFO, false);
     EXPECT_NO_THROW(LOG_INFO_PRINT("This info should be filtered"));
-    EXPECT_FALSE(logger.isLevelEnabled(LogLevel::INFO));
+    EXPECT_FALSE(Logger::is_level_enabled(LogLevel::INFO));
 
     // Re-enable for other tests
-    logger.setLevelEnabled(LogLevel::DEBUG, true);
-    logger.setLevelEnabled(LogLevel::INFO, true);
+    Logger::set_level_enabled(LogLevel::DEBUG, true);
+    Logger::set_level_enabled(LogLevel::INFO, true);
 
     // Test that enabled levels work
     EXPECT_NO_THROW(LOG_DEBUG_PRINT("This debug should work"));
     EXPECT_NO_THROW(LOG_INFO_PRINT("This info should work"));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::DEBUG));
-    EXPECT_TRUE(logger.isLevelEnabled(LogLevel::INFO));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::DEBUG));
+    EXPECT_TRUE(Logger::is_level_enabled(LogLevel::INFO));
 }

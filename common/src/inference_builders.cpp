@@ -35,37 +35,37 @@ namespace inference_lab::common {
 
 FactBuilder::FactBuilder(const std::string& predicate) : predicate_(predicate) {}
 
-FactBuilder& FactBuilder::withArg(const Value& arg) {
+FactBuilder& FactBuilder::with_arg(const Value& arg) {
     args_.push_back(arg);
     return *this;
 }
 
-FactBuilder& FactBuilder::withArg(int64_t value) {
-    return withArg(Value::fromInt64(value));
+FactBuilder& FactBuilder::with_arg(int64_t value) {
+    return with_arg(Value::fromInt64(value));
 }
 
-FactBuilder& FactBuilder::withArg(double value) {
-    return withArg(Value::fromFloat64(value));
+FactBuilder& FactBuilder::with_arg(double value) {
+    return with_arg(Value::fromFloat64(value));
 }
 
-FactBuilder& FactBuilder::withArg(const std::string& value) {
-    return withArg(Value::fromText(value));
+FactBuilder& FactBuilder::with_arg(const std::string& value) {
+    return with_arg(Value::fromText(value));
 }
 
-FactBuilder& FactBuilder::withArg(const char* value) {
-    return withArg(Value::fromText(std::string(value)));
+FactBuilder& FactBuilder::with_arg(const char* value) {
+    return with_arg(Value::fromText(std::string(value)));
 }
 
-FactBuilder& FactBuilder::withArg(bool value) {
-    return withArg(Value::fromBool(value));
+FactBuilder& FactBuilder::with_arg(bool value) {
+    return with_arg(Value::fromBool(value));
 }
 
-FactBuilder& FactBuilder::withId(uint64_t id) {
+FactBuilder& FactBuilder::with_id(uint64_t id) {
     id_ = id;
     return *this;
 }
 
-FactBuilder& FactBuilder::withConfidence(double confidence) {
+FactBuilder& FactBuilder::with_confidence(double confidence) {
     confidence_ = confidence;
     return *this;
 }
@@ -148,7 +148,7 @@ RuleBuilder& RuleBuilder::whenNot(const std::string& predicate) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::withArg(const Value& arg) {
+RuleBuilder& RuleBuilder::with_arg(const Value& arg) {
     if (buildingState_ == BuildingState::None) {
         throw std::runtime_error("Must call when() or then() before adding arguments");
     }
@@ -156,24 +156,24 @@ RuleBuilder& RuleBuilder::withArg(const Value& arg) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::withArg(int64_t value) {
-    return withArg(Value::fromInt64(value));
+RuleBuilder& RuleBuilder::with_arg(int64_t value) {
+    return with_arg(Value::fromInt64(value));
 }
 
-RuleBuilder& RuleBuilder::withArg(double value) {
-    return withArg(Value::fromFloat64(value));
+RuleBuilder& RuleBuilder::with_arg(double value) {
+    return with_arg(Value::fromFloat64(value));
 }
 
-RuleBuilder& RuleBuilder::withArg(const std::string& value) {
-    return withArg(Value::fromText(value));
+RuleBuilder& RuleBuilder::with_arg(const std::string& value) {
+    return with_arg(Value::fromText(value));
 }
 
-RuleBuilder& RuleBuilder::withArg(const char* value) {
-    return withArg(Value::fromText(std::string(value)));
+RuleBuilder& RuleBuilder::with_arg(const char* value) {
+    return with_arg(Value::fromText(std::string(value)));
 }
 
-RuleBuilder& RuleBuilder::withArg(bool value) {
-    return withArg(Value::fromBool(value));
+RuleBuilder& RuleBuilder::with_arg(bool value) {
+    return with_arg(Value::fromBool(value));
 }
 
 RuleBuilder& RuleBuilder::withVariable(const std::string& varName) {
@@ -182,7 +182,7 @@ RuleBuilder& RuleBuilder::withVariable(const std::string& varName) {
     if (!name.empty() && std::islower(name[0])) {
         name[0] = std::toupper(name[0]);
     }
-    return withArg(Value::fromText(name));
+    return with_arg(Value::fromText(name));
 }
 
 RuleBuilder& RuleBuilder::thenConclusion(const std::string& predicate,
@@ -212,7 +212,7 @@ RuleBuilder& RuleBuilder::then(const std::string& predicate) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::withId(uint64_t id) {
+RuleBuilder& RuleBuilder::with_id(uint64_t id) {
     id_ = id;
     return *this;
 }
@@ -222,7 +222,7 @@ RuleBuilder& RuleBuilder::withPriority(int32_t priority) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::withConfidence(double confidence) {
+RuleBuilder& RuleBuilder::with_confidence(double confidence) {
     if (buildingState_ == BuildingState::Conclusion) {
         currentConfidence_ = confidence;
     } else {
@@ -315,7 +315,7 @@ QueryBuilder& QueryBuilder::goal(const std::string& predicate) {
     return *this;
 }
 
-QueryBuilder& QueryBuilder::withArg(const Value& arg) {
+QueryBuilder& QueryBuilder::with_arg(const Value& arg) {
     if (!goalSet_) {
         throw std::runtime_error("Must call goal() before adding arguments");
     }
@@ -323,24 +323,24 @@ QueryBuilder& QueryBuilder::withArg(const Value& arg) {
     return *this;
 }
 
-QueryBuilder& QueryBuilder::withArg(int64_t value) {
-    return withArg(Value::fromInt64(value));
+QueryBuilder& QueryBuilder::with_arg(int64_t value) {
+    return with_arg(Value::fromInt64(value));
 }
 
-QueryBuilder& QueryBuilder::withArg(double value) {
-    return withArg(Value::fromFloat64(value));
+QueryBuilder& QueryBuilder::with_arg(double value) {
+    return with_arg(Value::fromFloat64(value));
 }
 
-QueryBuilder& QueryBuilder::withArg(const std::string& value) {
-    return withArg(Value::fromText(value));
+QueryBuilder& QueryBuilder::with_arg(const std::string& value) {
+    return with_arg(Value::fromText(value));
 }
 
-QueryBuilder& QueryBuilder::withArg(const char* value) {
-    return withArg(Value::fromText(std::string(value)));
+QueryBuilder& QueryBuilder::with_arg(const char* value) {
+    return with_arg(Value::fromText(std::string(value)));
 }
 
-QueryBuilder& QueryBuilder::withArg(bool value) {
-    return withArg(Value::fromBool(value));
+QueryBuilder& QueryBuilder::with_arg(bool value) {
+    return with_arg(Value::fromBool(value));
 }
 
 QueryBuilder& QueryBuilder::withVariable(const std::string& varName) {
@@ -349,10 +349,10 @@ QueryBuilder& QueryBuilder::withVariable(const std::string& varName) {
     if (!name.empty() && std::islower(name[0])) {
         name[0] = std::toupper(name[0]);
     }
-    return withArg(Value::fromText(name));
+    return with_arg(Value::fromText(name));
 }
 
-QueryBuilder& QueryBuilder::withId(uint64_t id) {
+QueryBuilder& QueryBuilder::with_id(uint64_t id) {
     id_ = id;
     return *this;
 }

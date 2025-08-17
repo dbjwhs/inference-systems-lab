@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "inference_types.hpp"
 
 namespace inference_lab::common {
@@ -66,43 +68,43 @@ class FactBuilder {
     // These can be chained together: .withArg(arg1).withArg(arg2).withArg(arg3)
 
     /** @brief Add a Value argument to the fact */
-    FactBuilder& withArg(const Value& arg);
+    auto with_arg(const Value& arg) -> FactBuilder&;
 
     /** @brief Add an int64 argument to the fact */
-    FactBuilder& withArg(int64_t value);
+    auto with_arg(int64_t value) -> FactBuilder&;
 
     /** @brief Add a double argument to the fact */
-    FactBuilder& withArg(double value);
+    auto with_arg(double value) -> FactBuilder&;
 
     /** @brief Add a string argument to the fact */
-    FactBuilder& withArg(const std::string& value);
+    auto with_arg(const std::string& value) -> FactBuilder&;
 
     /** @brief Add a C-string argument to the fact (avoids bool conversion) */
-    FactBuilder& withArg(const char* value);
+    auto with_arg(const char* value) -> FactBuilder&;
 
     /** @brief Add a boolean argument to the fact */
-    FactBuilder& withArg(bool value);
+    auto with_arg(bool value) -> FactBuilder&;
 
     // Methods for setting optional properties of the fact
 
     /** @brief Set the unique ID (if not set, auto-generated) */
-    FactBuilder& withId(uint64_t id);
+    auto with_id(uint64_t id) -> FactBuilder&;
 
     /** @brief Set the confidence level (0.0 to 1.0, default: 1.0) */
-    FactBuilder& withConfidence(double confidence);
+    auto with_confidence(double confidence) -> FactBuilder&;
 
     /** @brief Set the timestamp (if not set, uses current time) */
-    FactBuilder& withTimestamp(uint64_t timestamp);
+    auto with_timestamp(uint64_t timestamp) -> FactBuilder&;
 
     /** @brief Add a metadata key-value pair */
-    FactBuilder& withMetadata(const std::string& key, const Value& value);
+    auto with_metadata(const std::string& key, const Value& value) -> FactBuilder&;
 
     /**
      * @brief Build the final Fact object
      * @return Completed Fact with all specified properties
      * @throws std::runtime_error if required fields are missing
      */
-    Fact build();
+    auto build() -> Fact;
 
   private:
     std::string predicate_;                            ///< Predicate name for the fact
@@ -113,7 +115,7 @@ class FactBuilder {
     std::unordered_map<std::string, Value> metadata_;  ///< Metadata key-value pairs
 
     /** @brief Generate next unique ID for facts */
-    static uint64_t nextId();
+    static auto next_id() -> uint64_t;
 };
 
 /**
@@ -151,43 +153,43 @@ class RuleBuilder {
      * @param args Arguments for the condition
      * @param negated Whether this is a NOT condition
      */
-    RuleBuilder& whenCondition(const std::string& predicate,
-                               const std::vector<Value>& args,
-                               bool negated = false);
+    auto when_condition(const std::string& predicate,
+                        const std::vector<Value>& args,
+                        bool negated = false) -> RuleBuilder&;
 
     /**
      * @brief Start building a new positive condition
      * @param predicate Predicate name for the condition
      * @return Reference to this builder for chaining withArg() calls
      */
-    RuleBuilder& when(const std::string& predicate);
+    auto when(const std::string& predicate) -> RuleBuilder&;
 
     /**
      * @brief Start building a new negative (NOT) condition
      * @param predicate Predicate name for the negated condition
      * @return Reference to this builder for chaining withArg() calls
      */
-    RuleBuilder& whenNot(const std::string& predicate);
+    auto when_not(const std::string& predicate) -> RuleBuilder&;
 
     // Methods for adding arguments to the current condition/conclusion being built
 
     /** @brief Add a Value argument to current condition/conclusion */
-    RuleBuilder& withArg(const Value& arg);
+    auto with_arg(const Value& arg) -> RuleBuilder&;
 
     /** @brief Add an int64 argument to current condition/conclusion */
-    RuleBuilder& withArg(int64_t value);
+    auto with_arg(int64_t value) -> RuleBuilder&;
 
     /** @brief Add a double argument to current condition/conclusion */
-    RuleBuilder& withArg(double value);
+    auto with_arg(double value) -> RuleBuilder&;
 
     /** @brief Add a string argument to current condition/conclusion */
-    RuleBuilder& withArg(const std::string& value);
+    auto with_arg(const std::string& value) -> RuleBuilder&;
 
     /** @brief Add a C-string argument to current condition/conclusion */
-    RuleBuilder& withArg(const char* value);
+    auto with_arg(const char* value) -> RuleBuilder&;
 
     /** @brief Add a boolean argument to current condition/conclusion */
-    RuleBuilder& withArg(bool value);
+    auto with_arg(bool value) -> RuleBuilder&;
 
     /**
      * @brief Add a logic variable to current condition/conclusion
@@ -197,7 +199,7 @@ class RuleBuilder {
      * For example, variable "X" in condition isHuman(X) will be bound to the same
      * value as "X" in conclusion isMortal(X).
      */
-    RuleBuilder& withVariable(const std::string& varName);
+    auto with_variable(const std::string& var_name) -> RuleBuilder&;
 
     // Methods for adding complete conclusions
 
@@ -207,34 +209,34 @@ class RuleBuilder {
      * @param args Arguments for the conclusion
      * @param confidence Confidence level for this conclusion
      */
-    RuleBuilder& thenConclusion(const std::string& predicate,
-                                const std::vector<Value>& args,
-                                double confidence = 1.0);
+    auto then_conclusion(const std::string& predicate,
+                         const std::vector<Value>& args,
+                         double confidence = 1.0) -> RuleBuilder&;
 
     /**
      * @brief Start building a new conclusion
      * @param predicate Predicate name for the conclusion
      * @return Reference to this builder for chaining withArg() calls
      */
-    RuleBuilder& then(const std::string& predicate);
+    auto then(const std::string& predicate) -> RuleBuilder&;
 
     // Methods for setting rule properties
 
     /** @brief Set the unique ID (if not set, auto-generated) */
-    RuleBuilder& withId(uint64_t id);
+    auto with_id(uint64_t id) -> RuleBuilder&;
 
     /** @brief Set the priority for conflict resolution (higher = more important) */
-    RuleBuilder& withPriority(int32_t priority);
+    auto with_priority(int32_t priority) -> RuleBuilder&;
 
     /** @brief Set the overall confidence level for the rule */
-    RuleBuilder& withConfidence(double confidence);
+    auto with_confidence(double confidence) -> RuleBuilder&;
 
     /**
      * @brief Build the final Rule object
      * @return Completed Rule with all conditions and conclusions
      * @throws std::runtime_error if rule has no conditions or no conclusions
      */
-    Rule build();
+    auto build() -> Rule;
 
   private:
     std::string name_;                           ///< Human-readable rule name
@@ -245,22 +247,22 @@ class RuleBuilder {
     double confidence_ = 1.0;                    ///< Overall rule confidence
 
     // State for building the current condition or conclusion
-    std::string currentPredicate_;    ///< Predicate being built
-    std::vector<Value> currentArgs_;  ///< Arguments being accumulated
-    bool currentNegated_ = false;     ///< Whether current condition is negated
-    double currentConfidence_ = 1.0;  ///< Confidence for current conclusion
+    std::string current_predicate_;    ///< Predicate being built
+    std::vector<Value> current_args_;  ///< Arguments being accumulated
+    bool current_negated_ = false;     ///< Whether current condition is negated
+    double current_confidence_ = 1.0;  ///< Confidence for current conclusion
 
     /** @brief Tracks whether we're currently building a condition or conclusion */
-    enum class BuildingState { Condition, Conclusion, None } buildingState_ = BuildingState::None;
+    enum class BuildingState { CONDITION, CONCLUSION, NONE } building_state_ = BuildingState::NONE;
 
     /** @brief Finish building current condition and add it to the conditions list */
-    void finishCurrentCondition();
+    void finish_current_condition();
 
     /** @brief Finish building current conclusion and add it to the conclusions list */
-    void finishCurrentConclusion();
+    void finish_current_conclusion();
 
     /** @brief Generate next unique ID for rules */
-    static uint64_t nextId();
+    static auto next_id() -> uint64_t;
 };
 
 /**
@@ -296,93 +298,92 @@ class QueryBuilder {
      * @param args Arguments for the goal pattern
      * @param negated Whether this is a negated goal (NOT pattern)
      */
-    QueryBuilder& goal(const std::string& predicate,
-                       const std::vector<Value>& args,
-                       bool negated = false);
+    auto goal(const std::string& predicate, const std::vector<Value>& args, bool negated = false)
+        -> QueryBuilder&;
 
     /**
      * @brief Start building a goal pattern
      * @param predicate Predicate name for the goal
      * @return Reference to this builder for chaining withArg() calls
      */
-    QueryBuilder& goal(const std::string& predicate);
+    auto goal(const std::string& predicate) -> QueryBuilder&;
 
     // Methods for adding arguments to the goal pattern
 
     /** @brief Add a Value argument to the goal */
-    QueryBuilder& withArg(const Value& arg);
+    auto with_arg(const Value& arg) -> QueryBuilder&;
 
     /** @brief Add an int64 argument to the goal */
-    QueryBuilder& withArg(int64_t value);
+    auto with_arg(int64_t value) -> QueryBuilder&;
 
     /** @brief Add a double argument to the goal */
-    QueryBuilder& withArg(double value);
+    auto with_arg(double value) -> QueryBuilder&;
 
     /** @brief Add a string argument to the goal */
-    QueryBuilder& withArg(const std::string& value);
+    auto with_arg(const std::string& value) -> QueryBuilder&;
 
     /** @brief Add a C-string argument to the goal */
-    QueryBuilder& withArg(const char* value);
+    auto with_arg(const char* value) -> QueryBuilder&;
 
     /** @brief Add a boolean argument to the goal */
-    QueryBuilder& withArg(bool value);
+    auto with_arg(bool value) -> QueryBuilder&;
 
     /**
      * @brief Add a logic variable to the goal
      * @param varName Variable name (will be converted to uppercase if needed)
      */
-    QueryBuilder& withVariable(const std::string& varName);
+    auto with_variable(const std::string& var_name) -> QueryBuilder&;
 
     // Methods for setting query parameters
 
     /** @brief Set the unique ID (if not set, auto-generated) */
-    QueryBuilder& withId(uint64_t id);
+    auto with_id(uint64_t id) -> QueryBuilder&;
 
     /** @brief Set the maximum number of results to return */
-    QueryBuilder& maxResults(uint32_t max);
+    auto max_results(uint32_t max) -> QueryBuilder&;
 
     /** @brief Set the query timeout in milliseconds */
-    QueryBuilder& timeout(uint32_t timeoutMs);
+    auto timeout(uint32_t timeout_ms) -> QueryBuilder&;
 
     /** @brief Add a metadata key-value pair */
-    QueryBuilder& withMetadata(const std::string& key, const Value& value);
+    auto with_metadata(const std::string& key, const Value& value) -> QueryBuilder&;
 
     /**
      * @brief Build the final Query object
      * @return Completed Query with goal and parameters
      * @throws std::runtime_error if no goal is set
      */
-    Query build();
+    auto build() -> Query;
 
     // Static factory methods for common query types - these provide convenient shortcuts
 
     /** @brief Create a FindAll query builder */
-    static QueryBuilder findAll();
+    static auto find_all() -> QueryBuilder;
 
     /** @brief Create a Prove query builder */
-    static QueryBuilder prove();
+    static auto prove() -> QueryBuilder;
 
     /** @brief Create a FindFirst query builder with specified limit */
-    static QueryBuilder findFirst(uint32_t limit = 1);
+    static auto find_first(uint32_t limit = 1) -> QueryBuilder;
 
     /** @brief Create an Explain query builder */
-    static QueryBuilder explain();
+    static auto explain() -> QueryBuilder;
 
   private:
     Query::Type type_;                                 ///< Type of query to create
     uint64_t id_ = 0;                                  ///< Query ID (0 = auto-generate)
-    uint32_t maxResults_ = 100;                        ///< Maximum results to return
-    uint32_t timeoutMs_ = 5000;                        ///< Timeout in milliseconds
+    uint32_t max_results_ = 100;                       ///< Maximum results to return
+    uint32_t timeout_ms_ = 5000;                       ///< Timeout in milliseconds
     std::unordered_map<std::string, Value> metadata_;  ///< Metadata key-value pairs
 
     // State for building the goal pattern
-    std::string goalPredicate_;    ///< Goal predicate being built
-    std::vector<Value> goalArgs_;  ///< Goal arguments being accumulated
-    bool goalNegated_ = false;     ///< Whether goal is negated
-    bool goalSet_ = false;         ///< Whether goal has been set
+    std::string goal_predicate_;    ///< Goal predicate being built
+    std::vector<Value> goal_args_;  ///< Goal arguments being accumulated
+    bool goal_negated_ = false;     ///< Whether goal is negated
+    bool goal_set_ = false;         ///< Whether goal has been set
 
     /** @brief Generate next unique ID for queries */
-    static uint64_t nextId();
+    static auto next_id() -> uint64_t;
 };
 
 /**
@@ -410,7 +411,7 @@ namespace builders {
  * @param predicate Predicate name for the fact
  * @return Completed Fact object
  */
-inline Fact fact(const std::string& predicate) {
+inline auto fact(const std::string& predicate) -> Fact {
     return FactBuilder(predicate).build();
 }
 
@@ -425,9 +426,9 @@ inline Fact fact(const std::string& predicate) {
  * in a single call, e.g., fact("livesIn", "socrates", "athens")
  */
 template <typename... ArgumentTypes>
-inline Fact fact(const std::string& predicate, ArgumentTypes&&... args) {
+inline auto fact(const std::string& predicate, ArgumentTypes&&... args) -> Fact {
     FactBuilder builder(predicate);
-    (builder.withArg(std::forward<ArgumentTypes>(args)), ...);
+    (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
     return builder.build();
 }
 
@@ -440,7 +441,7 @@ inline Fact fact(const std::string& predicate, ArgumentTypes&&... args) {
  *
  * This is just a convenience wrapper around RuleBuilder constructor.
  */
-inline RuleBuilder rule(const std::string& name) {
+inline auto rule(const std::string& name) -> RuleBuilder {
     return RuleBuilder(name);
 }
 
@@ -451,8 +452,8 @@ inline RuleBuilder rule(const std::string& name) {
  * @param predicate Goal predicate name
  * @return QueryBuilder for further configuration
  */
-inline QueryBuilder findAll(const std::string& predicate) {
-    return QueryBuilder::findAll().goal(predicate);
+inline auto find_all(const std::string& predicate) -> QueryBuilder {
+    return QueryBuilder::find_all().goal(predicate);
 }
 
 /**
@@ -463,9 +464,9 @@ inline QueryBuilder findAll(const std::string& predicate) {
  * @return QueryBuilder for further configuration
  */
 template <typename... ArgumentTypes>
-inline QueryBuilder findAll(const std::string& predicate, ArgumentTypes&&... args) {
-    auto builder = QueryBuilder::findAll().goal(predicate);
-    (builder.withArg(std::forward<ArgumentTypes>(args)), ...);
+inline auto find_all(const std::string& predicate, ArgumentTypes&&... args) -> QueryBuilder {
+    auto builder = QueryBuilder::find_all().goal(predicate);
+    (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
     return builder;
 }
 
@@ -474,7 +475,7 @@ inline QueryBuilder findAll(const std::string& predicate, ArgumentTypes&&... arg
  * @param predicate Goal predicate name
  * @return QueryBuilder for further configuration
  */
-inline QueryBuilder prove(const std::string& predicate) {
+inline auto prove(const std::string& predicate) -> QueryBuilder {
     return QueryBuilder::prove().goal(predicate);
 }
 
@@ -486,9 +487,9 @@ inline QueryBuilder prove(const std::string& predicate) {
  * @return QueryBuilder for further configuration
  */
 template <typename... ArgumentTypes>
-inline QueryBuilder prove(const std::string& predicate, ArgumentTypes&&... args) {
+inline auto prove(const std::string& predicate, ArgumentTypes&&... args) -> QueryBuilder {
     auto builder = QueryBuilder::prove().goal(predicate);
-    (builder.withArg(std::forward<ArgumentTypes>(args)), ...);
+    (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
     return builder;
 }
 
@@ -503,13 +504,13 @@ inline QueryBuilder prove(const std::string& predicate, ArgumentTypes&&... args)
  * conditions and conclusions. By convention, variables start with uppercase
  * letters to distinguish them from constants.
  */
-inline Value var(const std::string& name) {
+inline auto var(const std::string& name) -> Value {
     // Variables start with uppercase by convention
-    std::string varName = name;
-    if (!varName.empty() && std::islower(varName[0])) {
-        varName[0] = std::toupper(varName[0]);
+    std::string var_name = name;
+    if (!var_name.empty() && std::islower(var_name[0])) {
+        var_name[0] = std::toupper(var_name[0]);
     }
-    return Value::fromText(varName);
+    return Value::fromText(var_name);
 }
 
 }  // namespace builders

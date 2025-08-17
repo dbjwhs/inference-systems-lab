@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -29,8 +30,6 @@
 #include <vector>
 
 // Include generated Cap'n Proto headers
-#include <capnp/message.h>
-#include <capnp/serialize.h>
 
 #include "schemas/inference_types.capnp.h"
 
@@ -63,84 +62,84 @@ class Value {
      * This allows Value objects to be used in STL containers that require
      * default-constructible types (like std::unordered_map, std::vector).
      */
-    Value() : type_(Type::Int64), int64_value_(0) {}
+    Value() : type_(Type::INT64), int64_value_(0) {}
 
     // Factory methods for creating typed values - these are preferred over constructors
     // to make the type creation explicit and prevent accidental conversions
 
     /** @brief Create a 64-bit signed integer value */
-    static Value fromInt64(int64_t value);
+    static auto from_int64(int64_t value) -> Value;
 
     /** @brief Create a 64-bit floating point value */
-    static Value fromFloat64(double value);
+    static auto from_float64(double value) -> Value;
 
     /** @brief Create a text/string value */
-    static Value fromText(const std::string& value);
+    static auto from_text(const std::string& value) -> Value;
 
     /** @brief Create a boolean value */
-    static Value fromBool(bool value);
+    static auto from_bool(bool value) -> Value;
 
     /** @brief Create a list/array value containing other Values */
-    static Value fromList(const std::vector<Value>& values);
+    static auto from_list(const std::vector<Value>& values) -> Value;
 
     /** @brief Create a structured object value (key-value map) */
-    static Value fromStruct(const std::unordered_map<std::string, Value>& fields);
+    static auto from_struct(const std::unordered_map<std::string, Value>& fields) -> Value;
 
     // Type checking methods - these are const and do not throw
 
     /** @brief Check if this value contains a 64-bit integer */
-    bool isInt64() const;
+    auto is_int64() const -> bool;
 
     /** @brief Check if this value contains a 64-bit float */
-    bool isFloat64() const;
+    auto is_float64() const -> bool;
 
     /** @brief Check if this value contains text/string data */
-    bool isText() const;
+    auto is_text() const -> bool;
 
     /** @brief Check if this value contains a boolean */
-    bool isBool() const;
+    auto is_bool() const -> bool;
 
     /** @brief Check if this value contains a list of other values */
-    bool isList() const;
+    auto is_list() const -> bool;
 
     /** @brief Check if this value contains a structured object */
-    bool isStruct() const;
+    auto is_struct() const -> bool;
 
     // Unsafe value extraction methods - these throw std::runtime_error if type doesn't match
     // Use these when you're certain of the type or want to fail fast on type mismatches
 
     /** @brief Extract int64 value - throws if not an int64 */
-    int64_t asInt64() const;
+    auto as_int64() const -> int64_t;
 
     /** @brief Extract float64 value - throws if not a float64 */
-    double asFloat64() const;
+    auto as_float64() const -> double;
 
     /** @brief Extract text value - throws if not text */
-    std::string asText() const;
+    std::string as_text() const;
 
     /** @brief Extract bool value - throws if not a bool */
-    bool asBool() const;
+    auto as_bool() const -> bool;
 
     /** @brief Extract list value - throws if not a list */
-    std::vector<Value> asList() const;
+    std::vector<Value> as_list() const;
 
     /** @brief Extract struct value - throws if not a struct */
-    std::unordered_map<std::string, Value> asStruct() const;
+    std::unordered_map<std::string, Value> as_struct() const;
 
     // Safe value extraction methods - these return std::nullopt if type doesn't match
     // Use these when you want to handle type mismatches gracefully
 
     /** @brief Safely extract int64 value - returns nullopt if wrong type */
-    std::optional<int64_t> tryAsInt64() const;
+    std::optional<int64_t> try_as_int64() const;
 
     /** @brief Safely extract float64 value - returns nullopt if wrong type */
-    std::optional<double> tryAsFloat64() const;
+    std::optional<double> try_as_float64() const;
 
     /** @brief Safely extract text value - returns nullopt if wrong type */
-    std::optional<std::string> tryAsText() const;
+    std::optional<std::string> try_as_text() const;
 
     /** @brief Safely extract bool value - returns nullopt if wrong type */
-    std::optional<bool> tryAsBool() const;
+    std::optional<bool> try_as_bool() const;
 
     /** @brief Safely extract list value - returns nullopt if wrong type */
     std::optional<std::vector<Value>> tryAsList() const;
@@ -152,7 +151,7 @@ class Value {
      * @brief Generate human-readable string representation for debugging
      * @return String representation that shows both type and value
      */
-    std::string toString() const;
+    std::string to_string() const;
 
     // Cap'n Proto interoperability methods
 
@@ -172,7 +171,7 @@ class Value {
      * This method allows seamless conversion from our C++ wrapper
      * back to Cap'n Proto's native format for serialization.
      */
-    void writeTo(schemas::Value::Builder builder) const;
+    void write_to(schemas::Value::Builder builder) const;
 
   private:
     /**
@@ -181,7 +180,7 @@ class Value {
      * This enum tracks which type of value is currently stored in the Value object.
      * It's used internally for type checking and safe casting operations.
      */
-    enum class Type { Int64, Float64, Text, Bool, List, Struct };
+    enum class Type { INT64, FLOAT64, TEXT, BOOL, LIST, STRUCT };
 
     /** @brief Current type of the stored value */
     Type type_;
@@ -193,15 +192,16 @@ class Value {
      * This saves memory compared to storing all possible values separately.
      */
     union {
-        int64_t int64_value_;   ///< Storage for 64-bit integers
-        double float64_value_;  ///< Storage for 64-bit floats
-        bool bool_value_;       ///< Storage for boolean values
+        int64_t int64_value_{};  ///< Storage for 64-bit integers
+        double float64_value_;   ///< Storage for 64-bit floats
+        bool bool_value_;        ///< Storage for boolean values
     };
 
     // Complex types are stored separately since they can't be in unions
-    std::string text_value_;                               ///< Storage for text/string values
-    std::vector<Value> list_value_;                        ///< Storage for list values
-    std::unordered_map<std::string, Value> struct_value_;  ///< Storage for structured object values
+    std::string text_value_{};                               ///< Storage for text/string values
+    std::vector<Value> list_value_{};                        ///< Storage for list values
+    std::unordered_map<std::string, Value> struct_value_{};  ///< Storage for structured object
+                                                             ///< values
 
     /**
      * @brief Private constructor for internal use
@@ -210,7 +210,7 @@ class Value {
      * This constructor is used internally by the factory methods to create
      * appropriately typed Value objects.
      */
-    Value(Type type) : type_(type) {}
+    explicit Value(Type type) : type_(type) {}
 };
 
 /**
@@ -246,26 +246,26 @@ class Fact {
     // Accessor methods - all const to ensure facts are immutable after creation
 
     /** @brief Get the unique ID of this fact */
-    uint64_t getId() const { return id_; }
+    auto get_id() const -> uint64_t { return id_; }
 
     /** @brief Get the predicate name */
-    const std::string& getPredicate() const { return predicate_; }
+    auto get_predicate() const -> const std::string& { return predicate_; }
 
     /** @brief Get the arguments list */
-    const std::vector<Value>& getArgs() const { return args_; }
+    auto get_args() const -> const std::vector<Value>& { return args_; }
 
     /** @brief Get the confidence level (0.0 to 1.0) */
-    double getConfidence() const { return confidence_; }
+    auto get_confidence() const -> double { return confidence_; }
 
     /** @brief Get the timestamp when this fact was created */
-    uint64_t getTimestamp() const { return timestamp_; }
+    auto get_timestamp() const -> uint64_t { return timestamp_; }
 
     /** @brief Get all metadata as a key-value map */
-    const std::unordered_map<std::string, Value>& getMetadata() const { return metadata_; }
+    auto get_metadata() const -> const std::unordered_map<std::string, Value>& { return metadata_; }
 
     /** @brief Get the schema version this fact was created with (returns empty string if not set)
      */
-    std::string getSchemaVersionString() const { return schemaVersionString_; }
+    std::string get_schema_version_string() const { return schema_version_string_; }
 
     // Metadata management methods
 
@@ -277,14 +277,14 @@ class Fact {
      * Metadata can store additional information about facts, such as source,
      * creation context, or other properties not part of the core fact structure.
      */
-    void setMetadata(const std::string& key, const Value& value);
+    void set_metadata(const std::string& key, const Value& value);
 
     /**
      * @brief Get a specific metadata value by key
      * @param key Metadata key to look up
      * @return The metadata value if found, nullopt otherwise
      */
-    std::optional<Value> getMetadata(const std::string& key) const;
+    std::optional<Value> get_metadata(const std::string& key) const;
 
     /**
      * @brief Generate human-readable string representation
@@ -292,7 +292,7 @@ class Fact {
      *
      * This is primarily used for debugging and logging purposes.
      */
-    std::string toString() const;
+    std::string to_string() const;
 
     // Cap'n Proto interoperability methods
 
@@ -306,7 +306,7 @@ class Fact {
      * @brief Write this Fact to a Cap'n Proto builder
      * @param builder Cap'n Proto Fact builder to serialize to
      */
-    void writeTo(schemas::Fact::Builder builder) const;
+    void write_to(schemas::Fact::Builder builder) const;
 
   private:
     uint64_t id_;                                      ///< Unique identifier for this fact
@@ -315,7 +315,7 @@ class Fact {
     double confidence_;                                ///< Confidence level (0.0 to 1.0)
     uint64_t timestamp_;                               ///< Creation timestamp in milliseconds
     std::unordered_map<std::string, Value> metadata_;  ///< Additional metadata key-value pairs
-    std::string schemaVersionString_;  ///< Schema version this fact was created with (as string)
+    std::string schema_version_string_;  ///< Schema version this fact was created with (as string)
 };
 
 /**
@@ -343,12 +343,12 @@ class Rule {
      * used to bind values across multiple conditions and conclusions.
      */
     struct Condition {
-        std::string predicate;    ///< Predicate to match (e.g., "isHuman")
-        std::vector<Value> args;  ///< Arguments with variables and constants
-        bool negated = false;     ///< Whether this is a NOT condition
+        std::string predicate_{};    ///< Predicate to match (e.g., "isHuman")
+        std::vector<Value> args_{};  ///< Arguments with variables and constants
+        bool negated_ = false;       ///< Whether this is a NOT condition
 
         /** @brief Generate string representation of this condition */
-        std::string toString() const;
+        std::string to_string() const;
     };
 
     /**
@@ -359,12 +359,12 @@ class Rule {
      * They can reference variables bound in the conditions.
      */
     struct Conclusion {
-        std::string predicate;    ///< Predicate to assert (e.g., "isMortal")
-        std::vector<Value> args;  ///< Arguments (may contain variables from conditions)
-        double confidence = 1.0;  ///< Confidence for this conclusion
+        std::string predicate_{};    ///< Predicate to assert (e.g., "isMortal")
+        std::vector<Value> args_{};  ///< Arguments (may contain variables from conditions)
+        double confidence_ = 1.0;    ///< Confidence for this conclusion
 
         /** @brief Generate string representation of this conclusion */
-        std::string toString() const;
+        std::string to_string() const;
     };
 
     /**
@@ -386,32 +386,32 @@ class Rule {
     // Accessor methods - all const to ensure rules are immutable after creation
 
     /** @brief Get the unique ID of this rule */
-    uint64_t getId() const { return id_; }
+    auto get_id() const -> uint64_t { return id_; }
 
     /** @brief Get the human-readable name */
-    const std::string& getName() const { return name_; }
+    auto get_name() const -> const std::string& { return name_; }
 
     /** @brief Get all conditions that must be satisfied */
-    const std::vector<Condition>& getConditions() const { return conditions_; }
+    auto get_conditions() const -> const std::vector<Condition>& { return conditions_; }
 
     /** @brief Get all conclusions that will be asserted */
-    const std::vector<Conclusion>& getConclusions() const { return conclusions_; }
+    auto get_conclusions() const -> const std::vector<Conclusion>& { return conclusions_; }
 
     /** @brief Get the priority level for conflict resolution */
-    int32_t getPriority() const { return priority_; }
+    auto get_priority() const -> int32_t { return priority_; }
 
     /** @brief Get the overall confidence level */
-    double getConfidence() const { return confidence_; }
+    auto get_confidence() const -> double { return confidence_; }
 
     /** @brief Get the schema version this rule was created with (returns empty string if not set)
      */
-    std::string getSchemaVersionString() const { return schemaVersionString_; }
+    std::string get_schema_version_string() const { return schemaVersionString_; }
 
     /**
      * @brief Generate human-readable string representation
      * @return String in the format "name: IF condition1 AND condition2 THEN conclusion1"
      */
-    std::string toString() const;
+    std::string to_string() const;
 
     // Cap'n Proto interoperability methods
 
@@ -419,7 +419,7 @@ class Rule {
     explicit Rule(schemas::Rule::Reader reader);
 
     /** @brief Write this Rule to a Cap'n Proto builder */
-    void writeTo(schemas::Rule::Builder builder) const;
+    void write_to(schemas::Rule::Builder builder) const;
 
   private:
     uint64_t id_;                                      ///< Unique identifier for this rule
@@ -429,7 +429,7 @@ class Rule {
     int32_t priority_;                                 ///< Priority for conflict resolution
     double confidence_;                                ///< Overall confidence level
     std::unordered_map<std::string, Value> metadata_;  ///< Additional metadata (currently unused)
-    std::string schemaVersionString_;  ///< Schema version this rule was created with (as string)
+    std::string schema_version_string_;  ///< Schema version this rule was created with (as string)
 };
 
 /**
@@ -453,10 +453,10 @@ class Query {
      * @brief Enumeration of different query types supported by the inference engine
      */
     enum class Type {
-        FindAll,    ///< Find all facts that match the goal
-        Prove,      ///< Check if goal can be proven (true/false)
-        FindFirst,  ///< Find first N solutions
-        Explain     ///< Explain how a goal can be proven
+        FIND_ALL,    ///< Find all facts that match the goal
+        PROVE,       ///< Check if goal can be proven (true/false)
+        FIND_FIRST,  ///< Find first N solutions
+        EXPLAIN      ///< Explain how a goal can be proven
     };
 
     /**
@@ -470,31 +470,31 @@ class Query {
     Query(uint64_t id,
           Type type,
           const Rule::Condition& goal,
-          uint32_t maxResults = 100,
-          uint32_t timeoutMs = 5000);
+          uint32_t max_results = 100,
+          uint32_t timeout_ms = 5000);
 
     // Accessor methods - all const since queries are immutable after creation
 
     /** @brief Get the unique ID of this query */
-    uint64_t getId() const { return id_; }
+    auto get_id() const -> uint64_t { return id_; }
 
     /** @brief Get the type of query */
-    Type getType() const { return type_; }
+    auto get_type() const -> Type { return type_; }
 
     /** @brief Get the goal pattern to search for */
-    const Rule::Condition& getGoal() const { return goal_; }
+    auto get_goal() const -> const Rule::Condition& { return goal_; }
 
     /** @brief Get the maximum number of results to return */
-    uint32_t getMaxResults() const { return maxResults_; }
+    auto get_max_results() const -> uint32_t { return max_results_; }
 
     /** @brief Get the timeout in milliseconds */
-    uint32_t getTimeoutMs() const { return timeoutMs_; }
+    auto get_timeout_ms() const -> uint32_t { return timeout_ms_; }
 
     /**
      * @brief Generate human-readable string representation
      * @return String in the format "Query[id]: TYPE goal_pattern"
      */
-    std::string toString() const;
+    std::string to_string() const;
 
     // Cap'n Proto interoperability methods
 
@@ -502,14 +502,14 @@ class Query {
     explicit Query(schemas::Query::Reader reader);
 
     /** @brief Write this Query to a Cap'n Proto builder */
-    void writeTo(schemas::Query::Builder builder) const;
+    void write_to(schemas::Query::Builder builder) const;
 
   private:
     uint64_t id_;                                      ///< Unique identifier for this query
     Type type_;                                        ///< Type of query to perform
     Rule::Condition goal_;                             ///< Goal pattern to search for
-    uint32_t maxResults_;                              ///< Maximum number of results
-    uint32_t timeoutMs_;                               ///< Timeout in milliseconds
+    uint32_t max_results_;                             ///< Maximum number of results
+    uint32_t timeout_ms_;                              ///< Timeout in milliseconds
     std::unordered_map<std::string, Value> metadata_;  ///< Additional metadata (currently unused)
 };
 
@@ -544,32 +544,32 @@ class Serializer {
      * @param data Binary data produced by serialize(Fact)
      * @return Fact object if successful, nullopt if data is invalid/corrupted
      */
-    static std::optional<Fact> deserializeFact(const std::vector<uint8_t>& data);
+    static std::optional<Fact> deserialize_fact(const std::vector<uint8_t>& data);
 
     /**
      * @brief Deserialize a Rule from binary Cap'n Proto data
      * @param data Binary data produced by serialize(Rule)
      * @return Rule object if successful, nullopt if data is invalid/corrupted
      */
-    static std::optional<Rule> deserializeRule(const std::vector<uint8_t>& data);
+    static std::optional<Rule> deserialize_rule(const std::vector<uint8_t>& data);
 
     /**
      * @brief Deserialize a Query from binary Cap'n Proto data
      * @param data Binary data produced by serialize(Query)
      * @return Query object if successful, nullopt if data is invalid/corrupted
      */
-    static std::optional<Query> deserializeQuery(const std::vector<uint8_t>& data);
+    static std::optional<Query> deserialize_query(const std::vector<uint8_t>& data);
 
     // JSON-like text serialization methods - for debugging and human-readable output
 
     /** @brief Convert a Fact to JSON-like string representation */
-    static std::string toJson(const Fact& fact);
+    static std::string to_json(const Fact& fact);
 
     /** @brief Convert a Rule to JSON-like string representation */
-    static std::string toJson(const Rule& rule);
+    static std::string to_json(const Rule& rule);
 
     /** @brief Convert a Query to JSON-like string representation */
-    static std::string toJson(const Query& query);
+    static std::string to_json(const Query& query);
 };
 
 /**
@@ -587,14 +587,14 @@ class VersionedSerializer {
      * @param fact Fact to serialize
      * @return Binary data with embedded schema version information
      */
-    static std::vector<uint8_t> serializeWithVersion(const Fact& fact);
+    static std::vector<uint8_t> serialize_with_version(const Fact& fact);
 
     /**
      * @brief Serialize data with current schema version metadata
      * @param rule Rule to serialize
      * @return Binary data with embedded schema version information
      */
-    static std::vector<uint8_t> serializeWithVersion(const Rule& rule);
+    static std::vector<uint8_t> serialize_with_version(const Rule& rule);
 
     /**
      * @brief Serialize a complete knowledge base with schema evolution metadata
@@ -603,7 +603,7 @@ class VersionedSerializer {
      * @param metadata Additional metadata
      * @return Binary data with complete versioning information
      */
-    static std::vector<uint8_t> serializeKnowledgeBase(
+    static std::vector<uint8_t> serialize_knowledge_base(
         const std::vector<Fact>& facts,
         const std::vector<Rule>& rules,
         const std::unordered_map<std::string, Value>& metadata = {});
@@ -613,14 +613,14 @@ class VersionedSerializer {
      * @param data Binary data that may be from an older schema version
      * @return Fact migrated to current schema version, or nullopt if failed
      */
-    static std::optional<Fact> deserializeFactWithMigration(const std::vector<uint8_t>& data);
+    static std::optional<Fact> deserialize_fact_with_migration(const std::vector<uint8_t>& data);
 
     /**
      * @brief Deserialize with automatic migration support
      * @param data Binary data that may be from an older schema version
      * @return Rule migrated to current schema version, or nullopt if failed
      */
-    static std::optional<Rule> deserializeRuleWithMigration(const std::vector<uint8_t>& data);
+    static std::optional<Rule> deserialize_rule_with_migration(const std::vector<uint8_t>& data);
 
     /**
      * @brief Deserialize a complete knowledge base with migration
@@ -636,14 +636,14 @@ class VersionedSerializer {
      * @param data Binary data to check
      * @return Schema version string of the data, or empty string if unreadable
      */
-    static std::string detectSchemaVersionString(const std::vector<uint8_t>& data);
+    static std::string detect_schema_version_string(const std::vector<uint8_t>& data);
 
     /**
      * @brief Validate data integrity including schema version compatibility
      * @param data Binary data to validate
      * @return Vector of validation errors (empty if valid)
      */
-    static std::vector<std::string> validateData(const std::vector<uint8_t>& data);
+    static std::vector<std::string> validate_data(const std::vector<uint8_t>& data);
 };
 
 }  // namespace inference_lab::common

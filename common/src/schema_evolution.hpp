@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -30,7 +31,6 @@
 
 // Include generated Cap'n Proto headers
 #include <capnp/message.h>
-#include <capnp/serialize.h>
 
 #include "inference_types.hpp"
 #include "schemas/inference_types.capnp.h"
@@ -53,21 +53,21 @@ class SchemaVersion {
     SchemaVersion(uint32_t major,
                   uint32_t minor,
                   uint32_t patch,
-                  const std::string& schemaHash = "");
+                  const std::string& schema_hash = "");
 
     /**
      * @brief Parse version from string format (e.g., "1.2.3")
      * @param versionString String in format "major.minor.patch"
      * @return SchemaVersion object if parsing succeeds, nullopt otherwise
      */
-    static std::optional<SchemaVersion> fromString(const std::string& versionString);
+    static std::optional<SchemaVersion> from_string(const std::string& version_string);
 
     // Accessor methods
-    uint32_t getMajor() const { return major_; }
-    uint32_t getMinor() const { return minor_; }
-    uint32_t getPatch() const { return patch_; }
-    std::string getVersionString() const;
-    const std::string& getSchemaHash() const { return schemaHash_; }
+    auto get_major() const -> uint32_t { return major_; }
+    auto get_minor() const -> uint32_t { return minor_; }
+    auto get_patch() const -> uint32_t { return patch_; }
+    std::string get_version_string() const;
+    auto get_schema_hash() const -> const std::string& { return schema_hash_; }
 
     // Compatibility checking methods
 
@@ -76,45 +76,45 @@ class SchemaVersion {
      * @param other Version to check compatibility with
      * @return true if versions are compatible (can read each other's data)
      */
-    bool isCompatibleWith(const SchemaVersion& other) const;
+    auto is_compatible_with(const SchemaVersion& other) const -> bool;
 
     /**
      * @brief Check if this version can read data from an older version
      * @param older Older version to check forward compatibility with
      * @return true if this version can read older version's data
      */
-    bool isForwardCompatibleWith(const SchemaVersion& older) const;
+    auto is_forward_compatible_with(const SchemaVersion& older) const -> bool;
 
     /**
      * @brief Check if this version's data can be read by a newer version
      * @param newer Newer version to check backward compatibility with
      * @return true if newer version can read this version's data
      */
-    bool isBackwardCompatibleWith(const SchemaVersion& newer) const;
+    auto is_backward_compatible_with(const SchemaVersion& newer) const -> bool;
 
     // Comparison operators for sorting and ordering
-    bool operator==(const SchemaVersion& other) const;
-    bool operator!=(const SchemaVersion& other) const;
-    bool operator<(const SchemaVersion& other) const;
-    bool operator<=(const SchemaVersion& other) const;
-    bool operator>(const SchemaVersion& other) const;
-    bool operator>=(const SchemaVersion& other) const;
+    auto operator==(const SchemaVersion& other) const -> bool;
+    auto operator!=(const SchemaVersion& other) const -> bool;
+    auto operator<(const SchemaVersion& other) const -> bool;
+    auto operator<=(const SchemaVersion& other) const -> bool;
+    auto operator>(const SchemaVersion& other) const -> bool;
+    auto operator>=(const SchemaVersion& other) const -> bool;
 
     /**
      * @brief Generate string representation for debugging
      * @return String in format "major.minor.patch [hash]"
      */
-    std::string toString() const;
+    std::string to_string() const;
 
     // Cap'n Proto interoperability
     explicit SchemaVersion(schemas::SchemaVersion::Reader reader);
-    void writeTo(schemas::SchemaVersion::Builder builder) const;
+    void write_to(schemas::SchemaVersion::Builder builder) const;
 
   private:
     uint32_t major_;
     uint32_t minor_;
     uint32_t patch_;
-    std::string schemaHash_;
+    std::string schema_hash_;
 };
 
 /**
@@ -128,11 +128,11 @@ class MigrationPath {
      * @brief Migration strategies for different types of schema changes
      */
     enum class Strategy {
-        DirectMapping,   ///< Direct field mapping (no data loss)
-        Transformation,  ///< Field transformation required
-        DefaultValues,   ///< Default values for new fields
-        CustomLogic,     ///< Custom migration logic required
-        Lossy            ///< Data may be lost in migration
+        DIRECT_MAPPING,  ///< Direct field mapping (no data loss)
+        TRANSFORMATION,  ///< Field transformation required
+        DEFAULT_VALUES,  ///< Default values for new fields
+        CUSTOM_LOGIC,    ///< Custom migration logic required
+        LOSSY            ///< Data may be lost in migration
     };
 
     /**
@@ -143,25 +143,25 @@ class MigrationPath {
      * @param reversible Whether this migration can be reversed
      * @param description Human-readable description of the migration
      */
-    MigrationPath(const SchemaVersion& fromVersion,
-                  const SchemaVersion& toVersion,
+    MigrationPath(const SchemaVersion& from_version,
+                  const SchemaVersion& to_version,
                   Strategy strategy,
                   bool reversible = false,
                   const std::string& description = "");
 
     // Accessor methods
-    const SchemaVersion& getFromVersion() const { return fromVersion_; }
-    const SchemaVersion& getToVersion() const { return toVersion_; }
-    Strategy getStrategy() const { return strategy_; }
-    bool isReversible() const { return reversible_; }
-    const std::string& getDescription() const { return description_; }
-    const std::vector<std::string>& getWarnings() const { return warnings_; }
+    auto get_from_version() const -> const SchemaVersion& { return from_version_; }
+    auto get_to_version() const -> const SchemaVersion& { return to_version_; }
+    auto get_strategy() const -> Strategy { return strategy_; }
+    auto is_reversible() const -> bool { return reversible_; }
+    auto get_description() const -> const std::string& { return description_; }
+    auto get_warnings() const -> const std::vector<std::string>& { return warnings_; }
 
     /**
      * @brief Add a warning about this migration
      * @param warning Warning message to add
      */
-    void addWarning(const std::string& warning);
+    void add_warning(const std::string& warning);
 
     /**
      * @brief Check if this migration path can handle the version transition
@@ -169,20 +169,20 @@ class MigrationPath {
      * @param to Target version
      * @return true if this path can migrate from 'from' to 'to'
      */
-    bool canMigrate(const SchemaVersion& from, const SchemaVersion& to) const;
+    auto can_migrate(const SchemaVersion& from, const SchemaVersion& to) const -> bool;
 
     /**
      * @brief Generate string representation for debugging
      */
-    std::string toString() const;
+    std::string to_string() const;
 
     // Cap'n Proto interoperability
     explicit MigrationPath(schemas::MigrationPath::Reader reader);
-    void writeTo(schemas::MigrationPath::Builder builder) const;
+    void write_to(schemas::MigrationPath::Builder builder) const;
 
   private:
-    SchemaVersion fromVersion_;
-    SchemaVersion toVersion_;
+    SchemaVersion from_version_;
+    SchemaVersion to_version_;
     Strategy strategy_;
     bool reversible_;
     std::string description_;
@@ -199,47 +199,48 @@ class SchemaEvolutionManager {
      * @brief Construct a new SchemaEvolutionManager
      * @param currentVersion Current schema version being used
      */
-    explicit SchemaEvolutionManager(const SchemaVersion& currentVersion);
+    explicit SchemaEvolutionManager(const SchemaVersion& current_version);
 
     /**
      * @brief Register a migration path between two schema versions
      * @param path Migration path to register
      */
-    void registerMigrationPath(const MigrationPath& path);
+    void register_migration_path(const MigrationPath& path);
 
     /**
      * @brief Check if data with a given schema version can be read
      * @param dataVersion Version of the data to check
      * @return true if data can be read (possibly with migration)
      */
-    bool canReadVersion(const SchemaVersion& dataVersion) const;
+    auto can_read_version(const SchemaVersion& data_version) const -> bool;
 
     /**
      * @brief Find the migration path needed to read data from a specific version
      * @param fromVersion Version of the data to migrate from
      * @return Migration path if available, nullopt if no path exists
      */
-    std::optional<MigrationPath> findMigrationPath(const SchemaVersion& fromVersion) const;
+    std::optional<MigrationPath> find_migration_path(const SchemaVersion& from_version) const;
 
     /**
      * @brief Get all supported versions that can be read by this manager
      * @return Vector of all supported schema versions
      */
-    std::vector<SchemaVersion> getSupportedVersions() const;
+    std::vector<SchemaVersion> get_supported_versions() const;
 
     /**
      * @brief Validate that a schema evolution is safe and follows best practices
      * @param evolution Schema evolution metadata to validate
      * @return Vector of validation errors (empty if valid)
      */
-    std::vector<std::string> validateEvolution(
+    std::vector<std::string> validate_evolution(
         const schemas::SchemaEvolution::Reader& evolution) const;
 
     /**
      * @brief Create schema evolution metadata for the current state
      * @return SchemaEvolution structure with current version and migration paths
      */
-    schemas::SchemaEvolution::Builder createEvolutionMetadata(capnp::MessageBuilder& message) const;
+    auto create_evolution_metadata(capnp::MessageBuilder& message) const
+        -> schemas::SchemaEvolution::Builder;
 
     // Migration execution methods
 
@@ -249,7 +250,7 @@ class SchemaEvolutionManager {
      * @param sourceVersion Version the fact was created with
      * @return Migrated fact if successful, nullopt if migration failed
      */
-    std::optional<Fact> migrateFact(const Fact& fact, const SchemaVersion& sourceVersion) const;
+    std::optional<Fact> migrate_fact(const Fact& fact, const SchemaVersion& source_version) const;
 
     /**
      * @brief Migrate a Rule from an older schema version to the current version
@@ -257,36 +258,36 @@ class SchemaEvolutionManager {
      * @param sourceVersion Version the rule was created with
      * @return Migrated rule if successful, nullopt if migration failed
      */
-    std::optional<Rule> migrateRule(const Rule& rule, const SchemaVersion& sourceVersion) const;
+    std::optional<Rule> migrate_rule(const Rule& rule, const SchemaVersion& source_version) const;
 
     /**
      * @brief Generate a compatibility matrix showing relationships between versions
      * @return String representation of the compatibility matrix
      */
-    std::string generateCompatibilityMatrix() const;
+    std::string generate_compatibility_matrix() const;
 
     // Current version info
-    const SchemaVersion& getCurrentVersion() const { return currentVersion_; }
+    auto get_current_version() const -> const SchemaVersion& { return current_version_; }
 
   private:
-    SchemaVersion currentVersion_;
-    std::vector<MigrationPath> migrationPaths_;
-    std::unordered_map<std::string, size_t> pathIndex_;  // version_string -> index in
-                                                         // migrationPaths_
+    SchemaVersion current_version_;
+    std::vector<MigrationPath> migration_paths_;
+    std::unordered_map<std::string, size_t> path_index_;  // version_string -> index in
+                                                          // migrationPaths_
 
     /**
      * @brief Apply default values migration strategy
      * @param sourceVersion Source schema version
      * @return true if migration succeeded
      */
-    bool applyDefaultValuesMigration(const SchemaVersion& sourceVersion) const;
+    auto apply_default_values_migration(const SchemaVersion& source_version) const -> bool;
 
     /**
      * @brief Apply field transformation migration strategy
      * @param sourceVersion Source schema version
      * @return true if migration succeeded
      */
-    bool applyTransformationMigration(const SchemaVersion& sourceVersion) const;
+    auto apply_transformation_migration(const SchemaVersion& source_version) const -> bool;
 };
 
 /**
@@ -300,14 +301,14 @@ class VersionValidator {
      * @param version Version to validate
      * @return Vector of validation errors (empty if valid)
      */
-    static std::vector<std::string> validateVersion(const SchemaVersion& version);
+    static std::vector<std::string> validate_version(const SchemaVersion& version);
 
     /**
      * @brief Validate that a migration path follows evolution best practices
      * @param path Migration path to validate
      * @return Vector of validation errors (empty if valid)
      */
-    static std::vector<std::string> validateMigrationPath(const MigrationPath& path);
+    static std::vector<std::string> validate_migration_path(const MigrationPath& path);
 
     /**
      * @brief Check if a version transition is safe according to semantic versioning rules
@@ -315,7 +316,7 @@ class VersionValidator {
      * @param to Target version
      * @return true if transition is safe, false otherwise
      */
-    static bool isSafeTransition(const SchemaVersion& from, const SchemaVersion& to);
+    static auto is_safe_transition(const SchemaVersion& from, const SchemaVersion& to) -> bool;
 
     /**
      * @brief Generate warnings for potentially risky schema changes
@@ -323,8 +324,8 @@ class VersionValidator {
      * @param to Target version
      * @return Vector of warning messages
      */
-    static std::vector<std::string> generateWarnings(const SchemaVersion& from,
-                                                     const SchemaVersion& to);
+    static std::vector<std::string> generate_warnings(const SchemaVersion& from,
+                                                      const SchemaVersion& to);
 };
 
 /**
@@ -336,44 +337,44 @@ class SchemaRegistry {
     /**
      * @brief Get the singleton instance of the schema registry
      */
-    static SchemaRegistry& getInstance();
+    static auto get_instance() -> SchemaRegistry&;
 
     /**
      * @brief Register a schema version with its definition hash
      * @param version Schema version to register
      * @param schemaHash Hash of the schema definition
      */
-    void registerSchema(const SchemaVersion& version, const std::string& schemaHash);
+    void register_schema(const SchemaVersion& version, const std::string& schema_hash);
 
     /**
      * @brief Get the current active schema version
      */
-    const SchemaVersion& getCurrentSchema() const;
+    auto get_current_schema() const -> const SchemaVersion&;
 
     /**
      * @brief Set the current active schema version
      * @param version Version to set as current
      */
-    void setCurrentSchema(const SchemaVersion& version);
+    void set_current_schema(const SchemaVersion& version);
 
     /**
      * @brief Check if a schema version is registered
      * @param version Version to check
      * @return true if version is registered
      */
-    bool isRegistered(const SchemaVersion& version) const;
+    auto is_registered(const SchemaVersion& version) const -> bool;
 
     /**
      * @brief Get all registered schema versions
      * @return Vector of all registered versions, sorted by version number
      */
-    std::vector<SchemaVersion> getAllVersions() const;
+    std::vector<SchemaVersion> get_all_versions() const;
 
   private:
     SchemaRegistry() = default;
 
-    std::vector<SchemaVersion> registeredVersions_;
-    SchemaVersion currentVersion_{1, 0, 0};  // Default to 1.0.0
+    std::vector<SchemaVersion> registered_versions_{};
+    SchemaVersion current_version_{1, 0, 0};  // Default to 1.0.0
 };
 
 // Convenience constants for the current schema version
@@ -385,7 +386,7 @@ constexpr uint32_t CURRENT_SCHEMA_PATCH = 0;
  * @brief Get the current schema version as a constant
  * @return SchemaVersion representing the current version (1.0.0)
  */
-inline SchemaVersion getCurrentSchemaVersion() {
+inline auto get_current_schema_version() -> SchemaVersion {
     return SchemaVersion(CURRENT_SCHEMA_MAJOR, CURRENT_SCHEMA_MINOR, CURRENT_SCHEMA_PATCH);
 }
 

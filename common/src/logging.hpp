@@ -19,8 +19,7 @@
 #include <string>
 #include <thread>
 
-namespace inference_lab {
-namespace common {
+namespace inference_lab::common {
 
 enum class LogLevel { DEBUG = 0, INFO = 1, NORMAL = 2, WARNING = 3, ERROR = 4, CRITICAL = 5 };
 
@@ -31,7 +30,7 @@ class Logger {
     inline static std::mutex m_instance_mutex;  // mutex for thread-safe initialization
 
     // helper method to handle the common logging logic
-    void write_log_message(const LogLevel level, const std::string& message);
+    void write_log_message(LogLevel LEVEL, const std::string& message);
 
     // helper to build the log prefix
     static std::stringstream create_log_prefix(LogLevel level);
@@ -47,93 +46,90 @@ class Logger {
         ~StderrSuppressionGuard();
 
       private:
-        bool m_was_enabled;
+        bool m_was_enabled_;
     };
 
     // private method to get or create the instance
-    static std::shared_ptr<Logger> getOrCreateInstance(const std::string& path = "../custom.log",
-                                                       bool append = true);
+    static std::shared_ptr<Logger> get_or_create_instance(const std::string& path = "../custom.log",
+                                                          bool append = true);
 
     // returns a reference for backward compatibility but uses shared_ptr internally
-    static Logger& getInstance();
+    static auto get_instance() -> Logger&;
 
     // custom path version of getinstance
-    static Logger& getInstance(const std::string& custom_path, bool append = true);
+    static auto get_instance(const std::string& custom_path, bool append = true) -> Logger&;
 
     // new method for code that explicitly wants to manage the shared_ptr
-    static std::shared_ptr<Logger> getInstancePtr();
+    static std::shared_ptr<Logger> get_instance_ptr();
 
     // with custom path for the shared_ptr version
-    static std::shared_ptr<Logger> getInstancePtr(const std::string& custom_path,
-                                                  bool append = true);
+    static std::shared_ptr<Logger> get_instance_ptr(const std::string& custom_path,
+                                                    bool append = true);
 
     // destructor
     ~Logger();
 
     // Template-based logging methods for C++17 compatibility
     template <typename... FormatArgs>
-    void print_log(const LogLevel level, const std::string& format, FormatArgs&&... args) {
-        if (!is_level_enabled(level)) {
+    void print_log(const LogLevel LEVEL, const std::string& format, FormatArgs&&... args) {
+        if (!is_level_enabled(LEVEL)) {
             return;
         }
-        auto prefix = create_log_prefix(level);
+        auto prefix = create_log_prefix(LEVEL);
         auto formatted_message = format_message(format, std::forward<FormatArgs>(args)...);
         auto full_message = prefix.str() + formatted_message + "\n";
-        write_log_message(level, full_message);
+        write_log_message(LEVEL, full_message);
     }
 
     // Template-based logging with depth for C++17 compatibility
     template <typename... FormatArgs>
-    void print_log_with_depth(const LogLevel level,
-                              const int depth,
+    void print_log_with_depth(const LogLevel LEVEL,
+                              const int DEPTH,
                               const std::string& format,
                               FormatArgs&&... args) {
-        if (!is_level_enabled(level)) {
+        if (!is_level_enabled(LEVEL)) {
             return;
         }
-        auto prefix = create_log_prefix(level);
+        auto prefix = create_log_prefix(LEVEL);
         auto formatted_message = format_message(format, std::forward<FormatArgs>(args)...);
-        auto full_message = prefix.str() + getIndentation(depth) + formatted_message + "\n";
-        write_log_message(level, full_message);
+        auto full_message = prefix.str() + get_indentation(DEPTH) + formatted_message + "\n";
+        write_log_message(LEVEL, full_message);
     }
 
     // enable/disable specific log level
-    static void setLevelEnabled(LogLevel level, bool enabled);
+    static void set_level_enabled(LogLevel level, bool enabled);
 
     // check if a specific log level is enabled
-    static bool isLevelEnabled(LogLevel level);
+    static auto is_level_enabled(LogLevel level) -> bool;
 
     // disable stderr output
-    void disableStderr();
+    void disable_stderr();
 
     // enable stderr output
-    void enableStderr();
+    void enable_stderr();
 
     // get current stderr output state
-    bool isStderrEnabled() const;
+    auto is_stderr_enabled() const -> bool;
 
     // enable/disable file output
-    void setFileOutputEnabled(bool enabled);
+    void set_file_output_enabled(bool enabled);
 
     // check if file output is enabled
-    bool isFileOutputEnabled() const;
+    auto is_file_output_enabled() const -> bool;
 
   private:
-    std::ofstream m_log_file{};
-    std::mutex m_mutex{};
-    std::atomic<bool> m_stderr_enabled{true};
-    std::atomic<bool> m_file_output_enabled{true};
-    std::atomic<bool> m_enabled_levels[6]{true, true, true, true, true, true};  // one for each log
-                                                                                // level
-
-    // check if a level is enabled (internal helper)
-    static bool is_level_enabled(LogLevel level);
+    std::ofstream m_log_file_{};
+    std::mutex m_mutex_{};
+    std::atomic<bool> m_stderr_enabled_{true};
+    std::atomic<bool> m_file_output_enabled_{true};
+    std::atomic<bool> m_enabled_levels_[6]{true, true, true, true, true, true};  // one for each log
+                                                                                 // level
 
     // utility function for expression tree visualization
-    static std::string getIndentation(const int depth);
+    static std::string get_indentation(int DEPTH);
 
     // convert log level to string
-    static std::string log_level_to_string(const LogLevel level);
+    static std::string log_level_to_string(LogLevel LEVEL);
 
     // get current utc timestamp
     static std::string get_utc_timestamp();
@@ -176,7 +172,7 @@ class Logger {
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 
 #define LOG_BASE_PRINT(level, message, ...) \
-    Logger::getInstance().print_log(level, message, ##__VA_ARGS__)
+    Logger::get_instance().print_log(level, message, ##__VA_ARGS__)
 #define LOG_INFO_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::INFO, message, ##__VA_ARGS__)
 #define LOG_NORMAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::NORMAL, message, ##__VA_ARGS__)
 #define LOG_WARNING_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::WARNING, message, ##__VA_ARGS__)
@@ -186,5 +182,4 @@ class Logger {
 
 #pragma GCC diagnostic pop
 
-}  // namespace common
-}  // namespace inference_lab
+}  // namespace inference_lab::common
