@@ -129,6 +129,23 @@ docs/html/
 docs/latex/
 docs/xml/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+.tox/
+.venv/
+venv/
+env/
+ENV/
+
 # Jupyter notebooks (if any Python analysis)
 .ipynb_checkpoints/
 
