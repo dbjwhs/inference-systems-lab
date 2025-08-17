@@ -4,16 +4,3 @@
 #include <chrono>
 #include <optional>
 #include <string_view>
-
-namespace inference_lab {
-namespace common {
-
-// Placeholder utility interfaces
-// TODO: Design utility library with:
-// - std::string_view-based string processing
-// - High-resolution timing utilities
-// - Memory allocation helpers
-// - Configuration management with std::optional
-
-}  // namespace common
-}  // namespace inference_lab

@@ -10,7 +10,7 @@
 // #include "performance/memory_profiler.hpp"
 // #include "common/logging.hpp"
 
-int main() {
+auto main() -> int {
     std::cout << "Memory-Aware Inference Experiment - Placeholder Implementation\n";
     std::cout << "============================================================\n";
 

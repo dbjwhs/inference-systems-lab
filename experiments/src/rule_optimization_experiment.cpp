@@ -9,7 +9,7 @@
 // #include "performance/profiler.hpp"
 // #include "common/logging.hpp"
 
-int main() {
+auto main() -> int {
     std::cout << "Rule Optimization Experiment - Placeholder Implementation\n";
     std::cout << "=========================================================\n";
 
