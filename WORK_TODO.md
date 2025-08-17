@@ -24,7 +24,7 @@
 - [X] Set up clang-format configuration
 - [X] Set up clang-tidy configuration
 - [X] Create pre-commit hooks for code quality
-- [ ] Set up CI/CD pipeline (GitHub Actions or similar)
+- [-] Set up CI/CD pipeline (GitHub Actions or similar) (not needed yet)
 
 ## Phase 1: Common Module (Foundation)
 
