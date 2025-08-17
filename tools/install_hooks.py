@@ -133,6 +133,10 @@ check_tools() {{
         missing_tools+=("check_static_analysis.py")
     fi
     
+    if [[ ! -f "$TOOLS_DIR/check_eof_newline.py" ]]; then
+        missing_tools+=("check_eof_newline.py")
+    fi
+    
     if [[ ${{#missing_tools[@]}} -gt 0 ]]; then
         log_error "Missing required tools: ${{missing_tools[*]}}"
         log_error "Please ensure all development tools are available."
@@ -202,6 +206,38 @@ check_static_analysis() {{
         log_info "  python3 tools/check_static_analysis.py --check"
         log_info "To fix issues automatically, run:"
         log_info "  python3 tools/check_static_analysis.py --fix --backup"
+        log_info "To bypass this check (not recommended): git commit --no-verify"
+        rm -f "$temp_filter_file"
+        return 1
+    fi
+}}
+
+# Check EOF newlines on all staged files (not just C++)
+check_eof_newlines() {{
+    log_info "Checking end-of-file newlines on staged files..."
+    
+    # Get all staged files (not just C++)
+    local staged_files=($(git diff --cached --name-only --diff-filter=ACM))
+    
+    if [[ ${{#staged_files[@]}} -eq 0 ]]; then
+        log_info "No staged files to check for EOF newlines"
+        return 0
+    fi
+    
+    # Create temporary file list for filtering
+    local temp_filter_file=$(mktemp)
+    printf '%s\\n' "${{staged_files[@]}}" > "$temp_filter_file"
+    
+    # Check EOF newlines
+    if python3 "$TOOLS_DIR/check_eof_newline.py" --check --filter-from-file "$temp_filter_file" --quiet; then
+        log_success "EOF newline check passed"
+        rm -f "$temp_filter_file"
+        return 0
+    else
+        log_error "Found files missing EOF newlines"
+        log_info "To fix automatically, run:"
+        log_info "  python3 tools/check_eof_newline.py --fix --backup"
+        log_info "Then stage the changes and commit again."
         log_info "To bypass this check (not recommended): git commit --no-verify"
         rm -f "$temp_filter_file"
         return 1
@@ -287,6 +323,11 @@ main() {{
         fi
     else
         log_info "Skipping static analysis due to formatting issues"
+    fi
+    
+    # Run EOF newline check
+    if ! check_eof_newlines; then
+        overall_success=false
     fi
     
     # Run basic validation
@@ -399,7 +440,7 @@ main "$@"
         
         # Check if required tools exist
         tools_status = []
-        required_tools = ["check_format.py", "check_static_analysis.py"]
+        required_tools = ["check_format.py", "check_static_analysis.py", "check_eof_newline.py"]
         
         for tool in required_tools:
             tool_path = self.tools_dir / tool
