@@ -18,9 +18,9 @@
 - [-] Add CPack configuration for distribution (not needed yet)
 
 ### Development Tooling
-- [ ] Create `scripts/new_module.py` - Scaffold new components with tests
-- [ ] Create `scripts/run_benchmarks.py` - Performance regression detection
-- [ ] Create `scripts/check_coverage.py` - Test coverage verification
+- [ ] Create `tools/new_module.py` - Scaffold new components with tests
+- [ ] Create `tools/run_benchmarks.py` - Performance regression detection
+- [ ] Create `tools/check_coverage.py` - Test coverage verification
 - [ ] Set up clang-format configuration
 - [ ] Set up clang-tidy configuration
 - [ ] Create pre-commit hooks for code quality
