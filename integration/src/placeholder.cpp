@@ -1,13 +1,11 @@
 // Placeholder implementation for integration module
 // This file provides a minimal symbol to prevent empty library warnings
 
-namespace inference_lab {
-namespace integration {
+namespace inference_lab::integration {
 
 // Placeholder function to ensure library has symbols
-int placeholder_function() {
+static auto placeholder_function() -> int {
     return 0;
 }
 
-}  // namespace integration
-}  // namespace inference_lab
+}  // namespace inference_lab::integration

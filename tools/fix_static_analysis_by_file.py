@@ -183,7 +183,7 @@ class StaticAnalysisFileFixer:
         all_files.sort(key=lambda x: x[2])
         return all_files[0][0]
     
-    def fix_file(self, file_path: str, backup: bool = True):
+    def fix_file(self, file_path: str, backup: bool = True, test_build: bool = True):
         """Fix static analysis issues in a specific file."""
         rel_path = Path(file_path).relative_to(self.project_root)
         print(f"🔧 Fixing static analysis issues in: {rel_path}")
@@ -205,6 +205,20 @@ class StaticAnalysisFileFixer:
             if result.returncode == 0:
                 print("✅ Static analysis fixes applied successfully")
                 
+                # Test build if requested
+                if test_build:
+                    print("🔨 Testing build...")
+                    build_result = subprocess.run(['make'], cwd=self.project_root / 'build', 
+                                                 capture_output=True, text=True)
+                    
+                    if build_result.returncode == 0:
+                        print("✅ Build successful")
+                    else:
+                        print("❌ Build failed! You may need to fix compilation errors manually.")
+                        print("Build output:")
+                        print(build_result.stderr)
+                        return False
+                
                 # Show remaining issues
                 check_cmd = [
                     'python3', 'tools/check_static_analysis.py',
@@ -224,12 +238,16 @@ class StaticAnalysisFileFixer:
                             print(f"📊 {line}")
                             break
                 
+                return True
+                
             else:
                 print("❌ Error during static analysis fix:")
                 print(result.stderr)
+                return False
                 
         except Exception as e:
             print(f"❌ Error running static analysis fix: {e}")
+            return False
     
     def show_file_details(self, file_path: str):
         """Show detailed analysis of issues in a specific file."""
@@ -315,6 +333,8 @@ Examples:
     # Options
     parser.add_argument("--no-backup", action="store_true",
                        help="Don't create backup files when fixing")
+    parser.add_argument("--no-build", action="store_true",
+                       help="Don't test build after fixing files")
     
     args = parser.parse_args()
     
@@ -341,7 +361,7 @@ Examples:
         if not file_path.exists():
             print(f"❌ File not found: {args.fix_file}")
             sys.exit(1)
-        fixer.fix_file(str(file_path), backup=not args.no_backup)
+        fixer.fix_file(str(file_path), backup=not args.no_backup, test_build=not args.no_build)
     elif args.details:
         file_path = project_root / args.details
         if not file_path.exists():

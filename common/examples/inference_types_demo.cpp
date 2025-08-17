@@ -22,6 +22,7 @@
  * and demonstrates how the inference types would be used in a real system.
  */
 
+#include <cstdint>
 #include <iostream>
 
 #include "../src/inference_builders.hpp"
@@ -30,7 +31,7 @@
 using namespace inference_lab::common;
 using namespace inference_lab::common::builders;
 
-int main() {
+auto main() -> int {
     std::cout << "=== Inference Types C++ Interface Demo ===\n\n";
 
     //=========================================================================
@@ -183,10 +184,10 @@ int main() {
 
     std::cout << "6. Value Type Operations:\n";
 
-    Value int_val = Value::fromInt64(42);
+    Value const INT_VAL = Value::fromInt64(42);
     Value text_val = Value::fromText("hello");
 
-    std::cout << "   int_val.isInt64(): " << (int_val.isInt64() ? "true" : "false") << "\n";
+    std::cout << "   int_val.isInt64(): " << (INT_VAL.isInt64() ? "true" : "false") << "\n";
     std::cout << "   text_val.isText(): " << (text_val.isText() ? "true" : "false") << "\n";
 
     // Safe extraction

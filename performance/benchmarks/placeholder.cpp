@@ -4,10 +4,10 @@
 #include <benchmark/benchmark.h>
 
 // Simple placeholder benchmark
-static void BM_PerformancePlaceholder(benchmark::State& state) {
+static void bm_performance_placeholder(benchmark::State& state) {
     for (auto _ : state) {
         // Placeholder operation
         benchmark::DoNotOptimize(state.iterations());
     }
 }
-BENCHMARK(BM_PerformancePlaceholder);
+BENCHMARK(bm_performance_placeholder);

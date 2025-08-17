@@ -16,7 +16,7 @@
 
 using namespace inference_lab::common;
 
-void test_basic_logging() {
+static void test_basic_logging() {
     std::cout << "\n=== Testing Basic Logging ===\n";
 
     // Test all log levels
@@ -28,7 +28,7 @@ void test_basic_logging() {
     LOG_CRITICAL_PRINT("This is a critical message");
 }
 
-void test_level_control() {
+static void test_level_control() {
     std::cout << "\n=== Testing Level Control ===\n";
 
     auto& logger = Logger::getInstance();
@@ -51,12 +51,12 @@ void test_level_control() {
     LOG_INFO_PRINT("This info message should appear now");
 }
 
-void test_stderr_suppression() {
+static void test_stderr_suppression() {
     std::cout << "\n=== Testing Stderr Suppression ===\n";
 
     std::cout << "Testing stderr suppression guard:\n";
     {
-        Logger::StderrSuppressionGuard guard;
+        Logger::StderrSuppressionGuard const GUARD;
         LOG_ERROR_PRINT("This error should only go to stdout, not stderr");
         LOG_CRITICAL_PRINT("This critical should only go to stdout, not stderr");
     }
@@ -65,7 +65,7 @@ void test_stderr_suppression() {
     LOG_ERROR_PRINT("This error should go to stderr again");
 }
 
-void test_file_output_control() {
+static void test_file_output_control() {
     std::cout << "\n=== Testing File Output Control ===\n";
 
     auto& logger = Logger::getInstance();
@@ -81,7 +81,7 @@ void test_file_output_control() {
     LOG_NORMAL_PRINT("Console and file message");
 }
 
-void test_depth_logging() {
+static void test_depth_logging() {
     std::cout << "\n=== Testing Depth Logging ===\n";
 
     auto& logger = Logger::getInstance();
@@ -92,7 +92,7 @@ void test_depth_logging() {
     logger.print_log_with_depth(LogLevel::INFO, 3, "Depth 3 message");
 }
 
-void test_multithreaded_logging() {
+static void test_multithreaded_logging() {
     std::cout << "\n=== Testing Multithreaded Logging ===\n";
 
     std::vector<std::thread> threads;
@@ -113,17 +113,17 @@ void test_multithreaded_logging() {
     }
 }
 
-int main() {
+auto main() -> int {
     try {
         std::cout << "Starting logging system tests...\n";
 
         // Initialize logger with custom path and truncate mode for clean test start
-        const std::string log_file = "../test_custom.log";
+        const std::string LOG_FILE = "../test_custom.log";
         const auto& logger =
-            Logger::getInstance(log_file, false);  // false = truncate existing file
+            Logger::getInstance(LOG_FILE, false);  // false = truncate existing file
 
         std::cout << "Logger initialized successfully\n";
-        std::cout << "Log file: " << log_file << "\n";
+        std::cout << "Log file: " << LOG_FILE << "\n";
         std::cout << "File output enabled: " << (logger.isFileOutputEnabled() ? "Yes" : "No")
                   << "\n";
         std::cout << "Stderr enabled: " << (logger.isStderrEnabled() ? "Yes" : "No") << "\n";
@@ -137,11 +137,11 @@ int main() {
         test_multithreaded_logging();
 
         std::cout << "\n=== All Tests Completed ===\n";
-        std::cout << "Check the log file: " << log_file << "\n";
+        std::cout << "Check the log file: " << LOG_FILE << "\n";
 
         // Show log file contents if it exists
-        if (std::filesystem::exists(log_file)) {
-            std::cout << "\nLog file size: " << std::filesystem::file_size(log_file) << " bytes\n";
+        if (std::filesystem::exists(LOG_FILE)) {
+            std::cout << "\nLog file size: " << std::filesystem::file_size(LOG_FILE) << " bytes\n";
         }
 
         return 0;

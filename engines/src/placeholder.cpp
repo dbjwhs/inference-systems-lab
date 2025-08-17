@@ -1,13 +1,11 @@
 // Placeholder implementation for engines module
 // This file provides a minimal symbol to prevent empty library warnings
 
-namespace inference_lab {
-namespace engines {
+namespace inference_lab::engines {
 
 // Placeholder function to ensure library has symbols
-int placeholder_function() {
+static auto placeholder_function() -> int {
     return 0;
 }
 
-}  // namespace engines
-}  // namespace inference_lab
+}  // namespace inference_lab::engines

@@ -4,10 +4,10 @@
 #include <benchmark/benchmark.h>
 
 // Simple placeholder benchmark
-static void BM_DistributedPlaceholder(benchmark::State& state) {
+static void bm_distributed_placeholder(benchmark::State& state) {
     for (auto _ : state) {
         // Placeholder operation
         benchmark::DoNotOptimize(state.iterations());
     }
 }
-BENCHMARK(BM_DistributedPlaceholder);
+BENCHMARK(bm_distributed_placeholder);

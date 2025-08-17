@@ -4,10 +4,10 @@
 #include <benchmark/benchmark.h>
 
 // Simple placeholder benchmark
-static void BM_IntegrationPlaceholder(benchmark::State& state) {
+static void bm_integration_placeholder(benchmark::State& state) {
     for (auto _ : state) {
         // Placeholder operation
         benchmark::DoNotOptimize(state.iterations());
     }
 }
-BENCHMARK(BM_IntegrationPlaceholder);
+BENCHMARK(bm_integration_placeholder);
