@@ -7,7 +7,7 @@
 ### Build System Foundation
 - [X] Create root `CMakeLists.txt` with C++17 configuration
 - [X] Set up CMake options for Debug/Release builds
-- [ ] Configure sanitizers (address, undefined behavior)
+- [X] Configure sanitizers (address, undefined behavior)
 - [X] Set up CTest integration for testing
 - [X] Add Google Benchmark integration
 - [X] Fix Apple Silicon M3 Max compatibility issues
@@ -291,11 +291,24 @@ When tackling any item:
 ## Completion Tracking
 
 - Total Tasks: ~170
-- Completed: 31 (Build System: 9, Logging: 4, Serialization: 15, Schema Evolution: 9, Error Handling: 6)
+- Completed: 32 (Build System: 10, Logging: 4, Serialization: 15, Schema Evolution: 9, Error Handling: 6)
 - In Progress: 0  
 - Blocked: 0
 
-### Recently Completed (2025-08-16)
+### Recently Completed (2025-08-17)
+
+- **✅ Comprehensive sanitizer support** - Runtime error detection infrastructure:
+  - Enhanced CMake configuration with user-friendly SANITIZER_TYPE option (none, address, thread, memory, undefined, address+undefined)
+  - Implemented compatibility checks preventing incompatible sanitizer combinations (e.g., AddressSanitizer vs ThreadSanitizer)
+  - Added comprehensive UndefinedBehaviorSanitizer checks (signed-integer-overflow, null, bounds, alignment, object-size, vptr)
+  - Enhanced tools/setup.sh with --sanitizer command-line option and improved help documentation
+  - Fixed DEBUG macro naming conflict (DEBUG → INFERENCE_LAB_DEBUG) to resolve compilation with LogLevel::DEBUG enum
+  - **Validated clean codebase**: All tests pass with sanitizers enabled, no memory errors or undefined behavior detected
+  - **Performance impact documented**: AddressSanitizer ~2x slower, UBSan ~20% overhead, warnings included in benchmark output
+  - **Usage examples**: `tools/setup.sh --debug --sanitizer address+undefined` for development builds
+  - Addresses build system foundation requirement for runtime error detection during development and testing
+
+### Previously Completed (2025-08-16)
 
 - **✅ Build system stability and Apple Silicon compatibility** - Complete resolution of build issues:
   - Fixed Apple Silicon M3 Max linker errors (`ld: symbol(s) not found for architecture arm64`)
@@ -350,4 +363,4 @@ When tackling any item:
 2. **Forward chaining engine** - First inference algorithm implementation
 3. **Type system** - Common type definitions and concepts
 
-Last Updated: 2025-08-16 (Build system cleanup and warning elimination completed)
+Last Updated: 2025-08-17 (Comprehensive sanitizer support implemented and validated)
