@@ -15,7 +15,7 @@
 - [X] Eliminate all build warnings (19+ warnings → 0 warnings)
 - [X] Add placeholder implementations for all modules
 - [X] Create CMake modules for common settings
-- [ ] Add CPack configuration for distribution
+- [-] Add CPack configuration for distribution (not needed yet)
 
 ### Development Tooling
 - [ ] Create `scripts/new_module.py` - Scaffold new components with tests
