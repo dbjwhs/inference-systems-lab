@@ -32,6 +32,10 @@ else
     exit 1
 fi
 
+# Navigate to project root (parent of tools directory)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
 # Create build directory
 echo "Creating build directory..."
 mkdir -p build
