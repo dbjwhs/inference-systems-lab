@@ -98,10 +98,10 @@ class Logger {
     }
 
     // enable/disable specific log level
-    void setLevelEnabled(LogLevel level, bool enabled);
+    static void setLevelEnabled(LogLevel level, bool enabled);
 
     // check if a specific log level is enabled
-    bool isLevelEnabled(LogLevel level) const;
+    static bool isLevelEnabled(LogLevel level);
 
     // disable stderr output
     void disableStderr();
@@ -119,15 +119,15 @@ class Logger {
     bool isFileOutputEnabled() const;
 
   private:
-    std::ofstream m_log_file;
-    std::mutex m_mutex;
+    std::ofstream m_log_file{};
+    std::mutex m_mutex{};
     std::atomic<bool> m_stderr_enabled{true};
     std::atomic<bool> m_file_output_enabled{true};
     std::atomic<bool> m_enabled_levels[6]{true, true, true, true, true, true};  // one for each log
                                                                                 // level
 
     // check if a level is enabled (internal helper)
-    bool is_level_enabled(LogLevel level) const;
+    static bool is_level_enabled(LogLevel level);
 
     // utility function for expression tree visualization
     static std::string getIndentation(const int depth);

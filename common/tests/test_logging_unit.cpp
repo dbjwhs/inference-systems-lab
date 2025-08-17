@@ -61,16 +61,16 @@ class LoggerTest : public ::testing::Test {
     void SetUp() override {
         // Use a consistent test log file for all tests
         // Since Logger is a singleton, we need to work with the same instance
-        test_log_file = "./test_unit_logging.log";
+        test_log_file_ = "./test_unit_logging.log";
 
         // Clean up any existing test log file
-        if (std::filesystem::exists(test_log_file)) {
-            std::filesystem::remove(test_log_file);
+        if (std::filesystem::exists(test_log_file_)) {
+            std::filesystem::remove(test_log_file_);
         }
 
         // Initialize the singleton Logger with our test file and truncate mode
         // This creates the singleton instance that all tests will use
-        Logger::getInstance(test_log_file, false);
+        Logger::getInstance(test_log_file_, false);
     }
 
     /**
@@ -80,19 +80,19 @@ class LoggerTest : public ::testing::Test {
      */
     void TearDown() override {
         // Clean up test log files after each test
-        if (std::filesystem::exists(test_log_file)) {
-            std::filesystem::remove(test_log_file);
+        if (std::filesystem::exists(test_log_file_)) {
+            std::filesystem::remove(test_log_file_);
         }
     }
 
-    std::string test_log_file;  ///< Path to test log file used across all tests
+    std::string test_log_file_;  ///< Path to test log file used across all tests
 
     /**
      * @brief Utility method to read entire log file contents
      * @param filename Path to the file to read
      * @return String containing full file contents, empty if file cannot be opened
      */
-    std::string readLogFile(const std::string& filename) {
+    static std::string read_log_file(const std::string& filename) {
         std::ifstream file(filename);
         if (!file.is_open())
             return "";
@@ -106,10 +106,10 @@ class LoggerTest : public ::testing::Test {
      * Used between tests when we need to clear log contents without
      * reinitializing the Logger singleton.
      */
-    void clearLogFile() {
+    static void clear_log_file(const std::string& filename) {
         // Clear the log file by truncating it
-        if (std::filesystem::exists(test_log_file)) {
-            std::ofstream file(test_log_file, std::ios::trunc);
+        if (std::filesystem::exists(filename)) {
+            std::ofstream file(filename, std::ios::trunc);
             file.close();
         }
     }
@@ -133,10 +133,10 @@ TEST_F(LoggerTest, SingletonBehavior) {
     EXPECT_EQ(&logger1, &logger2);
 
     // Test shared_ptr version
-    const auto ptr1 = Logger::getInstancePtr();
-    const auto ptr2 = Logger::getInstancePtr();
+    const auto PTR1 = Logger::getInstancePtr();
+    const auto PTR2 = Logger::getInstancePtr();
 
-    EXPECT_EQ(ptr1, ptr2);
+    EXPECT_EQ(PTR1, PTR2);
 }
 
 /**
@@ -275,7 +275,7 @@ TEST_F(LoggerTest, StderrSuppressionGuard) {
     EXPECT_TRUE(logger.isStderrEnabled());
 
     {
-        Logger::StderrSuppressionGuard guard;
+        Logger::StderrSuppressionGuard const GUARD;
         EXPECT_FALSE(logger.isStderrEnabled());
     }
 
@@ -302,15 +302,15 @@ TEST_F(LoggerTest, ThreadSafety) {
     auto& logger = Logger::getInstance();
 
     std::vector<std::thread> threads;
-    const int num_threads = 5;
-    const int messages_per_thread = 10;
+    const int NUM_THREADS = 5;
+    const int MESSAGES_PER_THREAD = 10;
     std::atomic<int> successful_logs{0};
 
     // Create multiple threads that log simultaneously
-    threads.reserve(num_threads);
-    for (int ndx = 0; ndx < num_threads; ++ndx) {
+    threads.reserve(NUM_THREADS);
+    for (int ndx = 0; ndx < NUM_THREADS; ++ndx) {
         threads.emplace_back([&logger, &successful_logs, ndx]() {
-            for (int j = 0; j < messages_per_thread; ++j) {
+            for (int j = 0; j < MESSAGES_PER_THREAD; ++j) {
                 try {
                     logger.print_log(LogLevel::INFO, "Thread {} message {}", ndx, j);
                     ++successful_logs;
@@ -328,7 +328,7 @@ TEST_F(LoggerTest, ThreadSafety) {
     }
 
     // Verify all messages were logged successfully (no crashes)
-    EXPECT_EQ(successful_logs.load(), num_threads * messages_per_thread);
+    EXPECT_EQ(successful_logs.load(), NUM_THREADS * MESSAGES_PER_THREAD);
 }
 
 /**
