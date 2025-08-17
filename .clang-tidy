@@ -1,0 +1,88 @@
+---
+# clang-tidy configuration for inference-systems-lab
+# Comprehensive static analysis for modern C++17+ development
+# Based on clang-tidy version 20.1.8
+
+# Enable comprehensive static analysis checks
+Checks: >
+  clang-analyzer-*,
+  bugprone-*,
+  cert-*,
+  cppcoreguidelines-*,
+  google-*,
+  hicpp-*,
+  llvm-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  concurrency-*,
+  
+  # Disable checks that conflict with project style or are too noisy
+  -modernize-use-trailing-return-type,
+  -readability-braces-around-statements,
+  -hicpp-braces-around-statements,
+  -google-readability-braces-around-statements,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -llvm-header-guard,
+  -google-readability-todo,
+  -readability-identifier-length,
+  -modernize-use-nodiscard,
+  -cppcoreguidelines-avoid-do-while,
+  -readability-function-cognitive-complexity,
+  -bugprone-easily-swappable-parameters,
+  -misc-non-private-member-variables-in-classes,
+  -cppcoreguidelines-non-private-member-variables-in-classes
+
+# Treat specific warnings as errors for critical issues
+WarningsAsErrors: >
+  bugprone-use-after-move,
+  bugprone-dangling-handle,
+  cert-*,
+  clang-analyzer-*
+
+# Only analyze project headers, not system/third-party headers
+HeaderFilterRegex: '^((?!(/opt/homebrew|/usr/|/System/|_deps/|build/|cmake-build)).)*$'
+
+# Use project's clang-format style
+FormatStyle: file
+
+# Additional configuration options
+CheckOptions:
+  # Naming conventions following project standards
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.FunctionCase: lower_case
+  readability-identifier-naming.VariableCase: lower_case
+  readability-identifier-naming.ParameterCase: lower_case
+  readability-identifier-naming.MemberCase: lower_case
+  readability-identifier-naming.MemberSuffix: '_'
+  readability-identifier-naming.ConstantCase: UPPER_CASE
+  readability-identifier-naming.MacroCase: UPPER_CASE
+  readability-identifier-naming.NamespaceCase: lower_case
+  
+  # Template parameter naming (modern descriptive style preferred)
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  
+  # Performance and efficiency settings
+  performance-move-const-arg.CheckTriviallyCopyableMove: false
+  performance-unnecessary-value-param.AllowedTypes: 'std::shared_ptr;std::unique_ptr'
+  
+  # Modernization preferences
+  modernize-use-auto.MinTypeNameLength: 8
+  modernize-use-auto.RemoveStars: true
+  
+  # Core Guidelines compliance
+  cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+  cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions: true
+  
+  # Google style preferences
+  google-readability-function-size.StatementThreshold: 100
+  google-readability-function-size.BranchThreshold: 25
+  
+  # Readability preferences
+  readability-function-size.LineThreshold: 150
+  readability-function-size.StatementThreshold: 100
+  readability-function-size.BranchThreshold: 25
