@@ -298,6 +298,9 @@ Examples:
     # File selection options
     parser.add_argument("--filter",
                        help="Include only files matching this pattern (supports wildcards)")
+    parser.add_argument("--filter-from-file",
+                       type=Path,
+                       help="Include only files listed in the specified file (one per line)")
     parser.add_argument("--exclude",
                        help="Exclude files/directories matching these patterns (comma-separated)")
     
@@ -351,8 +354,23 @@ Examples:
     include_patterns = [args.filter] if args.filter else None
     exclude_patterns = args.exclude.split(',') if args.exclude else None
     
-    # Discover source files
-    source_files = formatter.discover_source_files(include_patterns, exclude_patterns)
+    # Handle file list input
+    if args.filter_from_file:
+        try:
+            with open(args.filter_from_file, 'r') as f:
+                file_list = [line.strip() for line in f if line.strip()]
+            # Convert to absolute paths and filter existing files
+            source_files = []
+            for file_path in file_list:
+                abs_path = project_root / file_path if not Path(file_path).is_absolute() else Path(file_path)
+                if abs_path.exists() and abs_path.suffix in formatter.cpp_extensions:
+                    source_files.append(abs_path)
+        except Exception as e:
+            print(f"Error reading file list from {args.filter_from_file}: {e}")
+            sys.exit(1)
+    else:
+        # Discover source files
+        source_files = formatter.discover_source_files(include_patterns, exclude_patterns)
     
     if not source_files:
         print("No source files found matching criteria")
@@ -362,6 +380,8 @@ Examples:
         print(f"Found {len(source_files)} source files")
         if args.filter:
             print(f"Include pattern: {args.filter}")
+        if args.filter_from_file:
+            print(f"Files from: {args.filter_from_file}")
         if args.exclude:
             print(f"Exclude patterns: {args.exclude}")
         if len(source_files) <= 10:
