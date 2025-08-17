@@ -24,7 +24,7 @@
 using namespace inference_lab::common;
 using namespace inference_lab::common::evolution;
 
-void testSchemaVersioning() {
+static void test_schema_versioning() {
     std::cout << "=== Testing Schema Versioning ===\n";
 
     // Test version creation and comparison
@@ -54,7 +54,7 @@ void testSchemaVersioning() {
     std::cout << "✅ Schema versioning tests passed\n\n";
 }
 
-void testMigrationPaths() {
+static void test_migration_paths() {
     std::cout << "=== Testing Migration Paths ===\n";
 
     SchemaVersion v1_0_0(1, 0, 0);
@@ -84,16 +84,16 @@ void testMigrationPaths() {
     std::cout << "✅ Migration paths tests passed\n\n";
 }
 
-void testSchemaEvolutionManager() {
+static void test_schema_evolution_manager() {
     std::cout << "=== Testing Schema Evolution Manager ===\n";
 
-    SchemaVersion currentVersion(1, 1, 0);
-    SchemaEvolutionManager manager(currentVersion);
+    SchemaVersion current_version(1, 1, 0);
+    SchemaEvolutionManager manager(current_version);
 
     // Register migration paths
     SchemaVersion v1_0_0(1, 0, 0);
     MigrationPath path(v1_0_0,
-                       currentVersion,
+                       current_version,
                        MigrationPath::Strategy::DefaultValues,
                        true,
                        "Migrate from initial version to current");
@@ -101,8 +101,8 @@ void testSchemaEvolutionManager() {
     manager.registerMigrationPath(path);
 
     // Test version reading capability
-    assert(manager.canReadVersion(currentVersion));  // Current version
-    assert(manager.canReadVersion(v1_0_0));          // Supported via migration
+    assert(manager.canReadVersion(current_version));  // Current version
+    assert(manager.canReadVersion(v1_0_0));           // Supported via migration
 
     SchemaVersion v2_0_0(2, 0, 0);
     assert(!manager.canReadVersion(v2_0_0));  // No migration path
@@ -121,18 +121,18 @@ void testSchemaEvolutionManager() {
     std::cout << "✅ Schema evolution manager tests passed\n\n";
 }
 
-void testVersionValidator() {
+static void test_version_validator() {
     std::cout << "=== Testing Version Validator ===\n";
 
     // Test invalid version
-    SchemaVersion invalidVersion(0, 0, 0);
-    auto errors = VersionValidator::validateVersion(invalidVersion);
+    SchemaVersion invalid_version(0, 0, 0);
+    auto errors = VersionValidator::validateVersion(invalid_version);
     assert(!errors.empty());
     std::cout << "Invalid version errors: " << errors[0] << "\n";
 
     // Test valid version
-    SchemaVersion validVersion(1, 0, 0);
-    errors = VersionValidator::validateVersion(validVersion);
+    SchemaVersion valid_version(1, 0, 0);
+    errors = VersionValidator::validateVersion(valid_version);
     assert(errors.empty());
 
     // Test safe transition
@@ -144,19 +144,19 @@ void testVersionValidator() {
     assert(!VersionValidator::isSafeTransition(v1_0_0, v2_0_0));  // Major increment
 
     // Test migration path validation
-    MigrationPath safePath(v1_0_0, v1_1_0, MigrationPath::Strategy::DefaultValues);
-    errors = VersionValidator::validateMigrationPath(safePath);
+    MigrationPath safe_path(v1_0_0, v1_1_0, MigrationPath::Strategy::DefaultValues);
+    errors = VersionValidator::validateMigrationPath(safe_path);
     assert(errors.empty());
 
-    MigrationPath unsafePath(v1_1_0, v1_0_0, MigrationPath::Strategy::DirectMapping);  // Backwards
-    errors = VersionValidator::validateMigrationPath(unsafePath);
+    MigrationPath unsafe_path(v1_1_0, v1_0_0, MigrationPath::Strategy::DirectMapping);  // Backwards
+    errors = VersionValidator::validateMigrationPath(unsafe_path);
     assert(!errors.empty());
     std::cout << "Unsafe migration error: " << errors[0] << "\n";
 
     std::cout << "✅ Version validator tests passed\n\n";
 }
 
-void testSchemaRegistry() {
+static void test_schema_registry() {
     std::cout << "=== Testing Schema Registry ===\n";
 
     auto& registry = SchemaRegistry::getInstance();
@@ -180,9 +180,9 @@ void testSchemaRegistry() {
     assert(registry.getCurrentSchema() == v1_1_0);
 
     // Get all versions
-    auto allVersions = registry.getAllVersions();
+    auto all_versions = registry.getAllVersions();
     std::cout << "Registered versions: ";
-    for (const auto& version : allVersions) {
+    for (const auto& version : all_versions) {
         std::cout << version.toString() << " ";
     }
     std::cout << "\n";
@@ -190,37 +190,37 @@ void testSchemaRegistry() {
     std::cout << "✅ Schema registry tests passed\n\n";
 }
 
-void testDataMigration() {
+static void test_data_migration() {
     std::cout << "=== Testing Data Migration ===\n";
 
     // Create a fact without schema version (simulates old data)
     std::vector<Value> args = {Value::fromText("socrates")};
-    Fact oldFact(1, "isHuman", args, 1.0, 1234567890);
+    Fact old_fact(1, "isHuman", args, 1.0, 1234567890);
 
-    std::cout << "Original fact: " << oldFact.toString() << "\n";
+    std::cout << "Original fact: " << old_fact.toString() << "\n";
 
     // Set up migration manager
-    SchemaVersion currentVersion(1, 1, 0);
-    SchemaVersion oldVersion(1, 0, 0);
-    SchemaEvolutionManager manager(currentVersion);
+    SchemaVersion current_version(1, 1, 0);
+    SchemaVersion old_version(1, 0, 0);
+    SchemaEvolutionManager manager(current_version);
 
-    MigrationPath path(oldVersion,
-                       currentVersion,
+    MigrationPath path(old_version,
+                       current_version,
                        MigrationPath::Strategy::DefaultValues,
                        true,
                        "Add schema version field with default value");
     manager.registerMigrationPath(path);
 
     // Migrate the fact
-    auto migratedFact = manager.migrateFact(oldFact, oldVersion);
-    assert(migratedFact.has_value());
+    auto migrated_fact = manager.migrateFact(old_fact, old_version);
+    assert(migrated_fact.has_value());
 
-    std::cout << "Migrated fact: " << migratedFact->toString() << "\n";
+    std::cout << "Migrated fact: " << migrated_fact->toString() << "\n";
 
     std::cout << "✅ Data migration tests passed\n\n";
 }
 
-void demonstrateEvolutionScenarios() {
+static void demonstrate_evolution_scenarios() {
     std::cout << "=== Demonstrating Evolution Scenarios ===\n";
 
     // Scenario 1: Adding optional fields (backward compatible)
@@ -228,14 +228,14 @@ void demonstrateEvolutionScenarios() {
     SchemaVersion v1_0_0(1, 0, 0);
     SchemaVersion v1_1_0(1, 1, 0);
 
-    MigrationPath addFields(v1_0_0,
-                            v1_1_0,
-                            MigrationPath::Strategy::DefaultValues,
-                            true,
-                            "Added optional schemaVersion field to Facts and Rules");
+    MigrationPath add_fields(v1_0_0,
+                             v1_1_0,
+                             MigrationPath::Strategy::DefaultValues,
+                             true,
+                             "Added optional schemaVersion field to Facts and Rules");
 
     auto warnings = VersionValidator::generateWarnings(v1_0_0, v1_1_0);
-    std::cout << "Migration: " << addFields.toString() << "\n";
+    std::cout << "Migration: " << add_fields.toString() << "\n";
     if (warnings.empty()) {
         std::cout << "✅ Safe migration - no warnings\n";
     }
@@ -244,18 +244,18 @@ void demonstrateEvolutionScenarios() {
     std::cout << "\nScenario 2: Major restructuring\n";
     SchemaVersion v2_0_0(2, 0, 0);
 
-    MigrationPath majorChange(v1_1_0,
-                              v2_0_0,
-                              MigrationPath::Strategy::CustomLogic,
-                              false,
-                              "Restructured data model - breaking changes");
-    majorChange.addWarning("May lose some metadata during migration");
-    majorChange.addWarning("Custom migration logic required");
+    MigrationPath major_change(v1_1_0,
+                               v2_0_0,
+                               MigrationPath::Strategy::CustomLogic,
+                               false,
+                               "Restructured data model - breaking changes");
+    major_change.addWarning("May lose some metadata during migration");
+    major_change.addWarning("Custom migration logic required");
 
     warnings = VersionValidator::generateWarnings(v1_1_0, v2_0_0);
-    std::cout << "Migration: " << majorChange.toString() << "\n";
+    std::cout << "Migration: " << major_change.toString() << "\n";
     std::cout << "Warnings:\n";
-    for (const auto& warning : majorChange.getWarnings()) {
+    for (const auto& warning : major_change.getWarnings()) {
         std::cout << "  ⚠️  " << warning << "\n";
     }
     for (const auto& warning : warnings) {
@@ -265,24 +265,24 @@ void demonstrateEvolutionScenarios() {
     std::cout << "\n✅ Evolution scenarios demonstrated\n\n";
 }
 
-int main() {
+auto main() -> int {
     std::cout << "Schema Evolution and Versioning Demo\n";
     std::cout << "====================================\n\n";
 
     try {
-        testSchemaVersioning();
-        testMigrationPaths();
-        testSchemaEvolutionManager();
-        testVersionValidator();
-        testSchemaRegistry();
-        testDataMigration();
-        demonstrateEvolutionScenarios();
+        test_schema_versioning();
+        test_migration_paths();
+        test_schema_evolution_manager();
+        test_version_validator();
+        test_schema_registry();
+        test_data_migration();
+        demonstrate_evolution_scenarios();
 
         std::cout << "🎉 All tests passed! Schema evolution system is working correctly.\n";
 
         // Show current schema version
-        auto currentSchema = getCurrentSchemaVersion();
-        std::cout << "\nCurrent schema version: " << currentSchema.toString() << "\n";
+        auto current_schema = getCurrentSchemaVersion();
+        std::cout << "\nCurrent schema version: " << current_schema.toString() << "\n";
 
         return 0;
     } catch (const std::exception& e) {

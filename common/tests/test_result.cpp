@@ -53,22 +53,28 @@ class ResultTest : public ::testing::Test {
     /**
      * @brief Common error types for testing
      */
-    enum class TestError { NetworkFailure, ParseError, InvalidInput, TimeoutError, UnknownError };
+    enum class TestError {
+        NETWORK_FAILURE,
+        PARSE_ERROR,
+        INVALID_INPUT,
+        TIMEOUT_ERROR,
+        UNKNOWN_ERROR
+    };
 
     /**
      * @brief Custom error type with additional data
      */
     struct DetailedError {
-        TestError code;
-        std::string message;
-        int error_number;
+        TestError code_;
+        std::string message_{};
+        int error_number_;
 
         DetailedError(TestError c, std::string msg, int num = 0)
-            : code(c), message(std::move(msg)), error_number(num) {}
+            : code_(c), message_(std::move(msg)), error_number_(num) {}
 
-        bool operator==(const DetailedError& other) const {
-            return code == other.code && message == other.message &&
-                   error_number == other.error_number;
+        auto operator==(const DetailedError& other) const -> bool {
+            return code_ == other.code_ && message_ == other.message_ &&
+                   error_number_ == other.error_number_;
         }
     };
 
@@ -76,71 +82,71 @@ class ResultTest : public ::testing::Test {
      * @brief Custom value type for testing move semantics
      */
     struct MoveOnlyType {
-        int value;
-        bool moved_from = false;
+        int value_;
+        bool moved_from_ = false;
 
-        explicit MoveOnlyType(int v) : value(v) {}
+        explicit MoveOnlyType(int v) : value_(v) {}
 
         // Non-copyable
         MoveOnlyType(const MoveOnlyType&) = delete;
-        MoveOnlyType& operator=(const MoveOnlyType&) = delete;
+        auto operator=(const MoveOnlyType&) -> MoveOnlyType& = delete;
 
         // Movable
-        MoveOnlyType(MoveOnlyType&& other) noexcept : value(other.value) {
-            other.moved_from = true;
+        MoveOnlyType(MoveOnlyType&& other) noexcept : value_(other.value_) {
+            other.moved_from_ = true;
         }
 
-        MoveOnlyType& operator=(MoveOnlyType&& other) noexcept {
+        auto operator=(MoveOnlyType&& other) noexcept -> MoveOnlyType& {
             if (this != &other) {
-                value = other.value;
-                other.moved_from = true;
+                value_ = other.value_;
+                other.moved_from_ = true;
             }
             return *this;
         }
 
-        bool operator==(const MoveOnlyType& other) const {
-            return value == other.value && !moved_from && !other.moved_from;
+        auto operator==(const MoveOnlyType& other) const -> bool {
+            return value_ == other.value_ && !moved_from_ && !other.moved_from_;
         }
     };
 
     /**
      * @brief Helper function that returns a successful result
      */
-    auto successful_operation(int input) -> Result<int, TestError> {
+    static auto successful_operation(int input) -> Result<int, TestError> {
         if (input >= 0) {
             return Ok(input * 2);
         }
-        return Err(TestError::InvalidInput);
+        return Err(TestError::INVALID_INPUT);
     }
 
     /**
      * @brief Helper function that returns an error result
      */
-    auto failing_operation([[maybe_unused]] int input) -> Result<int, TestError> {
-        return Err(TestError::NetworkFailure);
+    static auto failing_operation([[maybe_unused]] int input) -> Result<int, TestError> {
+        return Err(TestError::NETWORK_FAILURE);
     }
 
     /**
      * @brief Helper function that may fail based on input
      */
-    auto conditional_operation(int input) -> Result<std::string, TestError> {
+    static auto conditional_operation(int input) -> Result<std::string, TestError> {
         if (input > 10) {
             return Ok(std::string("Large: ") + std::to_string(input));
         } else if (input > 0) {
             return Ok(std::string("Small: ") + std::to_string(input));
         } else {
-            return Err(TestError::InvalidInput);
+            return Err(TestError::INVALID_INPUT);
         }
     }
 
     /**
      * @brief Helper function for testing and_then chaining
      */
-    auto chain_operation(int input) -> Result<int, TestError> {
+    static auto chain_operation(int input) -> Result<int, TestError> {
         if (input < 100) {
             return Ok(input + 10);
         }
-        return Err(TestError::InvalidInput);
+        return Err(TestError::INVALID_INPUT);
     }
 };
 
@@ -165,14 +171,14 @@ TEST_F(ResultTest, BasicConstruction) {
     EXPECT_TRUE(static_cast<bool>(success));
 
     // Test error Result construction
-    Result<int, TestError> failure = Err(TestError::NetworkFailure);
+    Result<int, TestError> failure = Err(TestError::NETWORK_FAILURE);
     EXPECT_FALSE(failure.is_ok());
     EXPECT_TRUE(failure.is_err());
     EXPECT_FALSE(static_cast<bool>(failure));
 
     // Test factory functions with type deduction
     auto success_auto = make_ok(123);
-    auto failure_auto = make_err(TestError::ParseError);
+    auto failure_auto = make_err(TestError::PARSE_ERROR);
 
     Result<int, TestError> success_typed = success_auto;
     Result<int, TestError> failure_typed = failure_auto;
@@ -180,7 +186,7 @@ TEST_F(ResultTest, BasicConstruction) {
     EXPECT_TRUE(success_typed.is_ok());
     EXPECT_EQ(success_typed.unwrap(), 123);
     EXPECT_TRUE(failure_typed.is_err());
-    EXPECT_EQ(failure_typed.unwrap_err(), TestError::ParseError);
+    EXPECT_EQ(failure_typed.unwrap_err(), TestError::PARSE_ERROR);
 }
 
 /**
@@ -204,7 +210,7 @@ TEST_F(ResultTest, ComplexTypeConstruction) {
     EXPECT_EQ(vector_result.unwrap(), test_vector);
 
     // Test with custom error type
-    DetailedError custom_error(TestError::NetworkFailure, "Connection timeout", 404);
+    DetailedError custom_error(TestError::NETWORK_FAILURE, "Connection timeout", 404);
     Result<int, DetailedError> custom_result = Err(custom_error);
     EXPECT_TRUE(custom_result.is_err());
     EXPECT_EQ(custom_result.unwrap_err(), custom_error);
@@ -223,7 +229,7 @@ TEST_F(ResultTest, CopyAndMoveSemantics) {
     // Test copy construction and assignment
     Result<int, TestError> original = Ok(100);
     Result<int, TestError> copied = original;
-    Result<int, TestError> assigned = Err(TestError::UnknownError);
+    Result<int, TestError> assigned = Err(TestError::UNKNOWN_ERROR);
     assigned = original;
 
     EXPECT_TRUE(original.is_ok());
@@ -235,16 +241,16 @@ TEST_F(ResultTest, CopyAndMoveSemantics) {
     // Test move construction and assignment
     Result<MoveOnlyType, TestError> move_original = Ok(MoveOnlyType(42));
     EXPECT_TRUE(move_original.is_ok());
-    EXPECT_EQ(move_original.unwrap().value, 42);
+    EXPECT_EQ(move_original.unwrap().value_, 42);
 
     Result<MoveOnlyType, TestError> move_constructed = std::move(move_original);
     EXPECT_TRUE(move_constructed.is_ok());
-    EXPECT_EQ(move_constructed.unwrap().value, 42);
+    EXPECT_EQ(move_constructed.unwrap().value_, 42);
 
-    Result<MoveOnlyType, TestError> move_assigned = Err(TestError::InvalidInput);
+    Result<MoveOnlyType, TestError> move_assigned = Err(TestError::INVALID_INPUT);
     move_assigned = Ok(MoveOnlyType(99));
     EXPECT_TRUE(move_assigned.is_ok());
-    EXPECT_EQ(move_assigned.unwrap().value, 99);
+    EXPECT_EQ(move_assigned.unwrap().value_, 99);
 }
 
 //=============================================================================
@@ -262,11 +268,11 @@ TEST_F(ResultTest, CopyAndMoveSemantics) {
  */
 TEST_F(ResultTest, ValueExtraction) {
     Result<int, TestError> success = Ok(42);
-    Result<int, TestError> failure = Err(TestError::NetworkFailure);
+    Result<int, TestError> failure = Err(TestError::NETWORK_FAILURE);
 
     // Test successful unwrap
     EXPECT_EQ(success.unwrap(), 42);
-    EXPECT_EQ(failure.unwrap_err(), TestError::NetworkFailure);
+    EXPECT_EQ(failure.unwrap_err(), TestError::NETWORK_FAILURE);
 
     // Test unwrap exceptions
     EXPECT_THROW(failure.unwrap(), std::runtime_error);
@@ -279,9 +285,9 @@ TEST_F(ResultTest, ValueExtraction) {
     // Test unwrap_or_else with computation
     auto compute_fallback = [](TestError error) -> int {
         switch (error) {
-            case TestError::NetworkFailure:
+            case TestError::NETWORK_FAILURE:
                 return -1;
-            case TestError::ParseError:
+            case TestError::PARSE_ERROR:
                 return -2;
             default:
                 return -99;
@@ -291,7 +297,7 @@ TEST_F(ResultTest, ValueExtraction) {
     EXPECT_EQ(success.unwrap_or_else(compute_fallback), 42);
     EXPECT_EQ(failure.unwrap_or_else(compute_fallback), -1);
 
-    Result<int, TestError> parse_error = Err(TestError::ParseError);
+    Result<int, TestError> parse_error = Err(TestError::PARSE_ERROR);
     EXPECT_EQ(parse_error.unwrap_or_else(compute_fallback), -2);
 }
 
@@ -305,30 +311,30 @@ TEST_F(ResultTest, ValueExtraction) {
  */
 TEST_F(ResultTest, MoveValueExtraction) {
     Result<MoveOnlyType, TestError> success = Ok(MoveOnlyType(42));
-    Result<MoveOnlyType, TestError> failure = Err(TestError::NetworkFailure);
+    Result<MoveOnlyType, TestError> failure = Err(TestError::NETWORK_FAILURE);
 
     // Test move unwrap
     MoveOnlyType extracted = std::move(success).unwrap();
-    EXPECT_EQ(extracted.value, 42);
-    EXPECT_FALSE(extracted.moved_from);
+    EXPECT_EQ(extracted.value_, 42);
+    EXPECT_FALSE(extracted.moved_from_);
 
     // Test that failure result is properly recognized as error
     EXPECT_TRUE(failure.is_err());
     EXPECT_FALSE(failure.is_ok());
 
     // Test move unwrap_or
-    Result<MoveOnlyType, TestError> failure2 = Err(TestError::ParseError);
+    Result<MoveOnlyType, TestError> failure2 = Err(TestError::PARSE_ERROR);
     MoveOnlyType fallback = std::move(failure2).unwrap_or(MoveOnlyType(99));
-    EXPECT_EQ(fallback.value, 99);
+    EXPECT_EQ(fallback.value_, 99);
 
     // Test move unwrap_or_else
     auto create_fallback = [](TestError error) -> MoveOnlyType {
         return MoveOnlyType(static_cast<int>(error) + 1000);
     };
 
-    Result<MoveOnlyType, TestError> failure3 = Err(TestError::InvalidInput);
+    Result<MoveOnlyType, TestError> failure3 = Err(TestError::INVALID_INPUT);
     MoveOnlyType computed = std::move(failure3).unwrap_or_else(create_fallback);
-    EXPECT_EQ(computed.value, static_cast<int>(TestError::InvalidInput) + 1000);
+    EXPECT_EQ(computed.value_, static_cast<int>(TestError::INVALID_INPUT) + 1000);
 }
 
 //=============================================================================
@@ -347,7 +353,7 @@ TEST_F(ResultTest, MoveValueExtraction) {
  */
 TEST_F(ResultTest, OptionalConversion) {
     Result<int, TestError> success = Ok(42);
-    Result<int, TestError> failure = Err(TestError::NetworkFailure);
+    Result<int, TestError> failure = Err(TestError::NETWORK_FAILURE);
 
     // Test ok() conversion
     auto success_opt = success.ok();
@@ -363,15 +369,15 @@ TEST_F(ResultTest, OptionalConversion) {
 
     EXPECT_FALSE(success_err.has_value());
     EXPECT_TRUE(failure_err.has_value());
-    EXPECT_EQ(failure_err.value(), TestError::NetworkFailure);
+    EXPECT_EQ(failure_err.value(), TestError::NETWORK_FAILURE);
 
     // Test move versions
     Result<MoveOnlyType, TestError> move_success = Ok(MoveOnlyType(123));
     auto move_opt = std::move(move_success).ok();
 
     EXPECT_TRUE(move_opt.has_value());
-    EXPECT_EQ(move_opt.value().value, 123);
-    EXPECT_FALSE(move_opt.value().moved_from);
+    EXPECT_EQ(move_opt.value().value_, 123);
+    EXPECT_FALSE(move_opt.value().moved_from_);
 }
 
 //=============================================================================
@@ -389,7 +395,7 @@ TEST_F(ResultTest, OptionalConversion) {
  */
 TEST_F(ResultTest, MapOperations) {
     Result<int, TestError> success = Ok(10);
-    Result<int, TestError> failure = Err(TestError::NetworkFailure);
+    Result<int, TestError> failure = Err(TestError::NETWORK_FAILURE);
 
     // Test basic map transformation
     auto doubled = success.map([](int x) { return x * 2; });
@@ -398,7 +404,7 @@ TEST_F(ResultTest, MapOperations) {
     EXPECT_TRUE(doubled.is_ok());
     EXPECT_EQ(doubled.unwrap(), 20);
     EXPECT_TRUE(failure_mapped.is_err());
-    EXPECT_EQ(failure_mapped.unwrap_err(), TestError::NetworkFailure);
+    EXPECT_EQ(failure_mapped.unwrap_err(), TestError::NETWORK_FAILURE);
 
     // Test type transformation
     auto to_string = success.map([](int x) { return std::to_string(x); });
@@ -419,7 +425,7 @@ TEST_F(ResultTest, MapOperations) {
         failure.map([](int x) { return x + 1; }).map([](int x) { return std::to_string(x); });
 
     EXPECT_TRUE(error_chain.is_err());
-    EXPECT_EQ(error_chain.unwrap_err(), TestError::NetworkFailure);
+    EXPECT_EQ(error_chain.unwrap_err(), TestError::NETWORK_FAILURE);
 }
 
 /**
@@ -433,7 +439,7 @@ TEST_F(ResultTest, MapOperations) {
  */
 TEST_F(ResultTest, MapErrorOperations) {
     Result<int, TestError> success = Ok(42);
-    Result<int, TestError> failure = Err(TestError::NetworkFailure);
+    Result<int, TestError> failure = Err(TestError::NETWORK_FAILURE);
 
     // Test basic error transformation
     auto to_detailed = failure.map_err(
@@ -441,9 +447,9 @@ TEST_F(ResultTest, MapErrorOperations) {
 
     EXPECT_TRUE(to_detailed.is_err());
     auto detailed_err = to_detailed.unwrap_err();
-    EXPECT_EQ(detailed_err.code, TestError::NetworkFailure);
-    EXPECT_EQ(detailed_err.message, "Network connection failed");
-    EXPECT_EQ(detailed_err.error_number, 500);
+    EXPECT_EQ(detailed_err.code_, TestError::NETWORK_FAILURE);
+    EXPECT_EQ(detailed_err.message_, "Network connection failed");
+    EXPECT_EQ(detailed_err.error_number_, 500);
 
     // Test success preservation
     auto success_mapped = success.map_err(
@@ -460,7 +466,7 @@ TEST_F(ResultTest, MapErrorOperations) {
 
     EXPECT_TRUE(chained_error.is_err());
     EXPECT_EQ(chained_error.unwrap_err(),
-              "Error code: " + std::to_string(static_cast<int>(TestError::NetworkFailure)));
+              "Error code: " + std::to_string(static_cast<int>(TestError::NETWORK_FAILURE)));
 }
 
 /**
@@ -487,7 +493,7 @@ TEST_F(ResultTest, AndThenOperations) {
                             .and_then([this](int x) { return conditional_operation(x); });
 
     EXPECT_TRUE(error_result.is_err());
-    EXPECT_EQ(error_result.unwrap_err(), TestError::InvalidInput);
+    EXPECT_EQ(error_result.unwrap_err(), TestError::INVALID_INPUT);
 
     // Test error propagation from middle operation
     auto middle_error =
@@ -496,7 +502,7 @@ TEST_F(ResultTest, AndThenOperations) {
             .and_then([this](int x) { return conditional_operation(x); });
 
     EXPECT_TRUE(middle_error.is_err());
-    EXPECT_EQ(middle_error.unwrap_err(), TestError::InvalidInput);
+    EXPECT_EQ(middle_error.unwrap_err(), TestError::INVALID_INPUT);
 
     // Test type changing chain
     Result<int, TestError> start = Ok(5);
@@ -523,7 +529,7 @@ TEST_F(ResultTest, AndThenOperations) {
  */
 TEST_F(ResultTest, OrElseOperations) {
     Result<int, TestError> success = Ok(42);
-    Result<int, TestError> failure = Err(TestError::NetworkFailure);
+    Result<int, TestError> failure = Err(TestError::NETWORK_FAILURE);
 
     // Test success preservation
     auto success_or_else =
@@ -536,10 +542,10 @@ TEST_F(ResultTest, OrElseOperations) {
 
     // Test error recovery
     auto recovered = failure.or_else([](TestError err) -> Result<int, TestError> {
-        if (err == TestError::NetworkFailure) {
+        if (err == TestError::NETWORK_FAILURE) {
             return Ok(100);  // Provide fallback value
         }
-        return Err(TestError::UnknownError);
+        return Err(TestError::UNKNOWN_ERROR);
     });
 
     EXPECT_TRUE(recovered.is_ok());
@@ -552,21 +558,21 @@ TEST_F(ResultTest, OrElseOperations) {
 
     EXPECT_TRUE(transformed_error.is_err());
     auto detailed = transformed_error.unwrap_err();
-    EXPECT_EQ(detailed.code, TestError::NetworkFailure);
-    EXPECT_EQ(detailed.message, "Transformed error");
-    EXPECT_EQ(detailed.error_number, 123);
+    EXPECT_EQ(detailed.code_, TestError::NETWORK_FAILURE);
+    EXPECT_EQ(detailed.message_, "Transformed error");
+    EXPECT_EQ(detailed.error_number_, 123);
 
     // Test chained error recovery
-    Result<int, TestError> multiple_errors = Err(TestError::ParseError);
+    Result<int, TestError> multiple_errors = Err(TestError::PARSE_ERROR);
     auto multi_recovery = multiple_errors
                               .or_else([](TestError err) -> Result<int, TestError> {
-                                  if (err == TestError::NetworkFailure) {
+                                  if (err == TestError::NETWORK_FAILURE) {
                                       return Ok(1);
                                   }
-                                  return Err(TestError::TimeoutError);  // Transform error
+                                  return Err(TestError::TIMEOUT_ERROR);  // Transform error
                               })
                               .or_else([](TestError err) -> Result<int, TestError> {
-                                  if (err == TestError::TimeoutError) {
+                                  if (err == TestError::TIMEOUT_ERROR) {
                                       return Ok(2);
                                   }
                                   return Err(err);  // Pass through
@@ -591,7 +597,7 @@ TEST_F(ResultTest, OrElseOperations) {
  */
 TEST_F(ResultTest, StructuredBinding) {
     Result<int, TestError> success = Ok(42);
-    Result<int, TestError> failure = Err(TestError::NetworkFailure);
+    Result<int, TestError> failure = Err(TestError::NETWORK_FAILURE);
 
     // Test structured binding for success
     auto [is_ok1, value_opt1, error_opt1] = success;
@@ -605,7 +611,7 @@ TEST_F(ResultTest, StructuredBinding) {
     EXPECT_FALSE(is_ok2);
     EXPECT_FALSE(value_opt2.has_value());
     EXPECT_TRUE(error_opt2.has_value());
-    EXPECT_EQ(error_opt2.value(), TestError::NetworkFailure);
+    EXPECT_EQ(error_opt2.value(), TestError::NETWORK_FAILURE);
 
     // Test with move semantics
     Result<MoveOnlyType, TestError> move_result = Ok(MoveOnlyType(123));
@@ -613,8 +619,8 @@ TEST_F(ResultTest, StructuredBinding) {
 
     EXPECT_TRUE(is_ok3);
     EXPECT_TRUE(value_opt3.has_value());
-    EXPECT_EQ(value_opt3.value().value, 123);
-    EXPECT_FALSE(value_opt3.value().moved_from);
+    EXPECT_EQ(value_opt3.value().value_, 123);
+    EXPECT_FALSE(value_opt3.value().moved_from_);
     EXPECT_FALSE(error_opt3.has_value());
 }
 
@@ -634,7 +640,7 @@ TEST_F(ResultTest, StructuredBinding) {
 TEST_F(ResultTest, UtilityFunctions) {
     // Test factory functions
     auto ok_result = make_ok(std::string("success"));
-    auto err_result = make_err(TestError::ParseError);
+    auto err_result = make_err(TestError::PARSE_ERROR);
 
     Result<std::string, TestError> typed_ok = ok_result;
     Result<int, TestError> typed_err = err_result;
@@ -642,7 +648,7 @@ TEST_F(ResultTest, UtilityFunctions) {
     EXPECT_TRUE(typed_ok.is_ok());
     EXPECT_EQ(typed_ok.unwrap(), "success");
     EXPECT_TRUE(typed_err.is_err());
-    EXPECT_EQ(typed_err.unwrap_err(), TestError::ParseError);
+    EXPECT_EQ(typed_err.unwrap_err(), TestError::PARSE_ERROR);
 
     // Test try_call with successful function
     auto success_call = try_call<std::runtime_error>([]() { return 42; });
@@ -690,21 +696,21 @@ TEST_F(ResultTest, CombineFunction) {
 
     // Test first error propagation
     Result<int, TestError> r4 = Ok(20);
-    Result<std::string, TestError> r5 = Err(TestError::NetworkFailure);
-    Result<double, TestError> r6 = Err(TestError::ParseError);
+    Result<std::string, TestError> r5 = Err(TestError::NETWORK_FAILURE);
+    Result<double, TestError> r6 = Err(TestError::PARSE_ERROR);
 
     auto error_combined = combine(r4, r5, r6);
     EXPECT_TRUE(error_combined.is_err());
-    EXPECT_EQ(error_combined.unwrap_err(), TestError::NetworkFailure);  // First error
+    EXPECT_EQ(error_combined.unwrap_err(), TestError::NETWORK_FAILURE);  // First error
 
     // Test mixed success and error
     Result<int, TestError> r7 = Ok(30);
     Result<std::string, TestError> r8 = Ok(std::string("world"));
-    Result<double, TestError> r9 = Err(TestError::InvalidInput);
+    Result<double, TestError> r9 = Err(TestError::INVALID_INPUT);
 
     auto mixed_combined = combine(r7, r8, r9);
     EXPECT_TRUE(mixed_combined.is_err());
-    EXPECT_EQ(mixed_combined.unwrap_err(), TestError::InvalidInput);
+    EXPECT_EQ(mixed_combined.unwrap_err(), TestError::INVALID_INPUT);
 }
 
 //=============================================================================
@@ -724,9 +730,9 @@ TEST_F(ResultTest, EqualityOperators) {
     Result<int, TestError> success1 = Ok(42);
     Result<int, TestError> success2 = Ok(42);
     Result<int, TestError> success3 = Ok(99);
-    Result<int, TestError> error1 = Err(TestError::NetworkFailure);
-    Result<int, TestError> error2 = Err(TestError::NetworkFailure);
-    Result<int, TestError> error3 = Err(TestError::ParseError);
+    Result<int, TestError> error1 = Err(TestError::NETWORK_FAILURE);
+    Result<int, TestError> error2 = Err(TestError::NETWORK_FAILURE);
+    Result<int, TestError> error3 = Err(TestError::PARSE_ERROR);
 
     // Test success equality
     EXPECT_TRUE(success1 == success2);
@@ -745,9 +751,9 @@ TEST_F(ResultTest, EqualityOperators) {
     EXPECT_TRUE(success1 != error1);
 
     // Test with complex types
-    DetailedError detailed1(TestError::NetworkFailure, "Connection failed", 404);
-    DetailedError detailed2(TestError::NetworkFailure, "Connection failed", 404);
-    DetailedError detailed3(TestError::NetworkFailure, "Different message", 404);
+    DetailedError detailed1(TestError::NETWORK_FAILURE, "Connection failed", 404);
+    DetailedError detailed2(TestError::NETWORK_FAILURE, "Connection failed", 404);
+    DetailedError detailed3(TestError::NETWORK_FAILURE, "Different message", 404);
 
     Result<int, DetailedError> complex_error1 = Err(detailed1);
     Result<int, DetailedError> complex_error2 = Err(detailed2);
@@ -778,10 +784,10 @@ TEST_F(ResultTest, PerformanceCharacteristics) {
     // Test that simple operations are inlined and fast
     auto start = std::chrono::high_resolution_clock::now();
 
-    const int iterations = 100000;  // Reduced iterations to avoid overflow and improve test speed
+    const int ITERATIONS = 100000;  // Reduced iterations to avoid overflow and improve test speed
     long long sum = 0;              // Use long long to avoid overflow
 
-    for (int i = 0; i < iterations; ++i) {
+    for (int i = 0; i < ITERATIONS; ++i) {
         auto result = make_result_ok<TestError>(i)
                           .map([](int x) { return x * 2; })
                           .and_then([](int x) -> Result<int, TestError> { return Ok(x + 1); });
@@ -816,9 +822,9 @@ TEST_F(ResultTest, EdgeCases) {
 
     // Test with large types
     struct LargeType {
-        std::array<int, 1000> data;
-        LargeType() { data.fill(42); }
-        bool operator==(const LargeType& other) const { return data == other.data; }
+        std::array<int, 1000> data_{};
+        LargeType() { data_.fill(42); }
+        auto operator==(const LargeType& other) const -> bool { return data_ == other.data_; }
     };
 
     Result<LargeType, TestError> large_result = Ok(LargeType{});
@@ -841,13 +847,13 @@ TEST_F(ResultTest, EdgeCases) {
     auto error_chain = make_result_ok<TestError>(1)
                            .map([](int x) { return x + 1; })
                            .and_then([](int x [[maybe_unused]]) -> Result<int, TestError> {
-                               return Err(TestError::InvalidInput);  // Error here
+                               return Err(TestError::INVALID_INPUT);  // Error here
                            })
                            .map([](int x) { return x * 1000; })  // Should not execute
                            .and_then([](int x) -> Result<int, TestError> { return Ok(x); });
 
     EXPECT_TRUE(error_chain.is_err());
-    EXPECT_EQ(error_chain.unwrap_err(), TestError::InvalidInput);
+    EXPECT_EQ(error_chain.unwrap_err(), TestError::INVALID_INPUT);
 }
 
 /**
@@ -860,26 +866,26 @@ TEST_F(ResultTest, EdgeCases) {
  * - Shared read-only access works correctly
  */
 TEST_F(ResultTest, ThreadSafety) {
-    const Result<int, TestError> shared_result = Ok(42);
+    const Result<int, TestError> SHARED_RESULT = Ok(42);
     std::atomic<int> success_count{0};
     std::atomic<int> total_sum{0};
 
-    const int num_threads = 4;
-    const int operations_per_thread = 1000;
+    const int NUM_THREADS = 4;
+    const int OPERATIONS_PER_THREAD = 1000;
 
     std::vector<std::thread> threads;
 
-    for (int t = 0; t < num_threads; ++t) {
-        threads.emplace_back([&shared_result, &success_count, &total_sum]() {
-            for (int i = 0; i < operations_per_thread; ++i) {
+    for (int t = 0; t < NUM_THREADS; ++t) {
+        threads.emplace_back([&SHARED_RESULT, &success_count, &total_sum]() {
+            for (int i = 0; i < OPERATIONS_PER_THREAD; ++i) {
                 // These operations should be thread-safe on const Result
-                if (shared_result.is_ok()) {
-                    auto value = shared_result.unwrap();
+                if (SHARED_RESULT.is_ok()) {
+                    auto value = SHARED_RESULT.unwrap();
                     total_sum += value;
                     success_count++;
                 }
 
-                auto opt = shared_result.ok();
+                auto opt = SHARED_RESULT.ok();
                 if (opt.has_value()) {
                     // Use the value
                     volatile int temp = opt.value();
@@ -893,8 +899,8 @@ TEST_F(ResultTest, ThreadSafety) {
         thread.join();
     }
 
-    EXPECT_EQ(success_count.load(), num_threads * operations_per_thread);
-    EXPECT_EQ(total_sum.load(), 42 * num_threads * operations_per_thread);
+    EXPECT_EQ(success_count.load(), NUM_THREADS * OPERATIONS_PER_THREAD);
+    EXPECT_EQ(total_sum.load(), 42 * NUM_THREADS * OPERATIONS_PER_THREAD);
 }
 
 //=============================================================================
@@ -921,7 +927,7 @@ TEST_F(ResultTest, TypeSafetyConstraints) {
         [](int x) -> Result<std::string, TestError> { return Ok(std::to_string(x)); });
     EXPECT_TRUE(valid_and_then.is_ok());
 
-    Result<int, TestError> error_result = Err(TestError::NetworkFailure);
+    Result<int, TestError> error_result = Err(TestError::NETWORK_FAILURE);
     auto valid_or_else = error_result.or_else([](TestError err) -> Result<int, DetailedError> {
         return Err(DetailedError(err, "Converted", 0));
     });
@@ -953,7 +959,7 @@ TEST_F(ResultTest, ErrorHandlingIntegration) {
         if (opt.has_value()) {
             return Ok(opt.value());
         }
-        return Err(TestError::InvalidInput);
+        return Err(TestError::INVALID_INPUT);
     };
 
     auto some_result = from_optional(std::make_optional(123));
@@ -962,7 +968,7 @@ TEST_F(ResultTest, ErrorHandlingIntegration) {
     EXPECT_TRUE(some_result.is_ok());
     EXPECT_EQ(some_result.unwrap(), 123);
     EXPECT_TRUE(none_result.is_err());
-    EXPECT_EQ(none_result.unwrap_err(), TestError::InvalidInput);
+    EXPECT_EQ(none_result.unwrap_err(), TestError::INVALID_INPUT);
 
     // Test integration with exception-based APIs
     auto risky_operation = [](int value) {
