@@ -78,7 +78,7 @@ class EOFNewlineChecker:
                 # Read first 1024 bytes to check if it's text
                 sample = f.read(1024)
                 if not sample:
-                    return False  # Empty files don't need newlines
+                    return True  # Empty files are valid and should be checked
                     
                 # Simple text detection - no null bytes in sample
                 return b'\x00' not in sample
@@ -89,8 +89,13 @@ class EOFNewlineChecker:
         """Check if a file ends with a newline character."""
         try:
             with open(file_path, 'rb') as f:
-                if f.seek(-1, 2) == -1:  # Seek to last character
-                    return False  # Empty file
+                # Check if file is empty first
+                f.seek(0, 2)  # Seek to end
+                if f.tell() == 0:  # File is empty
+                    return True  # Empty files are valid and don't need newlines
+                
+                # File has content, check last character
+                f.seek(-1, 2)  # Seek to last character
                 last_char = f.read(1)
                 return last_char in (b'\n', b'\r\n', b'\r')
         except (OSError, IOError):
