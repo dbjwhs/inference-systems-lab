@@ -26,7 +26,7 @@ void Logger::write_log_message(const LogLevel level, const std::string& message)
     if (is_level_enabled(level)) {
         if ((level == LogLevel::CRITICAL || level == LogLevel::ERROR) && m_stderr_enabled) {
             std::cerr << message;
-        } else { // info, normal, debug
+        } else {  // info, normal, debug
             std::cout << message;
         }
     }
@@ -34,10 +34,8 @@ void Logger::write_log_message(const LogLevel level, const std::string& message)
 
 std::stringstream Logger::create_log_prefix(LogLevel level) {
     std::stringstream message;
-    message << get_utc_timestamp()
-            << " [" << log_level_to_string(level)
-            << "] [Thread:"
-            << std::this_thread::get_id() << "] ";
+    message << get_utc_timestamp() << " [" << log_level_to_string(level)
+            << "] [Thread:" << std::this_thread::get_id() << "] ";
     return message;
 }
 
@@ -133,7 +131,7 @@ bool Logger::isFileOutputEnabled() const {
 
 bool Logger::is_level_enabled(LogLevel level) const {
     if (const int levelIndex = static_cast<int>(level);
-      levelIndex >= 0 && levelIndex <= static_cast<int>(LogLevel::CRITICAL)) {
+        levelIndex >= 0 && levelIndex <= static_cast<int>(LogLevel::CRITICAL)) {
         return m_enabled_levels[levelIndex];
     }
     return false;
@@ -164,7 +162,8 @@ std::string Logger::log_level_to_string(const LogLevel level) {
 
 std::string Logger::get_utc_timestamp() {
     const auto now = std::chrono::system_clock::now();
-    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    const auto ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     auto time = std::chrono::system_clock::to_time_t(now);
 
     struct tm tm_buf;
@@ -181,5 +180,5 @@ std::string Logger::get_utc_timestamp() {
     return ss.str();
 }
 
-} // namespace common
-} // namespace inference_lab
+}  // namespace common
+}  // namespace inference_lab

@@ -1,9 +1,9 @@
 // Common utilities for the Inference Systems Laboratory
 #pragma once
 
-#include <string_view>
 #include <chrono>
 #include <optional>
+#include <string_view>
 
 namespace inference_lab {
 namespace common {
@@ -15,5 +15,5 @@ namespace common {
 // - Memory allocation helpers
 // - Configuration management with std::optional
 
-} // namespace common
-} // namespace inference_lab
+}  // namespace common
+}  // namespace inference_lab

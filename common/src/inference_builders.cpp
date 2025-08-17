@@ -7,11 +7,11 @@
 /**
  * @file inference_builders.cpp
  * @brief Implementation of fluent builder classes for inference types
- * 
+ *
  * This file implements the builder pattern classes that provide a fluent interface
  * for constructing Facts, Rules, and Queries. The builders use method chaining to
  * make object construction more readable and less error-prone.
- * 
+ *
  * Key implementation details:
  * - Thread-safe ID generation using atomic counters
  * - State machines for building complex rules with conditions/conclusions
@@ -20,6 +20,7 @@
  */
 
 #include "inference_builders.hpp"
+
 #include <atomic>
 #include <stdexcept>
 
@@ -83,12 +84,12 @@ Fact FactBuilder::build() {
     if (id_ == 0) {
         id_ = nextId();
     }
-    
+
     Fact fact(id_, predicate_, args_, confidence_, timestamp_);
     for (const auto& [key, value] : metadata_) {
         fact.setMetadata(key, value);
     }
-    
+
     return fact;
 }
 
@@ -100,7 +101,7 @@ uint64_t FactBuilder::nextId() {
 }
 
 //=============================================================================
-// RuleBuilder Implementation  
+// RuleBuilder Implementation
 //=============================================================================
 // The RuleBuilder implements a state machine for building complex rules.
 // It tracks whether we're currently building a condition or conclusion
@@ -108,40 +109,42 @@ uint64_t FactBuilder::nextId() {
 
 RuleBuilder::RuleBuilder(const std::string& name) : name_(name) {}
 
-RuleBuilder& RuleBuilder::whenCondition(const std::string& predicate, const std::vector<Value>& args, bool negated) {
+RuleBuilder& RuleBuilder::whenCondition(const std::string& predicate,
+                                        const std::vector<Value>& args,
+                                        bool negated) {
     finishCurrentCondition();
     finishCurrentConclusion();
-    
+
     Rule::Condition condition;
     condition.predicate = predicate;
     condition.args = args;
     condition.negated = negated;
     conditions_.push_back(condition);
-    
+
     return *this;
 }
 
 RuleBuilder& RuleBuilder::when(const std::string& predicate) {
     finishCurrentCondition();
     finishCurrentConclusion();
-    
+
     currentPredicate_ = predicate;
     currentArgs_.clear();
     currentNegated_ = false;
     buildingState_ = BuildingState::Condition;
-    
+
     return *this;
 }
 
 RuleBuilder& RuleBuilder::whenNot(const std::string& predicate) {
     finishCurrentCondition();
     finishCurrentConclusion();
-    
+
     currentPredicate_ = predicate;
     currentArgs_.clear();
     currentNegated_ = true;
     buildingState_ = BuildingState::Condition;
-    
+
     return *this;
 }
 
@@ -182,28 +185,30 @@ RuleBuilder& RuleBuilder::withVariable(const std::string& varName) {
     return withArg(Value::fromText(name));
 }
 
-RuleBuilder& RuleBuilder::thenConclusion(const std::string& predicate, const std::vector<Value>& args, double confidence) {
+RuleBuilder& RuleBuilder::thenConclusion(const std::string& predicate,
+                                         const std::vector<Value>& args,
+                                         double confidence) {
     finishCurrentCondition();
     finishCurrentConclusion();
-    
+
     Rule::Conclusion conclusion;
     conclusion.predicate = predicate;
     conclusion.args = args;
     conclusion.confidence = confidence;
     conclusions_.push_back(conclusion);
-    
+
     return *this;
 }
 
 RuleBuilder& RuleBuilder::then(const std::string& predicate) {
     finishCurrentCondition();
     finishCurrentConclusion();
-    
+
     currentPredicate_ = predicate;
     currentArgs_.clear();
     currentConfidence_ = 1.0;
     buildingState_ = BuildingState::Conclusion;
-    
+
     return *this;
 }
 
@@ -229,18 +234,18 @@ RuleBuilder& RuleBuilder::withConfidence(double confidence) {
 Rule RuleBuilder::build() {
     finishCurrentCondition();
     finishCurrentConclusion();
-    
+
     if (conditions_.empty()) {
         throw std::runtime_error("Rule must have at least one condition");
     }
     if (conclusions_.empty()) {
         throw std::runtime_error("Rule must have at least one conclusion");
     }
-    
+
     if (id_ == 0) {
         id_ = nextId();
     }
-    
+
     return Rule(id_, name_, conditions_, conclusions_, priority_, confidence_);
 }
 
@@ -253,7 +258,7 @@ void RuleBuilder::finishCurrentCondition() {
         condition.args = currentArgs_;
         condition.negated = currentNegated_;
         conditions_.push_back(condition);
-        
+
         // Clear state for next condition/conclusion
         currentPredicate_.clear();
         currentArgs_.clear();
@@ -270,7 +275,7 @@ void RuleBuilder::finishCurrentConclusion() {
         conclusion.args = currentArgs_;
         conclusion.confidence = currentConfidence_;
         conclusions_.push_back(conclusion);
-        
+
         // Clear state for next condition/conclusion
         currentPredicate_.clear();
         currentArgs_.clear();
@@ -292,7 +297,9 @@ uint64_t RuleBuilder::nextId() {
 
 QueryBuilder::QueryBuilder(Query::Type type) : type_(type) {}
 
-QueryBuilder& QueryBuilder::goal(const std::string& predicate, const std::vector<Value>& args, bool negated) {
+QueryBuilder& QueryBuilder::goal(const std::string& predicate,
+                                 const std::vector<Value>& args,
+                                 bool negated) {
     goalPredicate_ = predicate;
     goalArgs_ = args;
     goalNegated_ = negated;
@@ -369,16 +376,16 @@ Query QueryBuilder::build() {
     if (!goalSet_ || goalPredicate_.empty()) {
         throw std::runtime_error("Query must have a goal");
     }
-    
+
     if (id_ == 0) {
         id_ = nextId();
     }
-    
+
     Rule::Condition goal;
     goal.predicate = goalPredicate_;
     goal.args = goalArgs_;
     goal.negated = goalNegated_;
-    
+
     return Query(id_, type_, goal, maxResults_, timeoutMs_);
 }
 
@@ -403,4 +410,4 @@ uint64_t QueryBuilder::nextId() {
     return counter.fetch_add(1);
 }
 
-} // namespace inference_lab::common
+}  // namespace inference_lab::common

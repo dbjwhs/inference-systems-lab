@@ -7,7 +7,7 @@
 /**
  * @file result_benchmarks.cpp
  * @brief Performance benchmarks for the Result<T, E> error handling type
- * 
+ *
  * This file contains comprehensive performance benchmarks for the Result<T, E>
  * implementation to validate zero-cost abstraction claims and compare against
  * alternative error handling approaches. Benchmarks include:
@@ -17,21 +17,23 @@
  * - Memory layout and cache performance characteristics
  * - Comparison with exception-based and raw error code approaches
  * - Real-world usage pattern performance simulation
- * 
+ *
  * The benchmarks use Google Benchmark framework for accurate measurement
  * and statistical analysis of performance characteristics.
  */
 
-#include "../src/result.hpp"
-#include <benchmark/benchmark.h>
-#include <iostream>
-#include <random>
-#include <vector>
-#include <string>
-#include <memory>
-#include <functional>
-#include <exception>
 #include <chrono>
+#include <exception>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
+
+#include <benchmark/benchmark.h>
+
+#include "../src/result.hpp"
 
 using namespace inference_lab::common;
 
@@ -52,19 +54,21 @@ enum class BenchError {
 struct LargeData {
     std::vector<double> values;
     std::string metadata;
-    
-    LargeData(size_t size = 1000) : values(size, 3.14159), metadata("benchmark_data_" + std::to_string(size)) {}
-    
+
+    LargeData(size_t size = 1000)
+        : values(size, 3.14159), metadata("benchmark_data_" + std::to_string(size)) {}
+
     // Make it expensive to copy
     LargeData(const LargeData& other) : values(other.values), metadata(other.metadata) {}
-    LargeData(LargeData&& other) noexcept : values(std::move(other.values)), metadata(std::move(other.metadata)) {}
-    
+    LargeData(LargeData&& other) noexcept
+        : values(std::move(other.values)), metadata(std::move(other.metadata)) {}
+
     LargeData& operator=(const LargeData& other) {
         values = other.values;
         metadata = other.metadata;
         return *this;
     }
-    
+
     LargeData& operator=(LargeData&& other) noexcept {
         values = std::move(other.values);
         metadata = std::move(other.metadata);
@@ -175,7 +179,7 @@ BENCHMARK(BM_Result_UnwrapOr_Error);
 static void BM_Result_UnwrapOrElse_Success(benchmark::State& state) {
     Result<int, BenchError> result = Ok(42);
     auto fallback = [](BenchError) { return 99; };
-    
+
     for (auto _ : state) {
         int value = result.unwrap_or_else(fallback);
         benchmark::DoNotOptimize(value);
@@ -186,7 +190,7 @@ BENCHMARK(BM_Result_UnwrapOrElse_Success);
 static void BM_Result_UnwrapOrElse_Error(benchmark::State& state) {
     Result<int, BenchError> result = Err(BenchError::InvalidInput);
     auto fallback = [](BenchError) { return 99; };
-    
+
     for (auto _ : state) {
         int value = result.unwrap_or_else(fallback);
         benchmark::DoNotOptimize(value);
@@ -204,7 +208,7 @@ BENCHMARK(BM_Result_UnwrapOrElse_Error);
 static void BM_Result_Map_Success(benchmark::State& state) {
     Result<int, BenchError> result = Ok(42);
     auto mapper = [](int x) { return x * 2; };
-    
+
     for (auto _ : state) {
         auto mapped = result.map(mapper);
         benchmark::DoNotOptimize(mapped);
@@ -215,7 +219,7 @@ BENCHMARK(BM_Result_Map_Success);
 static void BM_Result_Map_Error(benchmark::State& state) {
     Result<int, BenchError> result = Err(BenchError::InvalidInput);
     auto mapper = [](int x) { return x * 2; };
-    
+
     for (auto _ : state) {
         auto mapped = result.map(mapper);
         benchmark::DoNotOptimize(mapped);
@@ -228,12 +232,12 @@ BENCHMARK(BM_Result_Map_Error);
  */
 static void BM_Result_Map_Chain(benchmark::State& state) {
     Result<int, BenchError> result = Ok(10);
-    
+
     for (auto _ : state) {
-        auto chained = result
-            .map([](int x) { return x + 1; })
-            .map([](int x) { return x * 2; })
-            .map([](int x) { return x - 5; });
+        auto chained =
+            result.map([](int x) { return x + 1; }).map([](int x) { return x * 2; }).map([](int x) {
+                return x - 5;
+            });
         benchmark::DoNotOptimize(chained);
     }
 }
@@ -244,10 +248,8 @@ BENCHMARK(BM_Result_Map_Chain);
  */
 static void BM_Result_AndThen_Success(benchmark::State& state) {
     Result<int, BenchError> result = Ok(42);
-    auto operation = [](int x) -> Result<int, BenchError> {
-        return Ok(x * 2);
-    };
-    
+    auto operation = [](int x) -> Result<int, BenchError> { return Ok(x * 2); };
+
     for (auto _ : state) {
         auto chained = result.and_then(operation);
         benchmark::DoNotOptimize(chained);
@@ -257,10 +259,8 @@ BENCHMARK(BM_Result_AndThen_Success);
 
 static void BM_Result_AndThen_Error(benchmark::State& state) {
     Result<int, BenchError> result = Err(BenchError::InvalidInput);
-    auto operation = [](int x) -> Result<int, BenchError> {
-        return Ok(x * 2);
-    };
-    
+    auto operation = [](int x) -> Result<int, BenchError> { return Ok(x * 2); };
+
     for (auto _ : state) {
         auto chained = result.and_then(operation);
         benchmark::DoNotOptimize(chained);
@@ -273,21 +273,18 @@ BENCHMARK(BM_Result_AndThen_Error);
  */
 static void BM_Result_Complex_Chain(benchmark::State& state) {
     Result<int, BenchError> result = Ok(5);
-    
+
     for (auto _ : state) {
-        auto complex = result
-            .map([](int x) { return x + 10; })
-            .and_then([](int x) -> Result<int, BenchError> {
-                if (x > 20) {
-                    return Err(BenchError::ProcessingFailed);
-                } else {
-                    return Ok(x);
-                }
-            })
-            .map([](int x) { return x * 3; })
-            .or_else([](BenchError) -> Result<int, BenchError> {
-                return Ok(100);
-            });
+        auto complex = result.map([](int x) { return x + 10; })
+                           .and_then([](int x) -> Result<int, BenchError> {
+                               if (x > 20) {
+                                   return Err(BenchError::ProcessingFailed);
+                               } else {
+                                   return Ok(x);
+                               }
+                           })
+                           .map([](int x) { return x * 3; })
+                           .or_else([](BenchError) -> Result<int, BenchError> { return Ok(100); });
         benchmark::DoNotOptimize(complex);
     }
 }
@@ -302,17 +299,17 @@ BENCHMARK(BM_Result_Complex_Chain);
  */
 struct ErrorCodeResult {
     int value;
-    int error_code; // 0 = success, negative = error
-    
+    int error_code;  // 0 = success, negative = error
+
     bool is_ok() const { return error_code == 0; }
     int unwrap() const { return value; }
 };
 
 static ErrorCodeResult error_code_operation(int input) {
     if (input < 0) {
-        return {0, -1}; // Error
+        return {0, -1};  // Error
     }
-    return {input * 2, 0}; // Success
+    return {input * 2, 0};  // Success
 }
 
 static void BM_ErrorCode_Operation(benchmark::State& state) {
@@ -354,7 +351,7 @@ static void BM_Exception_Operation_Error(benchmark::State& state) {
             int value = exception_operation(-1);
             benchmark::DoNotOptimize(value);
         } catch (const std::exception&) {
-            benchmark::DoNotOptimize(100); // Default value
+            benchmark::DoNotOptimize(100);  // Default value
         }
     }
 }
@@ -401,7 +398,7 @@ static void BM_Result_Vector_Processing(benchmark::State& state) {
     size_t size = state.range(0);
     std::vector<Result<int, BenchError>> results;
     results.reserve(size);
-    
+
     // Populate with mix of success and error results
     std::uniform_int_distribution<int> dist(1, 100);
     for (size_t i = 0; i < size; ++i) {
@@ -412,7 +409,7 @@ static void BM_Result_Vector_Processing(benchmark::State& state) {
             results.emplace_back(Ok(value));
         }
     }
-    
+
     for (auto _ : state) {
         int sum = 0;
         for (const auto& result : results) {
@@ -420,7 +417,7 @@ static void BM_Result_Vector_Processing(benchmark::State& state) {
         }
         benchmark::DoNotOptimize(sum);
     }
-    
+
     state.SetItemsProcessed(state.iterations() * size);
 }
 BENCHMARK(BM_Result_Vector_Processing)->Range(1000, 100000);
@@ -432,11 +429,11 @@ static void BM_Result_Sequential_Access(benchmark::State& state) {
     size_t size = state.range(0);
     std::vector<Result<LargeData, BenchError>> results;
     results.reserve(size);
-    
+
     for (size_t i = 0; i < size; ++i) {
-        results.emplace_back(Ok(LargeData(10))); // Small data for this test
+        results.emplace_back(Ok(LargeData(10)));  // Small data for this test
     }
-    
+
     for (auto _ : state) {
         size_t total_size = 0;
         for (const auto& result : results) {
@@ -446,7 +443,7 @@ static void BM_Result_Sequential_Access(benchmark::State& state) {
         }
         benchmark::DoNotOptimize(total_size);
     }
-    
+
     state.SetItemsProcessed(state.iterations() * size);
 }
 BENCHMARK(BM_Result_Sequential_Access)->Range(1000, 10000);
@@ -459,44 +456,45 @@ BENCHMARK(BM_Result_Sequential_Access)->Range(1000, 10000);
  * @brief Simulate parsing pipeline with multiple stages
  */
 static auto parse_stage1(const std::string& input) -> Result<int, BenchError> {
-    if (input.empty()) return Err(BenchError::InvalidInput);
+    if (input.empty())
+        return Err(BenchError::InvalidInput);
     return Ok(static_cast<int>(input.length()));
 }
 
 static auto parse_stage2(int length) -> Result<double, BenchError> {
-    if (length > 1000) return Err(BenchError::ResourceExhausted);
+    if (length > 1000)
+        return Err(BenchError::ResourceExhausted);
     return Ok(static_cast<double>(length) * 1.5);
 }
 
 static auto parse_stage3(double value) -> Result<std::string, BenchError> {
-    if (value < 0) return Err(BenchError::ProcessingFailed);
+    if (value < 0)
+        return Err(BenchError::ProcessingFailed);
     return Ok("processed_" + std::to_string(value));
 }
 
 static void BM_Result_Parsing_Pipeline(benchmark::State& state) {
     std::vector<std::string> inputs;
     std::uniform_int_distribution<int> size_dist(1, 50);
-    
+
     // Generate test inputs
     for (int i = 0; i < 1000; ++i) {
         int size = size_dist(g_rng);
         inputs.emplace_back(size, 'a' + (i % 26));
     }
-    
+
     for (auto _ : state) {
         int successful = 0;
         for (const auto& input : inputs) {
-            auto result = parse_stage1(input)
-                .and_then(parse_stage2)
-                .and_then(parse_stage3);
-            
+            auto result = parse_stage1(input).and_then(parse_stage2).and_then(parse_stage3);
+
             if (result.is_ok()) {
                 successful++;
             }
         }
         benchmark::DoNotOptimize(successful);
     }
-    
+
     state.SetItemsProcessed(state.iterations() * inputs.size());
 }
 BENCHMARK(BM_Result_Parsing_Pipeline);
@@ -506,23 +504,25 @@ BENCHMARK(BM_Result_Parsing_Pipeline);
  */
 static auto simulate_network_request(int request_id) -> Result<std::string, BenchError> {
     // Simulate various outcomes based on request ID
-    if (request_id % 20 == 0) return Err(BenchError::NetworkTimeout);
-    if (request_id % 17 == 0) return Err(BenchError::ResourceExhausted);
+    if (request_id % 20 == 0)
+        return Err(BenchError::NetworkTimeout);
+    if (request_id % 17 == 0)
+        return Err(BenchError::ResourceExhausted);
     return Ok("response_" + std::to_string(request_id));
 }
 
 static void BM_Result_Network_Batch(benchmark::State& state) {
     size_t batch_size = state.range(0);
-    
+
     for (auto _ : state) {
         std::vector<Result<std::string, BenchError>> responses;
         responses.reserve(batch_size);
-        
+
         // Simulate batch requests
         for (size_t i = 0; i < batch_size; ++i) {
             responses.push_back(simulate_network_request(static_cast<int>(i)));
         }
-        
+
         // Process responses
         int successful = 0;
         size_t total_data = 0;
@@ -532,11 +532,11 @@ static void BM_Result_Network_Batch(benchmark::State& state) {
                 total_data += response.unwrap().length();
             }
         }
-        
+
         benchmark::DoNotOptimize(successful);
         benchmark::DoNotOptimize(total_data);
     }
-    
+
     state.SetItemsProcessed(state.iterations() * batch_size);
 }
 BENCHMARK(BM_Result_Network_Batch)->Range(10, 1000);
@@ -553,7 +553,7 @@ static void BM_Result_Memory_Overhead(benchmark::State& state) {
         // Measure actual memory allocation patterns
         std::vector<Result<int, BenchError>> results;
         results.reserve(10000);
-        
+
         for (int i = 0; i < 10000; ++i) {
             if (i % 10 == 0) {
                 results.emplace_back(Err(BenchError::ProcessingFailed));
@@ -561,7 +561,7 @@ static void BM_Result_Memory_Overhead(benchmark::State& state) {
                 results.emplace_back(Ok(i));
             }
         }
-        
+
         benchmark::DoNotOptimize(results);
     }
 }
@@ -574,23 +574,27 @@ BENCHMARK(BM_Result_Memory_Overhead);
 int main(int argc, char** argv) {
     std::cout << "Result<T, E> Performance Benchmarks" << std::endl;
     std::cout << "====================================" << std::endl;
-    std::cout << "Measuring performance characteristics of Result<T, E> implementation" << std::endl;
+    std::cout << "Measuring performance characteristics of Result<T, E> implementation"
+              << std::endl;
     std::cout << "Comparing with alternative error handling approaches" << std::endl;
     std::cout << "All measurements include compiler optimizations (-O2/-O3)" << std::endl;
     std::cout << std::endl;
-    
+
     // Display system information
     std::cout << "System Information:" << std::endl;
-    std::cout << "- Result<int, BenchError> size: " << sizeof(Result<int, BenchError>) << " bytes" << std::endl;
-    std::cout << "- std::variant<int, BenchError> size: " << sizeof(std::variant<int, BenchError>) << " bytes" << std::endl;
+    std::cout << "- Result<int, BenchError> size: " << sizeof(Result<int, BenchError>) << " bytes"
+              << std::endl;
+    std::cout << "- std::variant<int, BenchError> size: " << sizeof(std::variant<int, BenchError>)
+              << " bytes" << std::endl;
     std::cout << "- Raw int size: " << sizeof(int) << " bytes" << std::endl;
     std::cout << "- Raw pointer size: " << sizeof(void*) << " bytes" << std::endl;
     std::cout << std::endl;
-    
+
     ::benchmark::Initialize(&argc, argv);
-    if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+    if (::benchmark::ReportUnrecognizedArguments(argc, argv))
+        return 1;
     ::benchmark::RunSpecifiedBenchmarks();
     ::benchmark::Shutdown();
-    
+
     return 0;
 }

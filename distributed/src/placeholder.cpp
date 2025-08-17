@@ -9,5 +9,5 @@ int placeholder_function() {
     return 0;
 }
 
-} // namespace distributed
-} // namespace inference_lab
+}  // namespace distributed
+}  // namespace inference_lab

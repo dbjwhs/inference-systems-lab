@@ -7,35 +7,28 @@
 // Common logging utilities for the Inference Systems Laboratory
 #pragma once
 
-#include <fstream>
-#include <mutex>
-#include <memory>
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <filesystem>
-#include <chrono>
-#include <iomanip>
-#include <thread>
 #include <atomic>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <thread>
 
 namespace inference_lab {
 namespace common {
 
-enum class LogLevel {
-    DEBUG = 0,
-    INFO = 1,
-    NORMAL = 2,
-    WARNING = 3,
-    ERROR = 4,
-    CRITICAL = 5
-};
+enum class LogLevel { DEBUG = 0, INFO = 1, NORMAL = 2, WARNING = 3, ERROR = 4, CRITICAL = 5 };
 
 class Logger {
-private:
+  private:
     // shared_ptr to maintain the singleton
     inline static std::shared_ptr<Logger> m_instance;
-    inline static std::mutex m_instance_mutex; // mutex for thread-safe initialization
+    inline static std::mutex m_instance_mutex;  // mutex for thread-safe initialization
 
     // helper method to handle the common logging logic
     void write_log_message(const LogLevel level, const std::string& message);
@@ -46,19 +39,20 @@ private:
     // constructor is now private to control instantiation
     explicit Logger(const std::string& path, bool append = true);
 
-public:
+  public:
     // raii class for temporarily disabling stderr output
     class StderrSuppressionGuard {
-    public:
+      public:
         StderrSuppressionGuard();
         ~StderrSuppressionGuard();
 
-    private:
+      private:
         bool m_was_enabled;
     };
 
     // private method to get or create the instance
-    static std::shared_ptr<Logger> getOrCreateInstance(const std::string& path = "../custom.log", bool append = true);
+    static std::shared_ptr<Logger> getOrCreateInstance(const std::string& path = "../custom.log",
+                                                       bool append = true);
 
     // returns a reference for backward compatibility but uses shared_ptr internally
     static Logger& getInstance();
@@ -70,13 +64,14 @@ public:
     static std::shared_ptr<Logger> getInstancePtr();
 
     // with custom path for the shared_ptr version
-    static std::shared_ptr<Logger> getInstancePtr(const std::string& custom_path, bool append = true);
+    static std::shared_ptr<Logger> getInstancePtr(const std::string& custom_path,
+                                                  bool append = true);
 
     // destructor
     ~Logger();
 
     // Template-based logging methods for C++17 compatibility
-    template<typename... FormatArgs>
+    template <typename... FormatArgs>
     void print_log(const LogLevel level, const std::string& format, FormatArgs&&... args) {
         if (!is_level_enabled(level)) {
             return;
@@ -88,8 +83,11 @@ public:
     }
 
     // Template-based logging with depth for C++17 compatibility
-    template<typename... FormatArgs>
-    void print_log_with_depth(const LogLevel level, const int depth, const std::string& format, FormatArgs&&... args) {
+    template <typename... FormatArgs>
+    void print_log_with_depth(const LogLevel level,
+                              const int depth,
+                              const std::string& format,
+                              FormatArgs&&... args) {
         if (!is_level_enabled(level)) {
             return;
         }
@@ -120,12 +118,13 @@ public:
     // check if file output is enabled
     bool isFileOutputEnabled() const;
 
-private:
+  private:
     std::ofstream m_log_file;
     std::mutex m_mutex;
     std::atomic<bool> m_stderr_enabled{true};
     std::atomic<bool> m_file_output_enabled{true};
-    std::atomic<bool> m_enabled_levels[6]{true, true, true, true, true, true}; // one for each log level
+    std::atomic<bool> m_enabled_levels[6]{true, true, true, true, true, true};  // one for each log
+                                                                                // level
 
     // check if a level is enabled (internal helper)
     bool is_level_enabled(LogLevel level) const;
@@ -140,7 +139,7 @@ private:
     static std::string get_utc_timestamp();
 
     // C++17 compatible format message helper
-    template<typename... FormatArgs>
+    template <typename... FormatArgs>
     static std::string format_message(const std::string& format, FormatArgs&&... args) {
         // Simple string substitution approach for C++17
         // For more complex formatting, consider using fmtlib or similar
@@ -155,8 +154,11 @@ private:
     }
 
     // Helper for formatting - recursive case
-    template<typename ValueType, typename... FormatArgs>
-    static void format_message_impl(std::ostringstream& oss, const std::string& format, ValueType&& value, FormatArgs&&... args) {
+    template <typename ValueType, typename... FormatArgs>
+    static void format_message_impl(std::ostringstream& oss,
+                                    const std::string& format,
+                                    ValueType&& value,
+                                    FormatArgs&&... args) {
         // Simple approach: replace first {} with the value
         size_t pos = format.find("{}");
         if (pos != std::string::npos) {
@@ -173,7 +175,8 @@ private:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 
-#define LOG_BASE_PRINT(level, message, ...) Logger::getInstance().print_log(level, message, ##__VA_ARGS__)
+#define LOG_BASE_PRINT(level, message, ...) \
+    Logger::getInstance().print_log(level, message, ##__VA_ARGS__)
 #define LOG_INFO_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::INFO, message, ##__VA_ARGS__)
 #define LOG_NORMAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::NORMAL, message, ##__VA_ARGS__)
 #define LOG_WARNING_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::WARNING, message, ##__VA_ARGS__)
@@ -183,5 +186,5 @@ private:
 
 #pragma GCC diagnostic pop
 
-} // namespace common
-} // namespace inference_lab
+}  // namespace common
+}  // namespace inference_lab

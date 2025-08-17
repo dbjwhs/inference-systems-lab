@@ -13,5 +13,5 @@ namespace common {
 // - Time measurement utilities
 // - Configuration management
 
-} // namespace common
-} // namespace inference_lab
+}  // namespace common
+}  // namespace inference_lab
