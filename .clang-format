@@ -1,0 +1,112 @@
+# clang-format configuration for inference-systems-lab
+# Based on clang-format version 20.1.8
+# Ensures consistent C++17+ code formatting across the project
+
+# Base configuration
+BasedOnStyle: Google
+
+# Language and standard
+Language: Cpp
+Standard: c++17
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+ConstructorInitializerIndentWidth: 4
+AccessModifierOffset: -2
+
+# Line length and wrapping
+ColumnLimit: 100
+BreakBeforeBraces: Attach
+AlwaysBreakTemplateDeclarations: Yes
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+PackConstructorInitializers: NextLine
+
+# Spacing
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpacesBeforeTrailingComments: 2
+
+# Pointer and reference alignment
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Function formatting
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+
+# Include sorting and formatting
+SortIncludes: CaseInsensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # System headers first
+  - Regex: '^<[^/]*>$'
+    Priority: 1
+  # C++ standard library
+  - Regex: '^<.*\.(h|hpp)>$'
+    Priority: 2  
+  # Third-party libraries
+  - Regex: '^<.*>$'
+    Priority: 3
+  # Project headers
+  - Regex: '^".*"$'
+    Priority: 4
+
+# Namespace formatting
+NamespaceIndentation: None
+CompactNamespaces: false
+
+# Comment formatting
+ReflowComments: true
+AlignTrailingComments: true
+
+# Binary operator formatting
+BreakBeforeBinaryOperators: None
+AlignOperands: Align
+
+# Preprocessor formatting
+IndentPPDirectives: BeforeHash
+
+# Miscellaneous
+Cpp11BracedListStyle: true
+FixNamespaceComments: true
+SortUsingDeclarations: true
+
+# Template formatting for modern C++17+ patterns  
+BreakBeforeConceptDeclarations: true
+
+# Lambda formatting
+AllowShortLambdasOnASingleLine: All
+
+# Keep existing line breaks in some cases
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+
+# Experimental features for modern C++
+# (These may need adjustment based on clang-format version)
+SpaceAfterTemplateKeyword: true
+BinPackArguments: false
+BinPackParameters: false
+
+# Braced list formatting is already set above
+
+# Penalty settings for line breaking decisions
+PenaltyBreakAssignment: 10
+PenaltyBreakBeforeFirstCallParameter: 30
+PenaltyBreakComment: 60
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 200
