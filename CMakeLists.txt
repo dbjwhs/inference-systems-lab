@@ -30,7 +30,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-g -O0 -fno-omit-frame-pointer)
-        add_compile_definitions(DEBUG)
+        add_compile_definitions(INFERENCE_LAB_DEBUG)
     else()
         add_compile_options(-O3 -DNDEBUG)
     endif()
