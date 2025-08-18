@@ -14,9 +14,12 @@
 
 #include "../src/logging.hpp"
 
-using namespace inference_lab::common;
+using inference_lab::common::Logger;
+using inference_lab::common::LogLevel;
 
-static void test_basic_logging() {
+namespace {
+
+void test_basic_logging() {
     std::cout << "\n=== Testing Basic Logging ===\n";
 
     // Test all log levels
@@ -28,7 +31,7 @@ static void test_basic_logging() {
     LOG_CRITICAL_PRINT("This is a critical message");
 }
 
-static void test_level_control() {
+void test_level_control() {
     std::cout << "\n=== Testing Level Control ===\n";
 
     [[maybe_unused]] auto& logger = Logger::get_instance();
@@ -51,7 +54,7 @@ static void test_level_control() {
     LOG_INFO_PRINT("This info message should appear now");
 }
 
-static void test_stderr_suppression() {
+void test_stderr_suppression() {
     std::cout << "\n=== Testing Stderr Suppression ===\n";
 
     std::cout << "Testing stderr suppression guard:\n";
@@ -65,7 +68,7 @@ static void test_stderr_suppression() {
     LOG_ERROR_PRINT("This error should go to stderr again");
 }
 
-static void test_file_output_control() {
+void test_file_output_control() {
     std::cout << "\n=== Testing File Output Control ===\n";
 
     [[maybe_unused]] auto& logger = Logger::get_instance();
@@ -81,7 +84,7 @@ static void test_file_output_control() {
     LOG_NORMAL_PRINT("Console and file message");
 }
 
-static void test_depth_logging() {
+void test_depth_logging() {
     std::cout << "\n=== Testing Depth Logging ===\n";
 
     [[maybe_unused]] auto& logger = Logger::get_instance();
@@ -92,7 +95,7 @@ static void test_depth_logging() {
     logger.print_log_with_depth(LogLevel::INFO, 3, "Depth 3 message");
 }
 
-static void test_multithreaded_logging() {
+void test_multithreaded_logging() {
     std::cout << "\n=== Testing Multithreaded Logging ===\n";
 
     std::vector<std::thread> threads;
@@ -112,6 +115,8 @@ static void test_multithreaded_logging() {
         thrd.join();
     }
 }
+
+}  // anonymous namespace
 
 auto main() -> int {
     try {

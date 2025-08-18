@@ -3,9 +3,11 @@
 
 namespace inference_lab::distributed {
 
+namespace {
 // Placeholder function to ensure library has symbols
-auto placeholder_function() -> int {
+[[maybe_unused]] auto placeholder_function() -> int {
     return 0;
 }
+}  // anonymous namespace
 
 }  // namespace inference_lab::distributed
