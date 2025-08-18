@@ -101,11 +101,11 @@ class SerializationTest : public ::testing::Test {
      */
     Fact createTestFact(uint64_t id = 1) {
         std::vector<Value> args = {
-            Value::fromText("socrates"), Value::fromInt64(42), Value::fromFloat64(3.14159)};
+            Value::from_text("socrates"), Value::from_int64(42), Value::from_float64(3.14159)};
 
         Fact fact(id, "isHuman", args, 0.95, 1234567890);
-        fact.setMetadata("source", Value::fromText("unit_test"));
-        fact.setMetadata("created_by", Value::fromText("test_framework"));
+        fact.set_metadata("source", Value::from_text("unit_test"));
+        fact.set_metadata("created_by", Value::from_text("test_framework"));
 
         return fact;
     }
@@ -120,24 +120,24 @@ class SerializationTest : public ::testing::Test {
         std::vector<Rule::Condition> conditions;
 
         Rule::Condition cond1;
-        cond1.predicate = "isHuman";
-        cond1.args = {Value::fromText("X")};
-        cond1.negated = false;
+        cond1.predicate_ = "isHuman";
+        cond1.args_ = {Value::from_text("X")};
+        cond1.negated_ = false;
         conditions.push_back(cond1);
 
         Rule::Condition cond2;
-        cond2.predicate = "hasAge";
-        cond2.args = {Value::fromText("X"), Value::fromText("Age")};
-        cond2.negated = false;
+        cond2.predicate_ = "hasAge";
+        cond2.args_ = {Value::from_text("X"), Value::from_text("Age")};
+        cond2.negated_ = false;
         conditions.push_back(cond2);
 
         // Create conclusions: isMortal(X)
         std::vector<Rule::Conclusion> conclusions;
 
         Rule::Conclusion concl1;
-        concl1.predicate = "isMortal";
-        concl1.args = {Value::fromText("X")};
-        concl1.confidence = 0.99;
+        concl1.predicate_ = "isMortal";
+        concl1.args_ = {Value::from_text("X")};
+        concl1.confidence_ = 0.99;
         conclusions.push_back(concl1);
 
         return Rule(id, "mortality_rule", conditions, conclusions, 10, 0.95);
@@ -150,9 +150,9 @@ class SerializationTest : public ::testing::Test {
      */
     Query createTestQuery(uint64_t id = 1) {
         Rule::Condition goal;
-        goal.predicate = "isMortal";
-        goal.args = {Value::fromText("socrates")};
-        goal.negated = false;
+        goal.predicate_ = "isMortal";
+        goal.args_ = {Value::from_text("socrates")};
+        goal.negated_ = false;
 
         return Query(id, Query::Type::FindAll, goal, 50, 10000);
     }
@@ -256,32 +256,32 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
     EXPECT_FALSE(defaultValue.isStruct());
 
     // Test int64 value
-    Value intValue = Value::fromInt64(42);
+    Value intValue = Value::from_int64(42);
     EXPECT_TRUE(intValue.isInt64());
     EXPECT_EQ(intValue.asInt64(), 42);
     EXPECT_FALSE(intValue.isFloat64());
 
     // Test float64 value
-    Value floatValue = Value::fromFloat64(3.14159);
+    Value floatValue = Value::from_float64(3.14159);
     EXPECT_TRUE(floatValue.isFloat64());
     EXPECT_DOUBLE_EQ(floatValue.asFloat64(), 3.14159);
     EXPECT_FALSE(floatValue.isInt64());
 
     // Test text value
-    Value textValue = Value::fromText("hello world");
+    Value textValue = Value::from_text("hello world");
     EXPECT_TRUE(textValue.isText());
     EXPECT_EQ(textValue.asText(), "hello world");
     EXPECT_FALSE(textValue.isInt64());
 
     // Test bool value
-    Value boolValue = Value::fromBool(true);
+    Value boolValue = Value::from_bool(true);
     EXPECT_TRUE(boolValue.isBool());
     EXPECT_TRUE(boolValue.asBool());
     EXPECT_FALSE(boolValue.isText());
 
     // Test list value
     std::vector<Value> listData = {
-        Value::fromInt64(1), Value::fromText("test"), Value::fromBool(false)};
+        Value::from_int64(1), Value::from_text("test"), Value::from_bool(false)};
     Value listValue = Value::fromList(listData);
     EXPECT_TRUE(listValue.isList());
     EXPECT_FALSE(listValue.isStruct());
@@ -293,9 +293,9 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
     EXPECT_FALSE(retrievedList[2].asBool());
 
     // Test struct value
-    std::unordered_map<std::string, Value> structData = {{"name", Value::fromText("Alice")},
-                                                         {"age", Value::fromInt64(30)},
-                                                         {"score", Value::fromFloat64(95.5)}};
+    std::unordered_map<std::string, Value> structData = {{"name", Value::from_text("Alice")},
+                                                         {"age", Value::from_int64(30)},
+                                                         {"score", Value::from_float64(95.5)}};
     Value structValue = Value::fromStruct(structData);
     EXPECT_TRUE(structValue.isStruct());
     EXPECT_FALSE(structValue.isList());
@@ -317,8 +317,8 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
  * - Exception messages are meaningful for debugging
  */
 TEST_F(SerializationTest, ValueExtractionMethods) {
-    Value intValue = Value::fromInt64(123);
-    Value textValue = Value::fromText("test");
+    Value intValue = Value::from_int64(123);
+    Value textValue = Value::from_text("test");
 
     // Test successful extraction
     EXPECT_EQ(intValue.asInt64(), 123);
@@ -361,15 +361,15 @@ TEST_F(SerializationTest, ValueExtractionMethods) {
  */
 TEST_F(SerializationTest, ValueStringRepresentation) {
     // Test primitive types
-    EXPECT_EQ(Value::fromInt64(42).toString(), "42");
-    EXPECT_EQ(Value::fromFloat64(3.14).toString(), "3.140000");  // Note: std::to_string precision
-    EXPECT_EQ(Value::fromText("hello").toString(), "\"hello\"");
-    EXPECT_EQ(Value::fromBool(true).toString(), "true");
-    EXPECT_EQ(Value::fromBool(false).toString(), "false");
+    EXPECT_EQ(Value::from_int64(42).toString(), "42");
+    EXPECT_EQ(Value::from_float64(3.14).toString(), "3.140000");  // Note: std::to_string precision
+    EXPECT_EQ(Value::from_text("hello").toString(), "\"hello\"");
+    EXPECT_EQ(Value::from_bool(true).toString(), "true");
+    EXPECT_EQ(Value::from_bool(false).toString(), "false");
 
     // Test list representation
     std::vector<Value> listData = {
-        Value::fromInt64(1), Value::fromText("test"), Value::fromBool(true)};
+        Value::from_int64(1), Value::from_text("test"), Value::from_bool(true)};
     Value listValue = Value::fromList(listData);
     std::string listStr = listValue.toString();
     EXPECT_TRUE(listStr.find("[") != std::string::npos);
@@ -379,8 +379,8 @@ TEST_F(SerializationTest, ValueStringRepresentation) {
     EXPECT_TRUE(listStr.find("true") != std::string::npos);
 
     // Test struct representation
-    std::unordered_map<std::string, Value> structData = {{"name", Value::fromText("Alice")},
-                                                         {"count", Value::fromInt64(5)}};
+    std::unordered_map<std::string, Value> structData = {{"name", Value::from_text("Alice")},
+                                                         {"count", Value::from_int64(5)}};
     Value structValue = Value::fromStruct(structData);
     std::string structStr = structValue.toString();
     EXPECT_TRUE(structStr.find("{") != std::string::npos);
@@ -403,13 +403,13 @@ TEST_F(SerializationTest, ValueStringRepresentation) {
 TEST_F(SerializationTest, ValueCapnProtoInterop) {
     // Create a complex nested value structure
     std::unordered_map<std::string, Value> structData = {
-        {"simple_int", Value::fromInt64(42)},
-        {"simple_text", Value::fromText("hello")},
+        {"simple_int", Value::from_int64(42)},
+        {"simple_text", Value::from_text("hello")},
         {"nested_list",
-         Value::fromList({Value::fromInt64(1), Value::fromInt64(2), Value::fromInt64(3)})},
+         Value::fromList({Value::from_int64(1), Value::from_int64(2), Value::from_int64(3)})},
         {"nested_struct",
-         Value::fromStruct(
-             {{"inner_bool", Value::fromBool(true)}, {"inner_float", Value::fromFloat64(2.718)}})}};
+         Value::fromStruct({{"inner_bool", Value::from_bool(true)},
+                            {"inner_float", Value::from_float64(2.718)}})}};
     Value originalValue = Value::fromStruct(structData);
 
     // Write to Cap'n Proto and read back
@@ -441,7 +441,7 @@ TEST_F(SerializationTest, ValueCapnProtoInterop) {
  */
 TEST_F(SerializationTest, FactCreationAndOperations) {
     // Test basic fact creation
-    std::vector<Value> args = {Value::fromText("socrates"), Value::fromInt64(70)};
+    std::vector<Value> args = {Value::from_text("socrates"), Value::from_int64(70)};
 
     uint64_t testTimestamp = 1234567890;
     Fact fact(42, "hasAge", args, 0.95, testTimestamp);
@@ -461,9 +461,9 @@ TEST_F(SerializationTest, FactCreationAndOperations) {
     // Test metadata operations
     EXPECT_TRUE(fact.getMetadata().empty());
 
-    fact.setMetadata("source", Value::fromText("knowledge_base"));
-    fact.setMetadata("confidence_level", Value::fromText("high"));
-    fact.setMetadata("version", Value::fromInt64(1));
+    fact.set_metadata("source", Value::from_text("knowledge_base"));
+    fact.set_metadata("confidence_level", Value::from_text("high"));
+    fact.set_metadata("version", Value::from_int64(1));
 
     EXPECT_EQ(fact.getMetadata().size(), 3);
 
@@ -500,7 +500,7 @@ TEST_F(SerializationTest, FactTimestampGeneration) {
                               .count();
 
     // Create fact with auto-generated timestamp
-    Fact fact(1, "test", {Value::fromText("arg")}, 1.0, 0);
+    Fact fact(1, "test", {Value::from_text("arg")}, 1.0, 0);
 
     auto afterCreation = std::chrono::duration_cast<std::chrono::milliseconds>(
                              std::chrono::system_clock::now().time_since_epoch())
@@ -512,7 +512,7 @@ TEST_F(SerializationTest, FactTimestampGeneration) {
 
     // Test explicit timestamp preservation
     uint64_t explicitTimestamp = 9876543210;
-    Fact explicitFact(2, "test", {Value::fromText("arg")}, 1.0, explicitTimestamp);
+    Fact explicitFact(2, "test", {Value::from_text("arg")}, 1.0, explicitTimestamp);
     EXPECT_EQ(explicitFact.getTimestamp(), explicitTimestamp);
 }
 
@@ -531,9 +531,9 @@ TEST_F(SerializationTest, FactCapnProtoSerialization) {
     // Add complex metadata
     originalFact.setMetadata(
         "complex_data",
-        Value::fromList({Value::fromInt64(1),
-                         Value::fromText("nested"),
-                         Value::fromStruct({{"key", Value::fromBool(true)}})}));
+        Value::fromList({Value::from_int64(1),
+                         Value::from_text("nested"),
+                         Value::fromStruct({{"key", Value::from_bool(true)}})}));
 
     // Serialize to Cap'n Proto
     capnp::MallocMessageBuilder message;
@@ -627,22 +627,22 @@ TEST_F(SerializationTest, RuleNegatedConditions) {
 
     // Add a negated condition
     Rule::Condition negatedCond;
-    negatedCond.predicate = "isDead";
-    negatedCond.args = {Value::fromText("X")};
-    negatedCond.negated = true;
+    negatedCond.predicate_ = "isDead";
+    negatedCond.args_ = {Value::from_text("X")};
+    negatedCond.negated_ = true;
     conditions.push_back(negatedCond);
 
     // Add a normal condition
     Rule::Condition normalCond;
-    normalCond.predicate = "isAlive";
-    normalCond.args = {Value::fromText("X")};
-    normalCond.negated = false;
+    normalCond.predicate_ = "isAlive";
+    normalCond.args_ = {Value::from_text("X")};
+    normalCond.negated_ = false;
     conditions.push_back(normalCond);
 
     std::vector<Rule::Conclusion> conclusions;
     Rule::Conclusion concl;
-    concl.predicate = "canThink";
-    concl.args = {Value::fromText("X")};
+    concl.predicate_ = "canThink";
+    concl.args_ = {Value::from_text("X")};
     conclusions.push_back(concl);
 
     Rule rule(1, "thinking_rule", conditions, conclusions);
@@ -758,8 +758,8 @@ TEST_F(SerializationTest, QueryCreationAndTypes) {
 
     // Test different query types
     Rule::Condition proveGoal;
-    proveGoal.predicate = "isHuman";
-    proveGoal.args = {Value::fromText("alice")};
+    proveGoal.predicate_ = "isHuman";
+    proveGoal.args_ = {Value::from_text("alice")};
 
     Query proveQuery(1, Query::Type::Prove, proveGoal);
     EXPECT_TRUE(proveQuery.toString().find("PROVE") != std::string::npos);
@@ -790,10 +790,10 @@ TEST_F(SerializationTest, FactBinarySerialization) {
     // Add complex nested data to test comprehensive serialization
     originalFact.setMetadata(
         "nested_list",
-        Value::fromList({Value::fromStruct({{"inner_key", Value::fromText("inner_value")},
-                                            {"inner_number", Value::fromInt64(42)}}),
-                         Value::fromFloat64(2.718),
-                         Value::fromBool(false)}));
+        Value::fromList({Value::fromStruct({{"inner_key", Value::from_text("inner_value")},
+                                            {"inner_number", Value::from_int64(42)}}),
+                         Value::from_float64(2.718),
+                         Value::from_bool(false)}));
 
     // Serialize to binary format
     std::vector<uint8_t> binaryData = Serializer::serialize(originalFact);
@@ -1281,18 +1281,19 @@ TEST_F(SerializationTest, LargeScaleSerializationTest) {
         Fact fact = createTestFact(i);
 
         // Add some variability
-        fact.setMetadata("batch_id", Value::fromInt64(i / 100));
-        fact.setMetadata("sequence", Value::fromInt64(i));
+        fact.set_metadata("batch_id", Value::from_int64(i / 100));
+        fact.set_metadata("sequence", Value::from_int64(i));
 
         if (i % 10 == 0) {
             // Add complex nested structure every 10th fact
-            fact.setMetadata("complex",
-                             Value::fromStruct(
-                                 {{"nested_list",
-                                   Value::fromList({Value::fromInt64(i),
-                                                    Value::fromFloat64(i * 0.1),
-                                                    Value::fromText("item_" + std::to_string(i))})},
-                                  {"metadata_level", Value::fromInt64(2)}}));
+            fact.set_metadata(
+                "complex",
+                Value::fromStruct(
+                    {{"nested_list",
+                      Value::fromList({Value::from_int64(i),
+                                       Value::from_float64(i * 0.1),
+                                       Value::from_text("item_" + std::to_string(i))})},
+                     {"metadata_level", Value::from_int64(2)}}));
         }
 
         originalFacts.push_back(fact);
@@ -1374,8 +1375,8 @@ TEST_F(SerializationTest, ConcurrentSerializationTest) {
             for (int i = 0; i < operationsPerThread; ++i) {
                 try {
                     Fact fact = createTestFact(threadId * 1000 + i);
-                    fact.setMetadata("thread_id", Value::fromInt64(threadId));
-                    fact.setMetadata("operation_id", Value::fromInt64(i));
+                    fact.set_metadata("thread_id", Value::from_int64(threadId));
+                    fact.set_metadata("operation_id", Value::from_int64(i));
 
                     auto serializedData = Serializer::serialize(fact);
                     threadResults[threadId].push_back(serializedData);
@@ -1455,7 +1456,7 @@ TEST_F(SerializationTest, ErrorHandlingAndEdgeCases) {
 
     // Test very large strings
     std::string largeString(10000, 'A');
-    Value largeValue = Value::fromText(largeString);
+    Value largeValue = Value::from_text(largeString);
     Fact largeFact(1, "large_predicate", {largeValue}, 1.0, 12345);
 
     auto serializedLarge = Serializer::serialize(largeFact);
@@ -1470,7 +1471,7 @@ TEST_F(SerializationTest, ErrorHandlingAndEdgeCases) {
               {{"level2",
                 Value::fromStruct({{"level3",
                                     Value::fromList({Value::fromStruct(
-                                        {{"level4", Value::fromText("deep_value")}})})}})}})}});
+                                        {{"level4", Value::from_text("deep_value")}})})}})}})}});
 
     Fact nestedFact(2, "nested", {deeplyNested}, 1.0, 12345);
     auto serializedNested = Serializer::serialize(nestedFact);

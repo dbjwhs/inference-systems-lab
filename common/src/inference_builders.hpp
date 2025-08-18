@@ -52,7 +52,7 @@ namespace inference_lab::common {
  *     .withArg("socrates")
  *     .withArg("athens")
  *     .withConfidence(0.95)
- *     .withMetadata("source", Value::fromText("historical_records"))
+ *     .with_metadata("source", Value::from_text("historical_records"))
  *     .build();
  * ```
  */
@@ -510,7 +510,7 @@ inline auto var(const std::string& name) -> Value {
     if (!var_name.empty() && std::islower(var_name[0])) {
         var_name[0] = std::toupper(var_name[0]);
     }
-    return Value::fromText(var_name);
+    return Value::from_text(var_name);
 }
 
 }  // namespace builders

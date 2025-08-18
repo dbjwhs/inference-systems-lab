@@ -323,7 +323,7 @@ std::optional<Rule> SchemaEvolutionManager::migrate_rule(const Rule& rule,
 
 std::string SchemaEvolutionManager::generate_compatibility_matrix() const {
     std::ostringstream oss;
-    auto supportedVersions = getSupportedVersions();
+    auto supportedVersions = get_supported_versions();
 
     oss << "Schema Compatibility Matrix\n";
     oss << "Current version: " << current_version_.to_string() << "\n\n";
@@ -381,9 +381,9 @@ std::vector<std::string> VersionValidator::validate_migration_path(const Migrati
     }
 
     // Validate major version changes
-    if (from.getMajor() != to.getMajor()) {
-        if (path.getStrategy() != MigrationPath::Strategy::CustomLogic &&
-            path.getStrategy() != MigrationPath::Strategy::Lossy) {
+    if (from.get_major() != to.get_major()) {
+        if (path.get_strategy() != MigrationPath::Strategy::CUSTOM_LOGIC &&
+            path.get_strategy() != MigrationPath::Strategy::LOSSY) {
             errors.push_back("Major version changes require custom logic or lossy migration");
         }
     }
@@ -391,20 +391,20 @@ std::vector<std::string> VersionValidator::validate_migration_path(const Migrati
     return errors;
 }
 
-bool VersionValidator::isSafeTransition(const SchemaVersion& from, const SchemaVersion& to) {
+bool VersionValidator::is_safe_transition(const SchemaVersion& from, const SchemaVersion& to) {
     // Safe if only minor or patch versions increase
-    return from.getMajor() == to.getMajor() && from <= to;
+    return from.get_major() == to.get_major() && from <= to;
 }
 
-std::vector<std::string> VersionValidator::generateWarnings(const SchemaVersion& from,
-                                                            const SchemaVersion& to) {
+std::vector<std::string> VersionValidator::generate_warnings(const SchemaVersion& from,
+                                                             const SchemaVersion& to) {
     std::vector<std::string> warnings;
 
-    if (from.getMajor() != to.getMajor()) {
+    if (from.get_major() != to.get_major()) {
         warnings.push_back("Major version change may break backward compatibility");
     }
 
-    if (to.getMinor() > from.getMinor() + 1) {
+    if (to.get_minor() > from.get_minor() + 1) {
         warnings.push_back("Skipping minor versions may indicate missing migration paths");
     }
 
@@ -412,35 +412,35 @@ std::vector<std::string> VersionValidator::generateWarnings(const SchemaVersion&
 }
 
 // SchemaRegistry implementation
-SchemaRegistry& SchemaRegistry::getInstance() {
+SchemaRegistry& SchemaRegistry::get_instance() {
     static SchemaRegistry instance;
     return instance;
 }
 
-void SchemaRegistry::registerSchema(const SchemaVersion& version,
-                                    [[maybe_unused]] const std::string& schemaHash) {
-    auto it = std::find(registeredVersions_.begin(), registeredVersions_.end(), version);
-    if (it == registeredVersions_.end()) {
-        registeredVersions_.push_back(version);
-        std::sort(registeredVersions_.begin(), registeredVersions_.end());
+void SchemaRegistry::register_schema(const SchemaVersion& version,
+                                     [[maybe_unused]] const std::string& schemaHash) {
+    auto it = std::find(registered_versions_.begin(), registered_versions_.end(), version);
+    if (it == registered_versions_.end()) {
+        registered_versions_.push_back(version);
+        std::sort(registered_versions_.begin(), registered_versions_.end());
     }
 }
 
-const SchemaVersion& SchemaRegistry::getCurrentSchema() const {
+const SchemaVersion& SchemaRegistry::get_current_schema() const {
     return current_version_;
 }
 
-void SchemaRegistry::setCurrentSchema(const SchemaVersion& version) {
+void SchemaRegistry::set_current_schema(const SchemaVersion& version) {
     current_version_ = version;
 }
 
-bool SchemaRegistry::isRegistered(const SchemaVersion& version) const {
-    return std::find(registeredVersions_.begin(), registeredVersions_.end(), version) !=
-           registeredVersions_.end();
+bool SchemaRegistry::is_registered(const SchemaVersion& version) const {
+    return std::find(registered_versions_.begin(), registered_versions_.end(), version) !=
+           registered_versions_.end();
 }
 
-std::vector<SchemaVersion> SchemaRegistry::getAllVersions() const {
-    return registeredVersions_;
+std::vector<SchemaVersion> SchemaRegistry::get_all_versions() const {
+    return registered_versions_;
 }
 
 }  // namespace inference_lab::common::evolution
