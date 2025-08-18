@@ -28,10 +28,18 @@
 #include "../src/inference_builders.hpp"
 #include "../src/inference_types.hpp"
 
-using namespace inference_lab::common;
-using namespace inference_lab::common::builders;
+using inference_lab::common::Fact;
+using inference_lab::common::FactBuilder;
+using inference_lab::common::Query;
+using inference_lab::common::QueryBuilder;
+using inference_lab::common::Rule;
+using inference_lab::common::RuleBuilder;
+using inference_lab::common::Serializer;
+using inference_lab::common::Value;
+using inference_lab::common::builders::fact;
+using inference_lab::common::builders::rule;
 
-auto main() -> int {
+auto main() -> int {  // NOLINT(readability-function-size) - Demo showcases multiple features
     std::cout << "=== Inference Types C++ Interface Demo ===\n\n";
 
     //=========================================================================
