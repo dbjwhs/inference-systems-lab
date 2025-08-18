@@ -23,6 +23,9 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <capnp/message.h>
+#include <capnp/serialize.h>
+
 namespace inference_lab::common {
 
 //=============================================================================
@@ -33,38 +36,38 @@ namespace inference_lab::common {
 // These use the private constructor to set the discriminant type and then
 // initialize the appropriate storage member
 
-Value Value::fromInt64(int64_t value) {
-    Value v(Type::Int64);
+auto Value::from_int64(int64_t value) -> Value {
+    Value v(Type::INT64);
     v.int64_value_ = value;
     return v;
 }
 
-Value Value::fromFloat64(double value) {
-    Value v(Type::Float64);
+auto Value::from_float64(double value) -> Value {
+    Value v(Type::FLOAT64);
     v.float64_value_ = value;
     return v;
 }
 
-Value Value::fromText(const std::string& value) {
-    Value v(Type::Text);
+auto Value::from_text(const std::string& value) -> Value {
+    Value v(Type::TEXT);
     v.text_value_ = value;  // Copy string into text_value_ member
     return v;
 }
 
-Value Value::fromBool(bool value) {
-    Value v(Type::Bool);
+auto Value::from_bool(bool value) -> Value {
+    Value v(Type::BOOL);
     v.bool_value_ = value;
     return v;
 }
 
-Value Value::fromList(const std::vector<Value>& values) {
-    Value v(Type::List);
+auto Value::from_list(const std::vector<Value>& values) -> Value {
+    Value v(Type::LIST);
     v.list_value_ = values;  // Deep copy of the vector and its Value elements
     return v;
 }
 
-Value Value::fromStruct(const std::unordered_map<std::string, Value>& fields) {
-    Value v(Type::Struct);
+auto Value::from_struct(const std::unordered_map<std::string, Value>& fields) -> Value {
+    Value v(Type::STRUCT);
     v.struct_value_ = fields;  // Deep copy of the map and its Value elements
     return v;
 }
@@ -72,60 +75,60 @@ Value Value::fromStruct(const std::unordered_map<std::string, Value>& fields) {
 // Type checking methods - these are simple discriminant checks
 // They're const and noexcept since they only read the type_ field
 
-bool Value::isInt64() const {
-    return type_ == Type::Int64;
+auto Value::is_int64() const -> bool {
+    return type_ == Type::INT64;
 }
-bool Value::isFloat64() const {
-    return type_ == Type::Float64;
+auto Value::is_float64() const -> bool {
+    return type_ == Type::FLOAT64;
 }
-bool Value::isText() const {
-    return type_ == Type::Text;
+auto Value::is_text() const -> bool {
+    return type_ == Type::TEXT;
 }
-bool Value::isBool() const {
-    return type_ == Type::Bool;
+auto Value::is_bool() const -> bool {
+    return type_ == Type::BOOL;
 }
-bool Value::isList() const {
-    return type_ == Type::List;
+auto Value::is_list() const -> bool {
+    return type_ == Type::LIST;
 }
-bool Value::isStruct() const {
-    return type_ == Type::Struct;
+auto Value::is_struct() const -> bool {
+    return type_ == Type::STRUCT;
 }
 
 // Unsafe extraction methods - these throw exceptions on type mismatch
 // Use these when you're certain of the type or want fail-fast behavior
 
-int64_t Value::asInt64() const {
-    if (type_ != Type::Int64)
+auto Value::as_int64() const -> int64_t {
+    if (type_ != Type::INT64)
         throw std::runtime_error("Value is not int64");
     return int64_value_;
 }
 
-double Value::asFloat64() const {
-    if (type_ != Type::Float64)
+auto Value::as_float64() const -> double {
+    if (type_ != Type::FLOAT64)
         throw std::runtime_error("Value is not float64");
     return float64_value_;
 }
 
-std::string Value::asText() const {
-    if (type_ != Type::Text)
+auto Value::as_text() const -> std::string {
+    if (type_ != Type::TEXT)
         throw std::runtime_error("Value is not text");
     return text_value_;  // Returns copy of the string
 }
 
-bool Value::asBool() const {
-    if (type_ != Type::Bool)
+auto Value::as_bool() const -> bool {
+    if (type_ != Type::BOOL)
         throw std::runtime_error("Value is not bool");
     return bool_value_;
 }
 
-std::vector<Value> Value::asList() const {
-    if (type_ != Type::List)
+auto Value::as_list() const -> std::vector<Value> {
+    if (type_ != Type::LIST)
         throw std::runtime_error("Value is not list");
     return list_value_;  // Returns copy of the vector
 }
 
-std::unordered_map<std::string, Value> Value::asStruct() const {
-    if (type_ != Type::Struct)
+auto Value::as_struct() const -> std::unordered_map<std::string, Value> {
+    if (type_ != Type::STRUCT)
         throw std::runtime_error("Value is not struct");
     return struct_value_;  // Returns copy of the map
 }
@@ -133,61 +136,61 @@ std::unordered_map<std::string, Value> Value::asStruct() const {
 // Safe extraction methods - these return nullopt on type mismatch
 // Use these when you want to handle type mismatches gracefully
 
-std::optional<int64_t> Value::tryAsInt64() const {
-    return type_ == Type::Int64 ? std::optional<int64_t>(int64_value_) : std::nullopt;
+auto Value::try_as_int64() const -> std::optional<int64_t> {
+    return type_ == Type::INT64 ? std::optional<int64_t>(int64_value_) : std::nullopt;
 }
 
-std::optional<double> Value::tryAsFloat64() const {
-    return type_ == Type::Float64 ? std::optional<double>(float64_value_) : std::nullopt;
+auto Value::try_as_float64() const -> std::optional<double> {
+    return type_ == Type::FLOAT64 ? std::optional<double>(float64_value_) : std::nullopt;
 }
 
-std::optional<std::string> Value::tryAsText() const {
-    return type_ == Type::Text ? std::optional<std::string>(text_value_) : std::nullopt;
+auto Value::try_as_text() const -> std::optional<std::string> {
+    return type_ == Type::TEXT ? std::optional<std::string>(text_value_) : std::nullopt;
 }
 
-std::optional<bool> Value::tryAsBool() const {
-    return type_ == Type::Bool ? std::optional<bool>(bool_value_) : std::nullopt;
+auto Value::try_as_bool() const -> std::optional<bool> {
+    return type_ == Type::BOOL ? std::optional<bool>(bool_value_) : std::nullopt;
 }
 
-std::optional<std::vector<Value>> Value::tryAsList() const {
-    return type_ == Type::List ? std::optional<std::vector<Value>>(list_value_) : std::nullopt;
+auto Value::try_as_list() const -> std::optional<std::vector<Value>> {
+    return type_ == Type::LIST ? std::optional<std::vector<Value>>(list_value_) : std::nullopt;
 }
 
-std::optional<std::unordered_map<std::string, Value>> Value::tryAsStruct() const {
-    return type_ == Type::Struct
+auto Value::try_as_struct() const -> std::optional<std::unordered_map<std::string, Value>> {
+    return type_ == Type::STRUCT
                ? std::optional<std::unordered_map<std::string, Value>>(struct_value_)
                : std::nullopt;
 }
 
-std::string Value::toString() const {
+auto Value::to_string() const -> std::string {
     switch (type_) {
-        case Type::Int64:
+        case Type::INT64:
             return std::to_string(int64_value_);
-        case Type::Float64:
+        case Type::FLOAT64:
             return std::to_string(float64_value_);
-        case Type::Text:
+        case Type::TEXT:
             return "\"" + text_value_ + "\"";
-        case Type::Bool:
+        case Type::BOOL:
             return bool_value_ ? "true" : "false";
-        case Type::List: {
+        case Type::LIST: {
             std::stringstream ss;
             ss << "[";
             for (size_t i = 0; i < list_value_.size(); ++i) {
                 if (i > 0)
                     ss << ", ";
-                ss << list_value_[i].toString();
+                ss << list_value_[i].to_string();
             }
             ss << "]";
             return ss.str();
         }
-        case Type::Struct: {
+        case Type::STRUCT: {
             std::stringstream ss;
             ss << "{";
             bool first = true;
             for (const auto& [key, value] : struct_value_) {
                 if (!first)
                     ss << ", ";
-                ss << "\"" << key << "\": " << value.toString();
+                ss << "\"" << key << "\": " << value.to_string();
                 first = false;
             }
             ss << "}";
@@ -197,26 +200,26 @@ std::string Value::toString() const {
     return "<unknown>";
 }
 
-Value::Value(schemas::Value::Reader reader) {
+Value::Value(schemas::Value::Reader reader) : text_value_{}, list_value_{}, struct_value_{} {
     switch (reader.which()) {
         case schemas::Value::INT64_VALUE:
-            type_ = Type::Int64;
+            type_ = Type::INT64;
             int64_value_ = reader.getInt64Value();
             break;
         case schemas::Value::FLOAT64_VALUE:
-            type_ = Type::Float64;
+            type_ = Type::FLOAT64;
             float64_value_ = reader.getFloat64Value();
             break;
         case schemas::Value::TEXT_VALUE:
-            type_ = Type::Text;
+            type_ = Type::TEXT;
             text_value_ = reader.getTextValue().cStr();
             break;
         case schemas::Value::BOOL_VALUE:
-            type_ = Type::Bool;
+            type_ = Type::BOOL;
             bool_value_ = reader.getBoolValue();
             break;
         case schemas::Value::LIST_VALUE: {
-            type_ = Type::List;
+            type_ = Type::LIST;
             auto list = reader.getListValue();
             list_value_.reserve(list.size());
             for (auto item : list) {
@@ -225,7 +228,7 @@ Value::Value(schemas::Value::Reader reader) {
             break;
         }
         case schemas::Value::STRUCT_VALUE: {
-            type_ = Type::Struct;
+            type_ = Type::STRUCT;
             auto fields = reader.getStructValue();
             for (auto field : fields) {
                 struct_value_[field.getName().cStr()] = Value(field.getValue());
@@ -235,33 +238,33 @@ Value::Value(schemas::Value::Reader reader) {
     }
 }
 
-void Value::writeTo(schemas::Value::Builder builder) const {
+auto Value::write_to(schemas::Value::Builder builder) const -> void {
     switch (type_) {
-        case Type::Int64:
+        case Type::INT64:
             builder.setInt64Value(int64_value_);
             break;
-        case Type::Float64:
+        case Type::FLOAT64:
             builder.setFloat64Value(float64_value_);
             break;
-        case Type::Text:
+        case Type::TEXT:
             builder.setTextValue(text_value_);
             break;
-        case Type::Bool:
+        case Type::BOOL:
             builder.setBoolValue(bool_value_);
             break;
-        case Type::List: {
+        case Type::LIST: {
             auto list = builder.initListValue(list_value_.size());
             for (size_t i = 0; i < list_value_.size(); ++i) {
-                list_value_[i].writeTo(list[i]);
+                list_value_[i].write_to(list[i]);
             }
             break;
         }
-        case Type::Struct: {
+        case Type::STRUCT: {
             auto fields = builder.initStructValue(struct_value_.size());
             size_t i = 0;
             for (const auto& [key, value] : struct_value_) {
                 fields[i].setName(key);
-                value.writeTo(fields[i].getValue());
+                value.write_to(fields[i].getValue());
                 ++i;
             }
             break;
@@ -283,22 +286,22 @@ Fact::Fact(uint64_t id,
     }
 }
 
-void Fact::setMetadata(const std::string& key, const Value& value) {
+auto Fact::set_metadata(const std::string& key, const Value& value) -> void {
     metadata_[key] = value;
 }
 
-std::optional<Value> Fact::getMetadata(const std::string& key) const {
+auto Fact::get_metadata(const std::string& key) const -> std::optional<Value> {
     auto it = metadata_.find(key);
     return it != metadata_.end() ? std::optional<Value>(it->second) : std::nullopt;
 }
 
-std::string Fact::toString() const {
+auto Fact::to_string() const -> std::string {
     std::stringstream ss;
     ss << predicate_ << "(";
     for (size_t i = 0; i < args_.size(); ++i) {
         if (i > 0)
             ss << ", ";
-        ss << args_[i].toString();
+        ss << args_[i].to_string();
     }
     ss << ")";
     if (confidence_ != 1.0) {
@@ -324,7 +327,7 @@ Fact::Fact(schemas::Fact::Reader reader)
     }
 }
 
-void Fact::writeTo(schemas::Fact::Builder builder) const {
+auto Fact::write_to(schemas::Fact::Builder builder) const -> void {
     builder.setId(id_);
     builder.setPredicate(predicate_);
     builder.setConfidence(confidence_);
@@ -332,45 +335,45 @@ void Fact::writeTo(schemas::Fact::Builder builder) const {
 
     auto args = builder.initArgs(args_.size());
     for (size_t i = 0; i < args_.size(); ++i) {
-        args_[i].writeTo(args[i]);
+        args_[i].write_to(args[i]);
     }
 
     auto metadata = builder.initMetadata(metadata_.size());
     size_t i = 0;
     for (const auto& [key, value] : metadata_) {
         metadata[i].setName(key);
-        value.writeTo(metadata[i].getValue());
+        value.write_to(metadata[i].getValue());
         ++i;
     }
 }
 
 // Rule::Condition implementation
-std::string Rule::Condition::toString() const {
+auto Rule::Condition::to_string() const -> std::string {
     std::stringstream ss;
-    if (negated)
+    if (negated_)
         ss << "NOT ";
-    ss << predicate << "(";
-    for (size_t i = 0; i < args.size(); ++i) {
+    ss << predicate_ << "(";
+    for (size_t i = 0; i < args_.size(); ++i) {
         if (i > 0)
             ss << ", ";
-        ss << args[i].toString();
+        ss << args_[i].to_string();
     }
     ss << ")";
     return ss.str();
 }
 
 // Rule::Conclusion implementation
-std::string Rule::Conclusion::toString() const {
+auto Rule::Conclusion::to_string() const -> std::string {
     std::stringstream ss;
-    ss << predicate << "(";
-    for (size_t i = 0; i < args.size(); ++i) {
+    ss << predicate_ << "(";
+    for (size_t i = 0; i < args_.size(); ++i) {
         if (i > 0)
             ss << ", ";
-        ss << args[i].toString();
+        ss << args_[i].to_string();
     }
     ss << ")";
-    if (confidence != 1.0) {
-        ss << " [confidence: " << confidence << "]";
+    if (confidence_ != 1.0) {
+        ss << " [confidence: " << confidence_ << "]";
     }
     return ss.str();
 }
@@ -389,19 +392,19 @@ Rule::Rule(uint64_t id,
       priority_(priority),
       confidence_(confidence) {}
 
-std::string Rule::toString() const {
+auto Rule::to_string() const -> std::string {
     std::stringstream ss;
     ss << name_ << ": IF ";
     for (size_t i = 0; i < conditions_.size(); ++i) {
         if (i > 0)
             ss << " AND ";
-        ss << conditions_[i].toString();
+        ss << conditions_[i].to_string();
     }
     ss << " THEN ";
     for (size_t i = 0; i < conclusions_.size(); ++i) {
         if (i > 0)
             ss << " AND ";
-        ss << conclusions_[i].toString();
+        ss << conclusions_[i].to_string();
     }
     if (priority_ != 0) {
         ss << " [priority: " << priority_ << "]";
@@ -418,12 +421,12 @@ Rule::Rule(schemas::Rule::Reader reader)
     conditions_.reserve(conditions.size());
     for (auto cond : conditions) {
         Condition c;
-        c.predicate = cond.getPredicate().cStr();
-        c.negated = cond.getNegated();
+        c.predicate_ = cond.getPredicate().cStr();
+        c.negated_ = cond.getNegated();
         auto args = cond.getArgs();
-        c.args.reserve(args.size());
+        c.args_.reserve(args.size());
         for (auto arg : args) {
-            c.args.emplace_back(arg);
+            c.args_.emplace_back(arg);
         }
         conditions_.push_back(std::move(c));
     }
@@ -432,18 +435,18 @@ Rule::Rule(schemas::Rule::Reader reader)
     conclusions_.reserve(conclusions.size());
     for (auto concl : conclusions) {
         Conclusion c;
-        c.predicate = concl.getPredicate().cStr();
-        c.confidence = concl.getConfidence();
+        c.predicate_ = concl.getPredicate().cStr();
+        c.confidence_ = concl.getConfidence();
         auto args = concl.getArgs();
-        c.args.reserve(args.size());
+        c.args_.reserve(args.size());
         for (auto arg : args) {
-            c.args.emplace_back(arg);
+            c.args_.emplace_back(arg);
         }
         conclusions_.push_back(std::move(c));
     }
 }
 
-void Rule::writeTo(schemas::Rule::Builder builder) const {
+auto Rule::write_to(schemas::Rule::Builder builder) const -> void {
     builder.setId(id_);
     builder.setName(name_);
     builder.setPriority(priority_);
@@ -451,78 +454,78 @@ void Rule::writeTo(schemas::Rule::Builder builder) const {
 
     auto conditions = builder.initConditions(conditions_.size());
     for (size_t i = 0; i < conditions_.size(); ++i) {
-        conditions[i].setPredicate(conditions_[i].predicate);
-        conditions[i].setNegated(conditions_[i].negated);
-        auto args = conditions[i].initArgs(conditions_[i].args.size());
-        for (size_t j = 0; j < conditions_[i].args.size(); ++j) {
-            conditions_[i].args[j].writeTo(args[j]);
+        conditions[i].setPredicate(conditions_[i].predicate_);
+        conditions[i].setNegated(conditions_[i].negated_);
+        auto args = conditions[i].initArgs(conditions_[i].args_.size());
+        for (size_t j = 0; j < conditions_[i].args_.size(); ++j) {
+            conditions_[i].args_[j].write_to(args[j]);
         }
     }
 
     auto conclusions = builder.initConclusions(conclusions_.size());
     for (size_t i = 0; i < conclusions_.size(); ++i) {
-        conclusions[i].setPredicate(conclusions_[i].predicate);
-        conclusions[i].setConfidence(conclusions_[i].confidence);
-        auto args = conclusions[i].initArgs(conclusions_[i].args.size());
-        for (size_t j = 0; j < conclusions_[i].args.size(); ++j) {
-            conclusions_[i].args[j].writeTo(args[j]);
+        conclusions[i].setPredicate(conclusions_[i].predicate_);
+        conclusions[i].setConfidence(conclusions_[i].confidence_);
+        auto args = conclusions[i].initArgs(conclusions_[i].args_.size());
+        for (size_t j = 0; j < conclusions_[i].args_.size(); ++j) {
+            conclusions_[i].args_[j].write_to(args[j]);
         }
     }
 }
 
 // Query implementation
 Query::Query(
-    uint64_t id, Type type, const Rule::Condition& goal, uint32_t maxResults, uint32_t timeoutMs)
-    : id_(id), type_(type), goal_(goal), maxResults_(maxResults), timeoutMs_(timeoutMs) {}
+    uint64_t id, Type type, const Rule::Condition& goal, uint32_t max_results, uint32_t timeout_ms)
+    : id_(id), type_(type), goal_(goal), max_results_(max_results), timeout_ms_(timeout_ms) {}
 
-std::string Query::toString() const {
+auto Query::to_string() const -> std::string {
     std::stringstream ss;
     ss << "Query[" << id_ << "]: ";
     switch (type_) {
-        case Type::FindAll:
+        case Type::FIND_ALL:
             ss << "FIND_ALL ";
             break;
-        case Type::Prove:
+        case Type::PROVE:
             ss << "PROVE ";
             break;
-        case Type::FindFirst:
+        case Type::FIND_FIRST:
             ss << "FIND_FIRST ";
             break;
-        case Type::Explain:
+        case Type::EXPLAIN:
             ss << "EXPLAIN ";
             break;
     }
-    ss << goal_.toString();
+    ss << goal_.to_string();
     return ss.str();
 }
 
 // Serializer implementation
-std::vector<uint8_t> Serializer::serialize(const Fact& fact) {
+auto Serializer::serialize(const Fact& fact) -> std::vector<uint8_t> {
     ::capnp::MallocMessageBuilder message;
     auto builder = message.initRoot<schemas::Fact>();
-    fact.writeTo(builder);
+    fact.write_to(builder);
 
     auto words = capnp::messageToFlatArray(message);
     auto bytes = words.asBytes();
     return std::vector<uint8_t>(bytes.begin(), bytes.end());
 }
 
-std::vector<uint8_t> Serializer::serialize(const Rule& rule) {
+auto Serializer::serialize(const Rule& rule) -> std::vector<uint8_t> {
     ::capnp::MallocMessageBuilder message;
     auto builder = message.initRoot<schemas::Rule>();
-    rule.writeTo(builder);
+    rule.write_to(builder);
 
     auto words = capnp::messageToFlatArray(message);
     auto bytes = words.asBytes();
     return std::vector<uint8_t>(bytes.begin(), bytes.end());
 }
 
-std::optional<Fact> Serializer::deserializeFact(const std::vector<uint8_t>& data) {
+auto Serializer::deserialize_fact(const std::vector<uint8_t>& data) -> std::optional<Fact> {
     try {
         kj::ArrayPtr<const capnp::word> words = kj::arrayPtr(
             reinterpret_cast<const capnp::word*>(data.data()), data.size() / sizeof(capnp::word));
 
-        capnp::FlatArrayMessageReader message(words);
+        ::capnp::FlatArrayMessageReader message(words);
         auto reader = message.getRoot<schemas::Fact>();
         return Fact(reader);
     } catch (...) {
@@ -530,12 +533,12 @@ std::optional<Fact> Serializer::deserializeFact(const std::vector<uint8_t>& data
     }
 }
 
-std::optional<Rule> Serializer::deserializeRule(const std::vector<uint8_t>& data) {
+auto Serializer::deserialize_rule(const std::vector<uint8_t>& data) -> std::optional<Rule> {
     try {
         kj::ArrayPtr<const capnp::word> words = kj::arrayPtr(
             reinterpret_cast<const capnp::word*>(data.data()), data.size() / sizeof(capnp::word));
 
-        capnp::FlatArrayMessageReader message(words);
+        ::capnp::FlatArrayMessageReader message(words);
         auto reader = message.getRoot<schemas::Rule>();
         return Rule(reader);
     } catch (...) {
@@ -543,47 +546,47 @@ std::optional<Rule> Serializer::deserializeRule(const std::vector<uint8_t>& data
     }
 }
 
-std::string Serializer::toJson(const Fact& fact) {
+auto Serializer::to_json(const Fact& fact) -> std::string {
     std::stringstream ss;
     ss << "{\n";
-    ss << "  \"id\": " << fact.getId() << ",\n";
-    ss << "  \"predicate\": \"" << fact.getPredicate() << "\",\n";
+    ss << "  \"id\": " << fact.get_id() << ",\n";
+    ss << "  \"predicate\": \"" << fact.get_predicate() << "\",\n";
     ss << "  \"args\": [";
-    const auto& args = fact.getArgs();
+    const auto& args = fact.get_args();
     for (size_t i = 0; i < args.size(); ++i) {
         if (i > 0)
             ss << ", ";
-        ss << args[i].toString();
+        ss << args[i].to_string();
     }
     ss << "],\n";
-    ss << "  \"confidence\": " << fact.getConfidence() << ",\n";
-    ss << "  \"timestamp\": " << fact.getTimestamp() << "\n";
+    ss << "  \"confidence\": " << fact.get_confidence() << ",\n";
+    ss << "  \"timestamp\": " << fact.get_timestamp() << "\n";
     ss << "}";
     return ss.str();
 }
 
-std::string Serializer::toJson(const Rule& rule) {
+auto Serializer::to_json(const Rule& rule) -> std::string {
     std::stringstream ss;
     ss << "{\n";
-    ss << "  \"id\": " << rule.getId() << ",\n";
-    ss << "  \"name\": \"" << rule.getName() << "\",\n";
+    ss << "  \"id\": " << rule.get_id() << ",\n";
+    ss << "  \"name\": \"" << rule.get_name() << "\",\n";
     ss << "  \"conditions\": [";
-    const auto& conditions = rule.getConditions();
+    const auto& conditions = rule.get_conditions();
     for (size_t i = 0; i < conditions.size(); ++i) {
         if (i > 0)
             ss << ", ";
-        ss << "\"" << conditions[i].toString() << "\"";
+        ss << "\"" << conditions[i].to_string() << "\"";
     }
     ss << "],\n";
     ss << "  \"conclusions\": [";
-    const auto& conclusions = rule.getConclusions();
+    const auto& conclusions = rule.get_conclusions();
     for (size_t i = 0; i < conclusions.size(); ++i) {
         if (i > 0)
             ss << ", ";
-        ss << "\"" << conclusions[i].toString() << "\"";
+        ss << "\"" << conclusions[i].to_string() << "\"";
     }
     ss << "],\n";
-    ss << "  \"priority\": " << rule.getPriority() << "\n";
+    ss << "  \"priority\": " << rule.get_priority() << "\n";
     ss << "}";
     return ss.str();
 }

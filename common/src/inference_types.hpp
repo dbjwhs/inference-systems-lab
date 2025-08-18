@@ -26,6 +26,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -62,7 +63,7 @@ class Value {
      * This allows Value objects to be used in STL containers that require
      * default-constructible types (like std::unordered_map, std::vector).
      */
-    Value() : type_(Type::INT64), int64_value_(0) {}
+    Value() : type_(Type::INT64), int64_value_(0), text_value_{}, list_value_{}, struct_value_{} {}
 
     // Factory methods for creating typed values - these are preferred over constructors
     // to make the type creation explicit and prevent accidental conversions
@@ -115,43 +116,43 @@ class Value {
     auto as_float64() const -> double;
 
     /** @brief Extract text value - throws if not text */
-    std::string as_text() const;
+    auto as_text() const -> std::string;
 
     /** @brief Extract bool value - throws if not a bool */
     auto as_bool() const -> bool;
 
     /** @brief Extract list value - throws if not a list */
-    std::vector<Value> as_list() const;
+    auto as_list() const -> std::vector<Value>;
 
     /** @brief Extract struct value - throws if not a struct */
-    std::unordered_map<std::string, Value> as_struct() const;
+    auto as_struct() const -> std::unordered_map<std::string, Value>;
 
     // Safe value extraction methods - these return std::nullopt if type doesn't match
     // Use these when you want to handle type mismatches gracefully
 
     /** @brief Safely extract int64 value - returns nullopt if wrong type */
-    std::optional<int64_t> try_as_int64() const;
+    auto try_as_int64() const -> std::optional<int64_t>;
 
     /** @brief Safely extract float64 value - returns nullopt if wrong type */
-    std::optional<double> try_as_float64() const;
+    auto try_as_float64() const -> std::optional<double>;
 
     /** @brief Safely extract text value - returns nullopt if wrong type */
-    std::optional<std::string> try_as_text() const;
+    auto try_as_text() const -> std::optional<std::string>;
 
     /** @brief Safely extract bool value - returns nullopt if wrong type */
-    std::optional<bool> try_as_bool() const;
+    auto try_as_bool() const -> std::optional<bool>;
 
     /** @brief Safely extract list value - returns nullopt if wrong type */
-    std::optional<std::vector<Value>> tryAsList() const;
+    auto try_as_list() const -> std::optional<std::vector<Value>>;
 
     /** @brief Safely extract struct value - returns nullopt if wrong type */
-    std::optional<std::unordered_map<std::string, Value>> tryAsStruct() const;
+    auto try_as_struct() const -> std::optional<std::unordered_map<std::string, Value>>;
 
     /**
      * @brief Generate human-readable string representation for debugging
      * @return String representation that shows both type and value
      */
-    std::string to_string() const;
+    auto to_string() const -> std::string;
 
     // Cap'n Proto interoperability methods
 
@@ -171,7 +172,7 @@ class Value {
      * This method allows seamless conversion from our C++ wrapper
      * back to Cap'n Proto's native format for serialization.
      */
-    void write_to(schemas::Value::Builder builder) const;
+    auto write_to(schemas::Value::Builder builder) const -> void;
 
   private:
     /**
@@ -180,7 +181,7 @@ class Value {
      * This enum tracks which type of value is currently stored in the Value object.
      * It's used internally for type checking and safe casting operations.
      */
-    enum class Type { INT64, FLOAT64, TEXT, BOOL, LIST, STRUCT };
+    enum class Type : std::uint8_t { INT64, FLOAT64, TEXT, BOOL, LIST, STRUCT };
 
     /** @brief Current type of the stored value */
     Type type_;
@@ -210,7 +211,8 @@ class Value {
      * This constructor is used internally by the factory methods to create
      * appropriately typed Value objects.
      */
-    explicit Value(Type type) : type_(type) {}
+    explicit Value(Type type)
+        : type_(type), int64_value_{}, text_value_{}, list_value_{}, struct_value_{} {}
 };
 
 /**
@@ -265,7 +267,7 @@ class Fact {
 
     /** @brief Get the schema version this fact was created with (returns empty string if not set)
      */
-    std::string get_schema_version_string() const { return schema_version_string_; }
+    auto get_schema_version_string() const -> std::string { return schema_version_string_; }
 
     // Metadata management methods
 
@@ -277,14 +279,14 @@ class Fact {
      * Metadata can store additional information about facts, such as source,
      * creation context, or other properties not part of the core fact structure.
      */
-    void set_metadata(const std::string& key, const Value& value);
+    auto set_metadata(const std::string& key, const Value& value) -> void;
 
     /**
      * @brief Get a specific metadata value by key
      * @param key Metadata key to look up
      * @return The metadata value if found, nullopt otherwise
      */
-    std::optional<Value> get_metadata(const std::string& key) const;
+    auto get_metadata(const std::string& key) const -> std::optional<Value>;
 
     /**
      * @brief Generate human-readable string representation
@@ -292,7 +294,7 @@ class Fact {
      *
      * This is primarily used for debugging and logging purposes.
      */
-    std::string to_string() const;
+    auto to_string() const -> std::string;
 
     // Cap'n Proto interoperability methods
 
@@ -306,7 +308,7 @@ class Fact {
      * @brief Write this Fact to a Cap'n Proto builder
      * @param builder Cap'n Proto Fact builder to serialize to
      */
-    void write_to(schemas::Fact::Builder builder) const;
+    auto write_to(schemas::Fact::Builder builder) const -> void;
 
   private:
     uint64_t id_;                                      ///< Unique identifier for this fact
@@ -345,10 +347,10 @@ class Rule {
     struct Condition {
         std::string predicate_{};    ///< Predicate to match (e.g., "isHuman")
         std::vector<Value> args_{};  ///< Arguments with variables and constants
-        bool negated_ = false;       ///< Whether this is a NOT condition
+        bool negated_{false};        ///< Whether this is a NOT condition
 
         /** @brief Generate string representation of this condition */
-        std::string to_string() const;
+        auto to_string() const -> std::string;
     };
 
     /**
@@ -361,10 +363,10 @@ class Rule {
     struct Conclusion {
         std::string predicate_{};    ///< Predicate to assert (e.g., "isMortal")
         std::vector<Value> args_{};  ///< Arguments (may contain variables from conditions)
-        double confidence_ = 1.0;    ///< Confidence for this conclusion
+        double confidence_{1.0};     ///< Confidence for this conclusion
 
         /** @brief Generate string representation of this conclusion */
-        std::string to_string() const;
+        auto to_string() const -> std::string;
     };
 
     /**
@@ -405,13 +407,13 @@ class Rule {
 
     /** @brief Get the schema version this rule was created with (returns empty string if not set)
      */
-    std::string get_schema_version_string() const { return schemaVersionString_; }
+    auto get_schema_version_string() const -> std::string { return schema_version_string_; }
 
     /**
      * @brief Generate human-readable string representation
      * @return String in the format "name: IF condition1 AND condition2 THEN conclusion1"
      */
-    std::string to_string() const;
+    auto to_string() const -> std::string;
 
     // Cap'n Proto interoperability methods
 
@@ -419,7 +421,7 @@ class Rule {
     explicit Rule(schemas::Rule::Reader reader);
 
     /** @brief Write this Rule to a Cap'n Proto builder */
-    void write_to(schemas::Rule::Builder builder) const;
+    auto write_to(schemas::Rule::Builder builder) const -> void;
 
   private:
     uint64_t id_;                                      ///< Unique identifier for this rule
@@ -452,7 +454,7 @@ class Query {
      * @enum Type
      * @brief Enumeration of different query types supported by the inference engine
      */
-    enum class Type {
+    enum class Type : std::uint8_t {
         FIND_ALL,    ///< Find all facts that match the goal
         PROVE,       ///< Check if goal can be proven (true/false)
         FIND_FIRST,  ///< Find first N solutions
@@ -494,7 +496,7 @@ class Query {
      * @brief Generate human-readable string representation
      * @return String in the format "Query[id]: TYPE goal_pattern"
      */
-    std::string to_string() const;
+    auto to_string() const -> std::string;
 
     // Cap'n Proto interoperability methods
 
@@ -502,7 +504,7 @@ class Query {
     explicit Query(schemas::Query::Reader reader);
 
     /** @brief Write this Query to a Cap'n Proto builder */
-    void write_to(schemas::Query::Builder builder) const;
+    auto write_to(schemas::Query::Builder builder) const -> void;
 
   private:
     uint64_t id_;                                      ///< Unique identifier for this query
@@ -529,13 +531,13 @@ class Serializer {
     // storage/transmission
 
     /** @brief Serialize a Fact to binary Cap'n Proto format */
-    static std::vector<uint8_t> serialize(const Fact& fact);
+    static auto serialize(const Fact& fact) -> std::vector<uint8_t>;
 
     /** @brief Serialize a Rule to binary Cap'n Proto format */
-    static std::vector<uint8_t> serialize(const Rule& rule);
+    static auto serialize(const Rule& rule) -> std::vector<uint8_t>;
 
     /** @brief Serialize a Query to binary Cap'n Proto format */
-    static std::vector<uint8_t> serialize(const Query& query);
+    static auto serialize(const Query& query) -> std::vector<uint8_t>;
 
     // Binary deserialization methods - convert binary data back to C++ objects
 
@@ -544,32 +546,32 @@ class Serializer {
      * @param data Binary data produced by serialize(Fact)
      * @return Fact object if successful, nullopt if data is invalid/corrupted
      */
-    static std::optional<Fact> deserialize_fact(const std::vector<uint8_t>& data);
+    static auto deserialize_fact(const std::vector<uint8_t>& data) -> std::optional<Fact>;
 
     /**
      * @brief Deserialize a Rule from binary Cap'n Proto data
      * @param data Binary data produced by serialize(Rule)
      * @return Rule object if successful, nullopt if data is invalid/corrupted
      */
-    static std::optional<Rule> deserialize_rule(const std::vector<uint8_t>& data);
+    static auto deserialize_rule(const std::vector<uint8_t>& data) -> std::optional<Rule>;
 
     /**
      * @brief Deserialize a Query from binary Cap'n Proto data
      * @param data Binary data produced by serialize(Query)
      * @return Query object if successful, nullopt if data is invalid/corrupted
      */
-    static std::optional<Query> deserialize_query(const std::vector<uint8_t>& data);
+    static auto deserialize_query(const std::vector<uint8_t>& data) -> std::optional<Query>;
 
     // JSON-like text serialization methods - for debugging and human-readable output
 
     /** @brief Convert a Fact to JSON-like string representation */
-    static std::string to_json(const Fact& fact);
+    static auto to_json(const Fact& fact) -> std::string;
 
     /** @brief Convert a Rule to JSON-like string representation */
-    static std::string to_json(const Rule& rule);
+    static auto to_json(const Rule& rule) -> std::string;
 
     /** @brief Convert a Query to JSON-like string representation */
-    static std::string to_json(const Query& query);
+    static auto to_json(const Query& query) -> std::string;
 };
 
 /**
@@ -587,14 +589,14 @@ class VersionedSerializer {
      * @param fact Fact to serialize
      * @return Binary data with embedded schema version information
      */
-    static std::vector<uint8_t> serialize_with_version(const Fact& fact);
+    static auto serialize_with_version(const Fact& fact) -> std::vector<uint8_t>;
 
     /**
      * @brief Serialize data with current schema version metadata
      * @param rule Rule to serialize
      * @return Binary data with embedded schema version information
      */
-    static std::vector<uint8_t> serialize_with_version(const Rule& rule);
+    static auto serialize_with_version(const Rule& rule) -> std::vector<uint8_t>;
 
     /**
      * @brief Serialize a complete knowledge base with schema evolution metadata
@@ -603,47 +605,48 @@ class VersionedSerializer {
      * @param metadata Additional metadata
      * @return Binary data with complete versioning information
      */
-    static std::vector<uint8_t> serialize_knowledge_base(
+    static auto serialize_knowledge_base(
         const std::vector<Fact>& facts,
         const std::vector<Rule>& rules,
-        const std::unordered_map<std::string, Value>& metadata = {});
+        const std::unordered_map<std::string, Value>& metadata = {}) -> std::vector<uint8_t>;
 
     /**
      * @brief Deserialize with automatic migration support
      * @param data Binary data that may be from an older schema version
      * @return Fact migrated to current schema version, or nullopt if failed
      */
-    static std::optional<Fact> deserialize_fact_with_migration(const std::vector<uint8_t>& data);
+    static auto deserialize_fact_with_migration(const std::vector<uint8_t>& data)
+        -> std::optional<Fact>;
 
     /**
      * @brief Deserialize with automatic migration support
      * @param data Binary data that may be from an older schema version
      * @return Rule migrated to current schema version, or nullopt if failed
      */
-    static std::optional<Rule> deserialize_rule_with_migration(const std::vector<uint8_t>& data);
+    static auto deserialize_rule_with_migration(const std::vector<uint8_t>& data)
+        -> std::optional<Rule>;
 
     /**
      * @brief Deserialize a complete knowledge base with migration
      * @param data Binary data from any supported schema version
      * @return Tuple of (facts, rules, metadata) migrated to current version
      */
-    static std::optional<
-        std::tuple<std::vector<Fact>, std::vector<Rule>, std::unordered_map<std::string, Value>>>
-    deserializeKnowledgeBase(const std::vector<uint8_t>& data);
+    static auto deserialize_knowledge_base(const std::vector<uint8_t>& data) -> std::optional<
+        std::tuple<std::vector<Fact>, std::vector<Rule>, std::unordered_map<std::string, Value>>>;
 
     /**
      * @brief Check if data can be read by examining its schema version
      * @param data Binary data to check
      * @return Schema version string of the data, or empty string if unreadable
      */
-    static std::string detect_schema_version_string(const std::vector<uint8_t>& data);
+    static auto detect_schema_version_string(const std::vector<uint8_t>& data) -> std::string;
 
     /**
      * @brief Validate data integrity including schema version compatibility
      * @param data Binary data to validate
      * @return Vector of validation errors (empty if valid)
      */
-    static std::vector<std::string> validate_data(const std::vector<uint8_t>& data);
+    static auto validate_data(const std::vector<uint8_t>& data) -> std::vector<std::string>;
 };
 
 }  // namespace inference_lab::common
