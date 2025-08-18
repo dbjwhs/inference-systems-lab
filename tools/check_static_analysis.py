@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2025 dbjwhs
 """
 check_static_analysis.py - Static analysis verification and enforcement for the Inference Systems Lab
 

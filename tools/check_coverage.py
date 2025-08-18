@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2025 dbjwhs
 """
 check_coverage.py - Test coverage verification for the Inference Systems Lab
 

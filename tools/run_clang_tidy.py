@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2025 dbjwhs
 """
 Automated clang-tidy runner script for C++ projects.
 

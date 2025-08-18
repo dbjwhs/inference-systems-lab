@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2025 dbjwhs
 """
 new_module.py - Scaffold new components with tests for the Inference Systems Lab
 

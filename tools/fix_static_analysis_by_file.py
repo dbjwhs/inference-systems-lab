@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2025 dbjwhs
 """
 fix_static_analysis_by_file.py - Systematic file-by-file static analysis fixing
 
