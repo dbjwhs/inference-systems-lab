@@ -21,10 +21,19 @@
 #include "../src/inference_types.hpp"
 #include "../src/schema_evolution.hpp"
 
-using namespace inference_lab::common;
-using namespace inference_lab::common::evolution;
+using inference_lab::common::Fact;
+using inference_lab::common::Value;
+using inference_lab::common::VersionedSerializer;
+using inference_lab::common::evolution::get_current_schema_version;
+using inference_lab::common::evolution::MigrationPath;
+using inference_lab::common::evolution::SchemaEvolutionManager;
+using inference_lab::common::evolution::SchemaRegistry;
+using inference_lab::common::evolution::SchemaVersion;
+using inference_lab::common::evolution::VersionValidator;
 
-static void test_schema_versioning() {
+namespace {
+
+void test_schema_versioning() {
     std::cout << "=== Testing Schema Versioning ===\n";
 
     // Test version creation and comparison
@@ -54,7 +63,7 @@ static void test_schema_versioning() {
     std::cout << "✅ Schema versioning tests passed\n\n";
 }
 
-static void test_migration_paths() {
+void test_migration_paths() {
     std::cout << "=== Testing Migration Paths ===\n";
 
     SchemaVersion v1_0_0(1, 0, 0);
@@ -84,7 +93,7 @@ static void test_migration_paths() {
     std::cout << "✅ Migration paths tests passed\n\n";
 }
 
-static void test_schema_evolution_manager() {
+void test_schema_evolution_manager() {
     std::cout << "=== Testing Schema Evolution Manager ===\n";
 
     SchemaVersion current_version(1, 1, 0);
@@ -121,7 +130,7 @@ static void test_schema_evolution_manager() {
     std::cout << "✅ Schema evolution manager tests passed\n\n";
 }
 
-static void test_version_validator() {
+void test_version_validator() {
     std::cout << "=== Testing Version Validator ===\n";
 
     // Test invalid version
@@ -157,7 +166,7 @@ static void test_version_validator() {
     std::cout << "✅ Version validator tests passed\n\n";
 }
 
-static void test_schema_registry() {
+void test_schema_registry() {
     std::cout << "=== Testing Schema Registry ===\n";
 
     auto& registry = SchemaRegistry::get_instance();
@@ -191,7 +200,7 @@ static void test_schema_registry() {
     std::cout << "✅ Schema registry tests passed\n\n";
 }
 
-static void test_data_migration() {
+void test_data_migration() {
     std::cout << "=== Testing Data Migration ===\n";
 
     // Create a fact without schema version (simulates old data)
@@ -221,7 +230,7 @@ static void test_data_migration() {
     std::cout << "✅ Data migration tests passed\n\n";
 }
 
-static void demonstrate_evolution_scenarios() {
+void demonstrate_evolution_scenarios() {
     std::cout << "=== Demonstrating Evolution Scenarios ===\n";
 
     // Scenario 1: Adding optional fields (backward compatible)
@@ -265,6 +274,8 @@ static void demonstrate_evolution_scenarios() {
 
     std::cout << "\n✅ Evolution scenarios demonstrated\n\n";
 }
+
+}  // anonymous namespace
 
 auto main() -> int {
     std::cout << "Schema Evolution and Versioning Demo\n";
