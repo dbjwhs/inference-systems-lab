@@ -253,7 +253,11 @@ class RuleBuilder {
     double current_confidence_ = 1.0;  ///< Confidence for current conclusion
 
     /** @brief Tracks whether we're currently building a condition or conclusion */
-    enum class BuildingState { CONDITION, CONCLUSION, NONE } building_state_ = BuildingState::NONE;
+    enum class BuildingState : std::uint8_t {
+        CONDITION,
+        CONCLUSION,
+        NONE
+    } building_state_ = BuildingState::NONE;
 
     /** @brief Finish building current condition and add it to the conditions list */
     void finish_current_condition();

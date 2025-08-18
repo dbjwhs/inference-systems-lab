@@ -7,8 +7,10 @@
 // Common logging utilities for the Inference Systems Laboratory
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -21,19 +23,32 @@
 
 namespace inference_lab::common {
 
-enum class LogLevel { DEBUG = 0, INFO = 1, NORMAL = 2, WARNING = 3, ERROR = 4, CRITICAL = 5 };
+enum class LogLevel : std::uint8_t {
+    DEBUG = 0,
+    INFO = 1,
+    NORMAL = 2,
+    WARNING = 3,
+    ERROR = 4,
+    CRITICAL = 5
+};
 
 class Logger {
+  public:
+    Logger(const Logger&) = delete;
+    auto operator=(const Logger&) -> Logger& = delete;
+    Logger(Logger&&) = delete;
+    auto operator=(Logger&&) -> Logger& = delete;
+
   private:
     // shared_ptr to maintain the singleton
     inline static std::shared_ptr<Logger> m_instance;
     inline static std::mutex m_instance_mutex;  // mutex for thread-safe initialization
 
     // helper method to handle the common logging logic
-    void write_log_message(LogLevel LEVEL, const std::string& message);
+    void write_log_message(LogLevel level, const std::string& message);
 
     // helper to build the log prefix
-    static std::stringstream create_log_prefix(LogLevel level);
+    static auto create_log_prefix(LogLevel level) -> std::stringstream;
 
     // constructor is now private to control instantiation
     explicit Logger(const std::string& path, bool append = true);
@@ -44,14 +59,18 @@ class Logger {
       public:
         StderrSuppressionGuard();
         ~StderrSuppressionGuard();
+        StderrSuppressionGuard(const StderrSuppressionGuard&) = delete;
+        auto operator=(const StderrSuppressionGuard&) -> StderrSuppressionGuard& = delete;
+        StderrSuppressionGuard(StderrSuppressionGuard&&) = delete;
+        auto operator=(StderrSuppressionGuard&&) -> StderrSuppressionGuard& = delete;
 
       private:
         bool m_was_enabled_;
     };
 
     // private method to get or create the instance
-    static std::shared_ptr<Logger> get_or_create_instance(const std::string& path = "../custom.log",
-                                                          bool append = true);
+    static auto get_or_create_instance(const std::string& path = "../custom.log",
+                                       bool append = true) -> std::shared_ptr<Logger>;
 
     // returns a reference for backward compatibility but uses shared_ptr internally
     static auto get_instance() -> Logger&;
@@ -60,23 +79,23 @@ class Logger {
     static auto get_instance(const std::string& custom_path, bool append = true) -> Logger&;
 
     // new method for code that explicitly wants to manage the shared_ptr
-    static std::shared_ptr<Logger> get_instance_ptr();
+    static auto get_instance_ptr() -> std::shared_ptr<Logger>;
 
     // with custom path for the shared_ptr version
-    static std::shared_ptr<Logger> get_instance_ptr(const std::string& custom_path,
-                                                    bool append = true);
+    static auto get_instance_ptr(const std::string& custom_path, bool append = true)
+        -> std::shared_ptr<Logger>;
 
     // destructor
     ~Logger();
 
     // Template-based logging methods for C++17 compatibility
     template <typename... FormatArgs>
-    void print_log(const LogLevel LEVEL, const std::string& format, FormatArgs&&... args) {
+    void print_log(const LogLevel LEVEL, const std::string& format, const FormatArgs&... args) {
         if (!is_level_enabled(LEVEL)) {
             return;
         }
         auto prefix = create_log_prefix(LEVEL);
-        auto formatted_message = format_message(format, std::forward<FormatArgs>(args)...);
+        auto formatted_message = format_message(format, args...);
         auto full_message = prefix.str() + formatted_message + "\n";
         write_log_message(LEVEL, full_message);
     }
@@ -86,12 +105,12 @@ class Logger {
     void print_log_with_depth(const LogLevel LEVEL,
                               const int DEPTH,
                               const std::string& format,
-                              FormatArgs&&... args) {
+                              const FormatArgs&... args) {
         if (!is_level_enabled(LEVEL)) {
             return;
         }
         auto prefix = create_log_prefix(LEVEL);
-        auto formatted_message = format_message(format, std::forward<FormatArgs>(args)...);
+        auto formatted_message = format_message(format, args...);
         auto full_message = prefix.str() + get_indentation(DEPTH) + formatted_message + "\n";
         write_log_message(LEVEL, full_message);
     }
@@ -122,25 +141,26 @@ class Logger {
     std::mutex m_mutex_{};
     std::atomic<bool> m_stderr_enabled_{true};
     std::atomic<bool> m_file_output_enabled_{true};
-    std::atomic<bool> m_enabled_levels_[6]{true, true, true, true, true, true};  // one for each log
-                                                                                 // level
+    std::array<std::atomic<bool>, 6> m_enabled_levels_{
+        {true, true, true, true, true, true}};  // one for each log level
 
     // utility function for expression tree visualization
-    static std::string get_indentation(int DEPTH);
+    static auto get_indentation(int depth) -> std::string;
 
     // convert log level to string
-    static std::string log_level_to_string(LogLevel LEVEL);
+    static auto log_level_to_string(LogLevel level) -> std::string;
 
     // get current utc timestamp
-    static std::string get_utc_timestamp();
+    static auto get_utc_timestamp() -> std::string;
 
     // C++17 compatible format message helper
     template <typename... FormatArgs>
-    static std::string format_message(const std::string& format, FormatArgs&&... args) {
+    static auto format_message(const std::string& format, const FormatArgs&... args)
+        -> std::string {
         // Simple string substitution approach for C++17
         // For more complex formatting, consider using fmtlib or similar
         std::ostringstream oss;
-        format_message_impl(oss, format, std::forward<FormatArgs>(args)...);
+        format_message_impl(oss, format, args...);
         return oss.str();
     }
 
@@ -153,13 +173,13 @@ class Logger {
     template <typename ValueType, typename... FormatArgs>
     static void format_message_impl(std::ostringstream& oss,
                                     const std::string& format,
-                                    ValueType&& value,
-                                    FormatArgs&&... args) {
+                                    const ValueType& value,
+                                    const FormatArgs&... args) {
         // Simple approach: replace first {} with the value
         size_t pos = format.find("{}");
         if (pos != std::string::npos) {
-            oss << format.substr(0, pos) << std::forward<ValueType>(value);
-            format_message_impl(oss, format.substr(pos + 2), std::forward<FormatArgs>(args)...);
+            oss << format.substr(0, pos) << value;
+            format_message_impl(oss, format.substr(pos + 2), args...);
         } else {
             oss << format;
         }
