@@ -24,6 +24,11 @@
 #include <atomic>
 #include <stdexcept>
 
+#include "../src/inference_types.hpp"
+#include "../src/logging.hpp"
+#include "../src/result.hpp"
+#include "../src/schema_evolution.hpp"
+
 namespace inference_lab::common {
 
 //=============================================================================
@@ -33,54 +38,55 @@ namespace inference_lab::common {
 // It accumulates arguments and properties, then constructs the final Fact
 // object in the build() method.
 
-FactBuilder::FactBuilder(const std::string& predicate) : predicate_(predicate) {}
+FactBuilder::FactBuilder(const std::string& predicate)
+    : predicate_(predicate), id_(0), confidence_(1.0), timestamp_(0) {}
 
-FactBuilder& FactBuilder::with_arg(const Value& arg) {
+auto FactBuilder::with_arg(const Value& arg) -> FactBuilder& {
     args_.push_back(arg);
     return *this;
 }
 
-FactBuilder& FactBuilder::with_arg(int64_t value) {
+auto FactBuilder::with_arg(int64_t value) -> FactBuilder& {
     return with_arg(Value::from_int64(value));
 }
 
-FactBuilder& FactBuilder::with_arg(double value) {
+auto FactBuilder::with_arg(double value) -> FactBuilder& {
     return with_arg(Value::from_float64(value));
 }
 
-FactBuilder& FactBuilder::with_arg(const std::string& value) {
+auto FactBuilder::with_arg(const std::string& value) -> FactBuilder& {
     return with_arg(Value::from_text(value));
 }
 
-FactBuilder& FactBuilder::with_arg(const char* value) {
+auto FactBuilder::with_arg(const char* value) -> FactBuilder& {
     return with_arg(Value::from_text(std::string(value)));
 }
 
-FactBuilder& FactBuilder::with_arg(bool value) {
+auto FactBuilder::with_arg(bool value) -> FactBuilder& {
     return with_arg(Value::from_bool(value));
 }
 
-FactBuilder& FactBuilder::with_id(uint64_t id) {
+auto FactBuilder::with_id(uint64_t id) -> FactBuilder& {
     id_ = id;
     return *this;
 }
 
-FactBuilder& FactBuilder::with_confidence(double confidence) {
+auto FactBuilder::with_confidence(double confidence) -> FactBuilder& {
     confidence_ = confidence;
     return *this;
 }
 
-FactBuilder& FactBuilder::with_timestamp(uint64_t timestamp) {
+auto FactBuilder::with_timestamp(uint64_t timestamp) -> FactBuilder& {
     timestamp_ = timestamp;
     return *this;
 }
 
-FactBuilder& FactBuilder::with_metadata(const std::string& key, const Value& value) {
+auto FactBuilder::with_metadata(const std::string& key, const Value& value) -> FactBuilder& {
     metadata_[key] = value;
     return *this;
 }
 
-Fact FactBuilder::build() {
+auto FactBuilder::build() -> Fact {
     if (id_ == 0) {
         id_ = next_id();
     }
@@ -93,7 +99,7 @@ Fact FactBuilder::build() {
     return fact;
 }
 
-uint64_t FactBuilder::next_id() {
+auto FactBuilder::next_id() -> uint64_t {
     // Thread-safe ID generation using atomic counter
     // Starts at 1 since 0 is used to indicate "auto-generate ID"
     static std::atomic<uint64_t> counter{1};
@@ -107,11 +113,18 @@ uint64_t FactBuilder::next_id() {
 // It tracks whether we're currently building a condition or conclusion
 // and accumulates arguments for the current item being built.
 
-RuleBuilder::RuleBuilder(const std::string& name) : name_(name) {}
+RuleBuilder::RuleBuilder(const std::string& name)
+    : name_(name),
+      id_(0),
+      priority_(0),
+      confidence_(1.0),
+      current_confidence_(1.0),
+      current_negated_(false),
+      building_state_(BuildingState::NONE) {}
 
-RuleBuilder& RuleBuilder::when_condition(const std::string& predicate,
-                                         const std::vector<Value>& args,
-                                         bool negated) {
+auto RuleBuilder::when_condition(const std::string& predicate,
+                                 const std::vector<Value>& args,
+                                 bool negated) -> RuleBuilder& {
     finish_current_condition();
     finish_current_conclusion();
 
@@ -124,7 +137,7 @@ RuleBuilder& RuleBuilder::when_condition(const std::string& predicate,
     return *this;
 }
 
-RuleBuilder& RuleBuilder::when(const std::string& predicate) {
+auto RuleBuilder::when(const std::string& predicate) -> RuleBuilder& {
     finish_current_condition();
     finish_current_conclusion();
 
@@ -136,7 +149,7 @@ RuleBuilder& RuleBuilder::when(const std::string& predicate) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::when_not(const std::string& predicate) {
+auto RuleBuilder::when_not(const std::string& predicate) -> RuleBuilder& {
     finish_current_condition();
     finish_current_conclusion();
 
@@ -148,7 +161,7 @@ RuleBuilder& RuleBuilder::when_not(const std::string& predicate) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::with_arg(const Value& arg) {
+auto RuleBuilder::with_arg(const Value& arg) -> RuleBuilder& {
     if (building_state_ == BuildingState::NONE) {
         throw std::runtime_error("Must call when() or then() before adding arguments");
     }
@@ -156,27 +169,27 @@ RuleBuilder& RuleBuilder::with_arg(const Value& arg) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::with_arg(int64_t value) {
+auto RuleBuilder::with_arg(int64_t value) -> RuleBuilder& {
     return with_arg(Value::from_int64(value));
 }
 
-RuleBuilder& RuleBuilder::with_arg(double value) {
+auto RuleBuilder::with_arg(double value) -> RuleBuilder& {
     return with_arg(Value::from_float64(value));
 }
 
-RuleBuilder& RuleBuilder::with_arg(const std::string& value) {
+auto RuleBuilder::with_arg(const std::string& value) -> RuleBuilder& {
     return with_arg(Value::from_text(value));
 }
 
-RuleBuilder& RuleBuilder::with_arg(const char* value) {
+auto RuleBuilder::with_arg(const char* value) -> RuleBuilder& {
     return with_arg(Value::from_text(std::string(value)));
 }
 
-RuleBuilder& RuleBuilder::with_arg(bool value) {
+auto RuleBuilder::with_arg(bool value) -> RuleBuilder& {
     return with_arg(Value::from_bool(value));
 }
 
-RuleBuilder& RuleBuilder::with_variable(const std::string& var_name) {
+auto RuleBuilder::with_variable(const std::string& var_name) -> RuleBuilder& {
     // Ensure variable name starts with uppercase
     std::string name = var_name;
     if (!name.empty() && std::islower(name[0])) {
@@ -185,9 +198,9 @@ RuleBuilder& RuleBuilder::with_variable(const std::string& var_name) {
     return with_arg(Value::from_text(name));
 }
 
-RuleBuilder& RuleBuilder::then_conclusion(const std::string& predicate,
-                                          const std::vector<Value>& args,
-                                          double confidence) {
+auto RuleBuilder::then_conclusion(const std::string& predicate,
+                                  const std::vector<Value>& args,
+                                  double confidence) -> RuleBuilder& {
     finish_current_condition();
     finish_current_conclusion();
 
@@ -200,7 +213,7 @@ RuleBuilder& RuleBuilder::then_conclusion(const std::string& predicate,
     return *this;
 }
 
-RuleBuilder& RuleBuilder::then(const std::string& predicate) {
+auto RuleBuilder::then(const std::string& predicate) -> RuleBuilder& {
     finish_current_condition();
     finish_current_conclusion();
 
@@ -212,17 +225,17 @@ RuleBuilder& RuleBuilder::then(const std::string& predicate) {
     return *this;
 }
 
-RuleBuilder& RuleBuilder::with_id(uint64_t id) {
+auto RuleBuilder::with_id(uint64_t id) -> RuleBuilder& {
     id_ = id;
     return *this;
 }
 
-RuleBuilder& RuleBuilder::with_priority(int32_t priority) {
+auto RuleBuilder::with_priority(int32_t priority) -> RuleBuilder& {
     priority_ = priority;
     return *this;
 }
 
-RuleBuilder& RuleBuilder::with_confidence(double confidence) {
+auto RuleBuilder::with_confidence(double confidence) -> RuleBuilder& {
     if (building_state_ == BuildingState::CONCLUSION) {
         current_confidence_ = confidence;
     } else {
@@ -231,7 +244,7 @@ RuleBuilder& RuleBuilder::with_confidence(double confidence) {
     return *this;
 }
 
-Rule RuleBuilder::build() {
+auto RuleBuilder::build() -> Rule {
     finish_current_condition();
     finish_current_conclusion();
 
@@ -284,7 +297,7 @@ void RuleBuilder::finish_current_conclusion() {
     }
 }
 
-uint64_t RuleBuilder::next_id() {
+auto RuleBuilder::next_id() -> uint64_t {
     static std::atomic<uint64_t> counter{1};
     return counter.fetch_add(1);
 }
@@ -295,11 +308,16 @@ uint64_t RuleBuilder::next_id() {
 // The QueryBuilder provides fluent interface for creating queries.
 // It maintains the goal pattern being built and query parameters.
 
-QueryBuilder::QueryBuilder(Query::Type type) : type_(type) {}
+QueryBuilder::QueryBuilder(Query::Type type)
+    : type_(type),
+      id_(0),
+      goal_negated_(false),
+      goal_set_(false),
+      max_results_(0),
+      timeout_ms_(0) {}
 
-QueryBuilder& QueryBuilder::goal(const std::string& predicate,
-                                 const std::vector<Value>& args,
-                                 bool negated) {
+auto QueryBuilder::goal(const std::string& predicate, const std::vector<Value>& args, bool negated)
+    -> QueryBuilder& {
     goal_predicate_ = predicate;
     goal_args_ = args;
     goal_negated_ = negated;
@@ -307,7 +325,7 @@ QueryBuilder& QueryBuilder::goal(const std::string& predicate,
     return *this;
 }
 
-QueryBuilder& QueryBuilder::goal(const std::string& predicate) {
+auto QueryBuilder::goal(const std::string& predicate) -> QueryBuilder& {
     goal_predicate_ = predicate;
     goal_args_.clear();
     goal_negated_ = false;
@@ -315,7 +333,7 @@ QueryBuilder& QueryBuilder::goal(const std::string& predicate) {
     return *this;
 }
 
-QueryBuilder& QueryBuilder::with_arg(const Value& arg) {
+auto QueryBuilder::with_arg(const Value& arg) -> QueryBuilder& {
     if (!goal_set_) {
         throw std::runtime_error("Must call goal() before adding arguments");
     }
@@ -323,27 +341,27 @@ QueryBuilder& QueryBuilder::with_arg(const Value& arg) {
     return *this;
 }
 
-QueryBuilder& QueryBuilder::with_arg(int64_t value) {
+auto QueryBuilder::with_arg(int64_t value) -> QueryBuilder& {
     return with_arg(Value::from_int64(value));
 }
 
-QueryBuilder& QueryBuilder::with_arg(double value) {
+auto QueryBuilder::with_arg(double value) -> QueryBuilder& {
     return with_arg(Value::from_float64(value));
 }
 
-QueryBuilder& QueryBuilder::with_arg(const std::string& value) {
+auto QueryBuilder::with_arg(const std::string& value) -> QueryBuilder& {
     return with_arg(Value::from_text(value));
 }
 
-QueryBuilder& QueryBuilder::with_arg(const char* value) {
+auto QueryBuilder::with_arg(const char* value) -> QueryBuilder& {
     return with_arg(Value::from_text(std::string(value)));
 }
 
-QueryBuilder& QueryBuilder::with_arg(bool value) {
+auto QueryBuilder::with_arg(bool value) -> QueryBuilder& {
     return with_arg(Value::from_bool(value));
 }
 
-QueryBuilder& QueryBuilder::with_variable(const std::string& var_name) {
+auto QueryBuilder::with_variable(const std::string& var_name) -> QueryBuilder& {
     // Ensure variable name starts with uppercase
     std::string name = var_name;
     if (!name.empty() && std::islower(name[0])) {
@@ -352,27 +370,27 @@ QueryBuilder& QueryBuilder::with_variable(const std::string& var_name) {
     return with_arg(Value::from_text(name));
 }
 
-QueryBuilder& QueryBuilder::with_id(uint64_t id) {
+auto QueryBuilder::with_id(uint64_t id) -> QueryBuilder& {
     id_ = id;
     return *this;
 }
 
-QueryBuilder& QueryBuilder::max_results(uint32_t max) {
+auto QueryBuilder::max_results(uint32_t max) -> QueryBuilder& {
     max_results_ = max;
     return *this;
 }
 
-QueryBuilder& QueryBuilder::timeout(uint32_t timeoutMs) {
-    timeout_ms_ = timeoutMs;
+auto QueryBuilder::timeout(uint32_t timeout_ms) -> QueryBuilder& {
+    timeout_ms_ = timeout_ms;
     return *this;
 }
 
-QueryBuilder& QueryBuilder::with_metadata(const std::string& key, const Value& value) {
+auto QueryBuilder::with_metadata(const std::string& key, const Value& value) -> QueryBuilder& {
     metadata_[key] = value;
     return *this;
 }
 
-Query QueryBuilder::build() {
+auto QueryBuilder::build() -> Query {  // NOLINT(readability-make-member-function-const)
     if (!goal_set_ || goal_predicate_.empty()) {
         throw std::runtime_error("Query must have a goal");
     }
@@ -389,23 +407,23 @@ Query QueryBuilder::build() {
     return Query(id_, type_, goal, max_results_, timeout_ms_);
 }
 
-QueryBuilder QueryBuilder::find_all() {
+auto QueryBuilder::find_all() -> QueryBuilder {
     return QueryBuilder(Query::Type::FIND_ALL);
 }
 
-QueryBuilder QueryBuilder::prove() {
+auto QueryBuilder::prove() -> QueryBuilder {
     return QueryBuilder(Query::Type::PROVE);
 }
 
-QueryBuilder QueryBuilder::find_first(uint32_t limit) {
+auto QueryBuilder::find_first(uint32_t limit) -> QueryBuilder {
     return QueryBuilder(Query::Type::FIND_FIRST).max_results(limit);
 }
 
-QueryBuilder QueryBuilder::explain() {
+auto QueryBuilder::explain() -> QueryBuilder {
     return QueryBuilder(Query::Type::EXPLAIN);
 }
 
-uint64_t QueryBuilder::next_id() {
+auto QueryBuilder::next_id() -> uint64_t {
     static std::atomic<uint64_t> counter{1};
     return counter.fetch_add(1);
 }
