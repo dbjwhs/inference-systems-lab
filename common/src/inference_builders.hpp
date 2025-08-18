@@ -430,9 +430,7 @@ inline auto fact(const std::string& predicate) -> Fact {
  * This template function allows creating facts with any number of arguments
  * in a single call, e.g., fact("livesIn", "socrates", "athens")
  */
-template <typename... ArgumentTypes>
-// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) - false positive, fold expression forwards
-// correctly
+template <typename... ArgumentTypes>  // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
 inline auto fact(const std::string& predicate, ArgumentTypes&&... args) -> Fact {
     FactBuilder builder(predicate);
     (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
@@ -470,9 +468,7 @@ inline auto find_all(const std::string& predicate) -> QueryBuilder {
  * @param args Arguments for the goal
  * @return QueryBuilder for further configuration
  */
-template <typename... ArgumentTypes>
-// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) - false positive, fold expression forwards
-// correctly
+template <typename... ArgumentTypes>  // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
 inline auto find_all(const std::string& predicate, ArgumentTypes&&... args) -> QueryBuilder {
     auto builder = QueryBuilder::find_all().goal(predicate);
     (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
@@ -495,9 +491,7 @@ inline auto prove(const std::string& predicate) -> QueryBuilder {
  * @param args Arguments for the goal
  * @return QueryBuilder for further configuration
  */
-template <typename... ArgumentTypes>
-// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) - false positive, fold expression forwards
-// correctly
+template <typename... ArgumentTypes>  // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
 inline auto prove(const std::string& predicate, ArgumentTypes&&... args) -> QueryBuilder {
     auto builder = QueryBuilder::prove().goal(predicate);
     (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
