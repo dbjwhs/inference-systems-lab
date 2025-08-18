@@ -31,7 +31,7 @@ static void test_basic_logging() {
 static void test_level_control() {
     std::cout << "\n=== Testing Level Control ===\n";
 
-    auto& logger = Logger::get_instance();
+    [[maybe_unused]] auto& logger = Logger::get_instance();
 
     // Disable debug and info levels
     Logger::set_level_enabled(LogLevel::DEBUG, false);
@@ -68,7 +68,7 @@ static void test_stderr_suppression() {
 static void test_file_output_control() {
     std::cout << "\n=== Testing File Output Control ===\n";
 
-    auto& logger = Logger::get_instance();
+    [[maybe_unused]] auto& logger = Logger::get_instance();
 
     // Disable file output
     logger.set_file_output_enabled(false);
@@ -84,7 +84,7 @@ static void test_file_output_control() {
 static void test_depth_logging() {
     std::cout << "\n=== Testing Depth Logging ===\n";
 
-    auto& logger = Logger::get_instance();
+    [[maybe_unused]] auto& logger = Logger::get_instance();
 
     logger.print_log_with_depth(LogLevel::INFO, 0, "Root level message");
     logger.print_log_with_depth(LogLevel::INFO, 1, "Depth 1 message");

@@ -4,7 +4,7 @@
 namespace inference_lab::engines {
 
 // Placeholder function to ensure library has symbols
-static auto placeholder_function() -> int {
+auto placeholder_function() -> int {
     return 0;
 }
 

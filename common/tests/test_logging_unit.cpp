@@ -181,7 +181,7 @@ TEST_F(LoggerTest, BasicLoggingFunctionality) {
  * Validates: Dynamic log level filtering, state persistence, and isolation
  */
 TEST_F(LoggerTest, LogLevelControl) {
-    auto& logger = Logger::get_instance();
+    [[maybe_unused]] auto& logger = Logger::get_instance();
 
     // Test initial state - all levels should be enabled
     EXPECT_TRUE(Logger::is_level_enabled(LogLevel::DEBUG));
@@ -409,7 +409,7 @@ TEST_F(LoggerTest, MacroFunctionality) {
  * and dynamic filtering behavior
  */
 TEST_F(LoggerTest, LevelFiltering) {
-    auto& logger = Logger::get_instance();
+    [[maybe_unused]] auto& logger = Logger::get_instance();
 
     // Test that disabled levels don't cause crashes
     Logger::set_level_enabled(LogLevel::DEBUG, false);

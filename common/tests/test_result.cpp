@@ -481,25 +481,25 @@ TEST_F(ResultTest, MapErrorOperations) {
 TEST_F(ResultTest, AndThenOperations) {
     // Test successful chaining
     auto result = successful_operation(5)
-                      .and_then([this](int x) { return chain_operation(x); })
-                      .and_then([this](int x) { return conditional_operation(x); });
+                      .and_then([](int x) { return chain_operation(x); })
+                      .and_then([](int x) { return conditional_operation(x); });
 
     EXPECT_TRUE(result.is_ok());
     EXPECT_EQ(result.unwrap(), "Large: 20");  // (5 * 2) + 10 = 20, which is > 10
 
     // Test error propagation from first operation
     auto error_result = successful_operation(-1)  // This will fail
-                            .and_then([this](int x) { return chain_operation(x); })
-                            .and_then([this](int x) { return conditional_operation(x); });
+                            .and_then([](int x) { return chain_operation(x); })
+                            .and_then([](int x) { return conditional_operation(x); });
 
     EXPECT_TRUE(error_result.is_err());
     EXPECT_EQ(error_result.unwrap_err(), TestError::INVALID_INPUT);
 
     // Test error propagation from middle operation
     auto middle_error =
-        successful_operation(50)                                     // 50 * 2 = 100
-            .and_then([this](int x) { return chain_operation(x); })  // 100 + 10 = 110 > 100, fails
-            .and_then([this](int x) { return conditional_operation(x); });
+        successful_operation(50)                                 // 50 * 2 = 100
+            .and_then([](int x) { return chain_operation(x); })  // 100 + 10 = 110 > 100, fails
+            .and_then([](int x) { return conditional_operation(x); });
 
     EXPECT_TRUE(middle_error.is_err());
     EXPECT_EQ(middle_error.unwrap_err(), TestError::INVALID_INPUT);
