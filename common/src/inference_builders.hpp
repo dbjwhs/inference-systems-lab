@@ -253,7 +253,8 @@ class RuleBuilder {
     double current_confidence_ = 1.0;  ///< Confidence for current conclusion
 
     /** @brief Tracks whether we're currently building a condition or conclusion */
-    enum class BuildingState : std::uint8_t {
+    enum class BuildingState : std::uint8_t {  // NOLINT(performance-enum-size) - false positive,
+                                               // uint8_t is correct
         CONDITION,
         CONCLUSION,
         NONE
@@ -430,6 +431,8 @@ inline auto fact(const std::string& predicate) -> Fact {
  * in a single call, e.g., fact("livesIn", "socrates", "athens")
  */
 template <typename... ArgumentTypes>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) - false positive, fold expression forwards
+// correctly
 inline auto fact(const std::string& predicate, ArgumentTypes&&... args) -> Fact {
     FactBuilder builder(predicate);
     (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
@@ -468,6 +471,8 @@ inline auto find_all(const std::string& predicate) -> QueryBuilder {
  * @return QueryBuilder for further configuration
  */
 template <typename... ArgumentTypes>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) - false positive, fold expression forwards
+// correctly
 inline auto find_all(const std::string& predicate, ArgumentTypes&&... args) -> QueryBuilder {
     auto builder = QueryBuilder::find_all().goal(predicate);
     (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);
@@ -491,6 +496,8 @@ inline auto prove(const std::string& predicate) -> QueryBuilder {
  * @return QueryBuilder for further configuration
  */
 template <typename... ArgumentTypes>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward) - false positive, fold expression forwards
+// correctly
 inline auto prove(const std::string& predicate, ArgumentTypes&&... args) -> QueryBuilder {
     auto builder = QueryBuilder::prove().goal(predicate);
     (builder.with_arg(std::forward<ArgumentTypes>(args)), ...);

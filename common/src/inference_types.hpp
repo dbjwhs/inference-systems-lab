@@ -181,6 +181,7 @@ class Value {
      * This enum tracks which type of value is currently stored in the Value object.
      * It's used internally for type checking and safe casting operations.
      */
+    // NOLINTNEXTLINE(performance-enum-size) - false positive, uint8_t is correct
     enum class Type : std::uint8_t { INT64, FLOAT64, TEXT, BOOL, LIST, STRUCT };
 
     /** @brief Current type of the stored value */
@@ -454,11 +455,12 @@ class Query {
      * @enum Type
      * @brief Enumeration of different query types supported by the inference engine
      */
-    enum class Type : std::uint8_t {
-        FIND_ALL,    ///< Find all facts that match the goal
-        PROVE,       ///< Check if goal can be proven (true/false)
-        FIND_FIRST,  ///< Find first N solutions
-        EXPLAIN      ///< Explain how a goal can be proven
+    enum class Type : std::uint8_t {  // NOLINT(performance-enum-size) - false positive, uint8_t is
+                                      // correct
+        FIND_ALL,                     ///< Find all facts that match the goal
+        PROVE,                        ///< Check if goal can be proven (true/false)
+        FIND_FIRST,                   ///< Find first N solutions
+        EXPLAIN                       ///< Explain how a goal can be proven
     };
 
     /**

@@ -127,12 +127,13 @@ class MigrationPath {
      * @enum Strategy
      * @brief Migration strategies for different types of schema changes
      */
-    enum class Strategy : std::uint8_t {
-        DIRECT_MAPPING,  ///< Direct field mapping (no data loss)
-        TRANSFORMATION,  ///< Field transformation required
-        DEFAULT_VALUES,  ///< Default values for new fields
-        CUSTOM_LOGIC,    ///< Custom migration logic required
-        LOSSY            ///< Data may be lost in migration
+    enum class Strategy : std::uint8_t {  // NOLINT(performance-enum-size) - false positive, uint8_t
+                                          // is correct
+        DIRECT_MAPPING,                   ///< Direct field mapping (no data loss)
+        TRANSFORMATION,                   ///< Field transformation required
+        DEFAULT_VALUES,                   ///< Default values for new fields
+        CUSTOM_LOGIC,                     ///< Custom migration logic required
+        LOSSY                             ///< Data may be lost in migration
     };
 
     /**

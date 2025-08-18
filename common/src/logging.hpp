@@ -23,7 +23,8 @@
 
 namespace inference_lab::common {
 
-enum class LogLevel : std::uint8_t {
+enum class LogLevel : std::uint8_t {  // NOLINT(performance-enum-size) - false positive, uint8_t is
+                                      // correct
     DEBUG = 0,
     INFO = 1,
     NORMAL = 2,
