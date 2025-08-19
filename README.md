@@ -46,6 +46,7 @@ A modern C++17+ research and development platform focused on building robust, hi
 - **Inference Engine Foundation**: Basic forward-chaining rule evaluation
 
 ### 📋 **Planned Development**
+- **ML Inference Integration**: TensorRT GPU acceleration and ONNX cross-platform model execution
 - **Distributed Systems**: Consensus algorithms and distributed state machines  
 - **Performance Engineering**: SIMD optimizations and custom allocators
 - **System Integration**: End-to-end distributed inference scenarios
@@ -103,8 +104,11 @@ inference-systems-lab/
 │   ├── Testing.cmake         # GoogleTest framework setup
 │   ├── Benchmarking.cmake    # Google Benchmark integration
 │   └── StaticAnalysis.cmake  # clang-tidy automation
-├── engines/                  # 🚧 PLACEHOLDER - Future inference implementations
-│   └── [placeholder structure prepared]
+├── engines/                  # 🚧 EXPANDING - Inference engine implementations
+│   ├── src/tensorrt/         # PLANNED - TensorRT GPU acceleration
+│   ├── src/onnx/             # PLANNED - ONNX Runtime cross-platform execution
+│   ├── src/forward_chaining/ # PLANNED - Rule-based inference engines
+│   └── src/inference_engine.hpp # PLANNED - Unified inference interface
 ├── distributed/              # 🚧 PLACEHOLDER - Future consensus algorithms
 │   └── [placeholder structure prepared]
 ├── performance/              # 🚧 PLACEHOLDER - Future optimization tools
@@ -132,11 +136,42 @@ inference-systems-lab/
 - **`common/examples/schema_evolution_demo.cpp`** - Schema versioning and migration examples
 - **`common/examples/inference_types_demo.cpp`** - Basic inference type definitions and usage
 
+### **ML Inference Integration (Phase 0 - Documentation Complete)**
+
+The laboratory is expanding to include modern machine learning inference capabilities alongside traditional rule-based reasoning:
+
+#### **🚀 TensorRT Integration**
+- **GPU Acceleration**: High-performance NVIDIA GPU inference for deep learning models
+- **Model Optimization**: Automatic precision calibration, layer fusion, and kernel auto-tuning
+- **Streaming Interface**: Integration with existing `Result<T,E>` error handling patterns
+- **Benchmarking**: Performance comparisons between CPU and GPU inference paths
+
+#### **🌐 ONNX Runtime Integration** 
+- **Cross-Platform Models**: Universal model format supporting TensorFlow, PyTorch, scikit-learn
+- **Multi-Backend Execution**: CPU, GPU, and specialized accelerator support
+- **Model Versioning**: Schema evolution patterns for ML model lifecycle management
+- **Production Deployment**: Enterprise-grade model serving with monitoring and logging
+
+#### **🔗 Unified Inference Architecture**
+```cpp
+// Planned API design integrating with existing patterns
+enum class InferenceBackend : std::uint8_t { 
+    RULE_BASED, 
+    TENSORRT_GPU, 
+    ONNX_RUNTIME,
+    HYBRID_NEURAL_SYMBOLIC 
+};
+
+auto create_inference_engine(InferenceBackend backend, const ModelConfig& config) 
+    -> Result<std::unique_ptr<InferenceEngine>, InferenceError>;
+```
+
 ### **Future Implementation Areas (Ready for Development)**
 
-- **🔮 Inference Engines**: Forward chaining, pattern matching, rule evaluation
-- **🔮 Distributed Systems**: Consensus algorithms, distributed state machines
-- **🔮 Performance Tools**: Custom allocators, SIMD optimizations, profiling integration
+- **🔮 Neural-Symbolic Fusion**: Combine rule-based reasoning with ML model predictions
+- **🔮 Distributed ML**: Model sharding and federated inference across compute nodes
+- **🔮 Performance Optimization**: Custom GPU kernels, quantization, and batch processing
+- **🔮 Production Integration**: Model monitoring, A/B testing, and automated retraining pipelines
 
 ## 🛠️ **Getting Started**
 
@@ -145,6 +180,11 @@ inference-systems-lab/
 - **Build System**: CMake 3.20+ 
 - **Dependencies**: Git, Python 3.8+ (for tooling)
 - **Development Tools**: clang-format, clang-tidy (automatically detected)
+
+#### **Optional ML Dependencies (for TensorRT/ONNX integration)**
+- **TensorRT**: NVIDIA TensorRT 8.5+ with CUDA 11.8+ (for GPU acceleration)
+- **ONNX Runtime**: Microsoft ONNX Runtime 1.15+ (for cross-platform model execution)
+- **Model Formats**: Support for ONNX, TensorRT engines, and framework-specific formats
 
 ### **Quick Setup**
 ```bash
@@ -197,21 +237,34 @@ python3 tools/new_module.py my_module --author "Your Name" --description "Module
 
 ## 🗺️ **Development Roadmap**
 
-### **Next Priorities (Current Focus)**
+### **Phase 0: ML Integration Documentation (CURRENT - In Progress)**
+- [x] **Documentation Updates**: README, CLAUDE.md, WORK_TODO.md integration plans
+- [ ] **Dependency Planning**: TensorRT/ONNX setup and build system integration
+- [ ] **Architecture Design**: Unified inference interface and error handling patterns
+- [ ] **Workflow Documentation**: Development processes for ML model integration
+
+### **Phase 1: Foundation & TensorRT Integration (Next Priority)**
 - [ ] **Core Data Structures**: Cache-friendly containers, memory pools, concurrent data structures
-- [ ] **Type System**: Common concepts, type traits, and strong type aliases  
-- [ ] **Forward Chaining Engine**: Basic rule representation, fact database, inference algorithm
-- [ ] **Networking Layer**: Message framing, async I/O abstractions, connection management
+- [ ] **TensorRT Engine**: Basic GPU inference with model loading and execution
+- [ ] **Error Handling**: Extend `Result<T,E>` for ML-specific error types
+- [ ] **Benchmarking**: Performance comparison framework for ML workloads
 
-### **Medium-term Goals (3-6 Months)**
-- [ ] **Advanced Inference**: Backward chaining, RETE networks, rule optimization
-- [ ] **Performance Layer**: Custom allocators, SIMD optimizations, profiling integration
-- [ ] **Distribution Foundation**: Consensus algorithms (Raft, PBFT), distributed state machines
-- [ ] **Integration Testing**: End-to-end scenarios, real-world applications
+### **Phase 2: ONNX Runtime & Cross-Platform Support (3-4 Months)**
+- [ ] **ONNX Integration**: Cross-platform model execution with CPU/GPU backends
+- [ ] **Model Versioning**: Schema evolution patterns for ML model lifecycle
+- [ ] **Forward Chaining Engine**: Traditional rule-based inference implementation
+- [ ] **Unified Interface**: Common API for rule-based and ML inference
 
-### **Long-term Vision (6+ Months)**
-- [ ] **Production Systems**: Distributed inference at scale, monitoring, operational tooling
-- [ ] **Research Extensions**: Neural-symbolic integration, probabilistic inference
+### **Phase 3: Advanced Integration & Performance (6-9 Months)**
+- [ ] **Neural-Symbolic Fusion**: Hybrid reasoning combining rules and ML models
+- [ ] **Advanced Optimization**: Custom CUDA kernels, quantization, batch processing
+- [ ] **Distributed ML**: Model sharding and federated inference capabilities
+- [ ] **Production Features**: Model monitoring, A/B testing, automated deployment
+
+### **Long-term Vision (9+ Months)**
+- [ ] **Enterprise Scale**: Production-ready distributed inference at scale
+- [ ] **Research Platform**: Framework for neural-symbolic AI experimentation
+- [ ] **Industry Applications**: Real-world use cases in finance, healthcare, autonomous systems
 - [ ] **Advanced Optimization**: Formal verification, automated rule discovery
 
 ## 📚 **Documentation & Resources**

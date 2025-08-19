@@ -97,7 +97,13 @@ inference-systems-lab/
 │   ├── Testing.cmake         # ✅ GoogleTest framework setup
 │   ├── Benchmarking.cmake    # ✅ Google Benchmark integration
 │   └── StaticAnalysis.cmake  # ✅ Clang-tidy automation
-├── engines/                  # 🚧 PLACEHOLDER - Ready for implementation
+├── engines/                  # 🚧 EXPANDING - Inference engine implementations
+│   ├── src/tensorrt/         # 📋 PLANNED - TensorRT GPU acceleration (Phase 1)
+│   ├── src/onnx/             # 📋 PLANNED - ONNX Runtime integration (Phase 2)
+│   ├── src/forward_chaining/ # 📋 PLANNED - Rule-based inference engines
+│   ├── src/inference_engine.hpp # 📋 PLANNED - Unified inference interface
+│   ├── examples/             # 📋 PLANNED - ML model demos and tutorials
+│   └── benchmarks/           # 📋 PLANNED - Performance comparisons
 ├── distributed/              # 🚧 PLACEHOLDER - Ready for implementation  
 ├── performance/              # 🚧 PLACEHOLDER - Ready for implementation
 ├── integration/              # 🚧 PLACEHOLDER - Ready for implementation
@@ -281,10 +287,63 @@ Complete automation suite for enterprise-grade development:
 - **Status**: All committed as single comprehensive commit with documentation updates
 
 ### Development Priorities
-1. **Next**: Core data structures implementation (`common/src/containers.hpp`)
-2. **Then**: Forward chaining engine (`engines/src/forward_chaining.hpp`)  
-3. **Also**: Complete remaining static analysis modernization phases
-4. **Future**: Distributed systems and performance optimization layers
+1. **Current**: ML Integration Documentation (Phase 0 - TensorRT/ONNX planning)
+2. **Next**: Core data structures implementation (`common/src/containers.hpp`)
+3. **Then**: TensorRT GPU inference engine (`engines/src/tensorrt/`)
+4. **Also**: ONNX Runtime cross-platform support (`engines/src/onnx/`)
+5. **Future**: Neural-symbolic fusion and distributed ML inference
+
+## ML Inference Integration Roadmap
+
+### Phase 0: Documentation and Architecture (CURRENT)
+**Status**: In Progress - Documentation updates and dependency planning
+- [x] README.md updated with TensorRT/ONNX vision and roadmap
+- [ ] CLAUDE.md integration context and development workflow  
+- [ ] WORK_TODO.md detailed implementation phases
+- [ ] DEVELOPMENT.md ML-specific development workflow
+- [ ] Dependencies documentation (TensorRT 8.5+, ONNX Runtime 1.15+)
+
+### Phase 1: TensorRT Foundation (Next Priority - 2-3 months)
+**Goal**: GPU-accelerated inference with existing Result<T,E> patterns
+- **Core Engine**: `engines/src/tensorrt/tensorrt_engine.hpp` - Basic model loading and execution
+- **Error Handling**: Extend `InferenceError` enum for TensorRT-specific errors
+- **Examples**: `engines/examples/tensorrt_demo.cpp` - Basic GPU inference demonstration
+- **Benchmarks**: Performance comparison between CPU and GPU inference paths
+- **Integration**: Seamless integration with existing logging and schema evolution systems
+
+### Phase 2: ONNX Runtime Cross-Platform (3-6 months)  
+**Goal**: Universal model format support with multi-backend execution
+- **ONNX Engine**: `engines/src/onnx/onnx_engine.hpp` - Cross-platform model execution
+- **Backend Management**: Dynamic selection between CPU, GPU, and specialized accelerators
+- **Model Versioning**: Schema evolution patterns for ML model lifecycle management
+- **Production Ready**: Enterprise-grade model serving with monitoring and error recovery
+
+### Phase 3: Unified Inference Architecture (6-9 months)
+**Goal**: Seamless integration between rule-based and ML inference
+```cpp
+// Planned unified interface integrating with existing patterns
+enum class InferenceBackend : std::uint8_t { 
+    RULE_BASED, 
+    TENSORRT_GPU, 
+    ONNX_RUNTIME,
+    HYBRID_NEURAL_SYMBOLIC 
+};
+
+auto create_inference_engine(InferenceBackend backend, const ModelConfig& config) 
+    -> Result<std::unique_ptr<InferenceEngine>, InferenceError>;
+
+// Integration with existing Result<T,E> and logging patterns
+auto run_inference(const InferenceRequest& request) 
+    -> Result<InferenceResponse, InferenceError>;
+```
+
+### Technical Integration Points
+- **Error Handling**: Extend existing `Result<T,E>` patterns for ML-specific error types
+- **Logging**: Integrate ML inference metrics with existing structured logging system
+- **Schema Evolution**: Apply versioning patterns to ML model lifecycle management  
+- **Benchmarking**: Leverage existing performance framework for ML workload comparisons
+- **Testing**: Apply existing quality standards (80%+ coverage, comprehensive test suites)
+- **Development Workflow**: Use existing automation (pre-commit hooks, static analysis)
 
 ## AI Assistant Guidelines
 

@@ -42,6 +42,99 @@ pytest                       # Testing framework
 catch2                       # C++ unit testing
 google-benchmark             # C++ benchmarking
 lcov                        # Coverage reporting
+
+# ML Integration Tools (Optional)
+tensorrt >= 8.5              # NVIDIA GPU inference
+onnxruntime >= 1.15          # Cross-platform ML inference
+cuda-toolkit >= 11.8        # GPU acceleration support
+```
+
+### ML Development Workflow (TensorRT & ONNX Integration)
+
+#### ML Dependencies Setup
+```bash
+# TensorRT Setup (NVIDIA GPUs)
+# Download TensorRT from NVIDIA Developer portal
+export TENSORRT_ROOT=/path/to/TensorRT
+export LD_LIBRARY_PATH=$TENSORRT_ROOT/lib:$LD_LIBRARY_PATH
+
+# ONNX Runtime Setup (Cross-platform)
+# Option 1: Package manager
+sudo apt install libonnxruntime-dev  # Ubuntu/Debian
+brew install onnxruntime             # macOS
+
+# Option 2: Build from source
+git clone --recursive https://github.com/Microsoft/onnxruntime
+cd onnxruntime
+./build.sh --config Release --build_shared_lib --parallel
+```
+
+#### ML Model Development Workflow
+```bash
+# 1. Model Preparation
+# Convert models to optimized formats
+trtexec --onnx=model.onnx --saveEngine=model.trt --fp16  # TensorRT optimization
+python -c "import onnx; onnx.checker.check_model('model.onnx')"  # ONNX validation
+
+# 2. Integration Development
+mkdir engines/examples/models  # Store test models
+# Implement inference engine with Result<T,E> patterns
+# Add comprehensive unit tests with mock GPU environment
+
+# 3. Performance Validation
+./build/engines/tensorrt_benchmarks     # GPU inference performance
+./build/engines/onnx_benchmarks         # Cross-platform performance
+python3 tools/run_benchmarks.py --compare-ml-backends  # Backend comparison
+
+# 4. Model Versioning
+# Use schema evolution patterns for model lifecycle
+# Integrate with existing Cap'n Proto versioning system
+```
+
+#### ML-Specific Testing Strategy
+```cpp
+// GPU inference testing with mock environment
+class TensorRTEngineTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // Mock GPU environment for CI/CD
+        if (!has_cuda_device()) {
+            GTEST_SKIP() << "CUDA device required for TensorRT tests";
+        }
+    }
+    
+    // Test model loading, inference, error handling
+    // Validate GPU memory management and cleanup
+    // Performance regression tests with baseline comparison
+};
+
+// Cross-platform ONNX testing
+class ONNXEngineTest : public ::testing::Test {
+    // Test model execution across CPU, GPU, specialized accelerators
+    // Validate backend switching and provider selection
+    // Memory usage and performance across different platforms
+};
+```
+
+#### ML Error Handling Patterns
+```cpp
+// Extend existing Result<T,E> patterns for ML workloads
+enum class InferenceError : std::uint8_t {
+    MODEL_LOAD_FAILED,
+    UNSUPPORTED_MODEL_FORMAT,
+    GPU_MEMORY_EXHAUSTED,
+    BACKEND_NOT_AVAILABLE,
+    INFERENCE_EXECUTION_FAILED,
+    INVALID_INPUT_SHAPE,
+    MODEL_VERSION_MISMATCH
+};
+
+// Integration with existing error handling
+auto load_model(const std::string& path, InferenceBackend backend) 
+    -> Result<std::unique_ptr<InferenceEngine>, InferenceError>;
+
+auto run_inference(const InferenceRequest& request) 
+    -> Result<InferenceResponse, InferenceError>;
 ```
 
 ### Build Instructions
@@ -141,7 +234,10 @@ Recommended implementation sequence:
    - Serialization framework
    - Basic data structures
 
-2. **engines/** - Core inference
+2. **engines/** - ML & Rule-based inference (PRIORITY UPDATE)
+   - **Phase 1**: TensorRT GPU inference engine (NEW)
+   - **Phase 2**: ONNX Runtime cross-platform engine (NEW)
+   - **Phase 3**: Unified inference interface (NEW)
    - Forward chaining engine
    - Backward chaining engine
    - RETE network

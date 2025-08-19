@@ -33,6 +33,36 @@
   - [X] Fix unused function warnings (placeholder files)
   - [X] Eliminate ranlib empty symbol table warnings (all modules)
 
+## Phase 0: ML Inference Integration Planning (CURRENT)
+
+### Documentation and Architecture (In Progress)
+- [X] **README.md Integration**: Updated with TensorRT/ONNX vision, roadmap, and prerequisites
+- [X] **CLAUDE.md Context**: Added ML integration roadmap and technical integration points
+- [X] **WORK_TODO.md Phases**: Document detailed implementation phases for TensorRT/ONNX
+- [ ] **DEVELOPMENT.md Workflow**: ML-specific development processes and model management
+- [ ] **Dependencies Documentation**: TensorRT 8.5+, ONNX Runtime 1.15+, CUDA 11.8+ setup guides
+
+### Phase 0.1: TensorRT Integration Architecture
+- [ ] **API Design**: Plan unified inference interface extending `Result<T,E>` patterns
+- [ ] **Error Handling**: Design `InferenceError` enum for TensorRT-specific error types
+- [ ] **Memory Management**: RAII patterns for GPU memory and TensorRT engine lifecycle
+- [ ] **Build Integration**: CMake modules for TensorRT dependency detection and linking
+- [ ] **Testing Strategy**: Unit test framework for GPU inference validation
+
+### Phase 0.2: ONNX Runtime Integration Architecture  
+- [ ] **Cross-Platform Design**: Backend selection (CPU, GPU, specialized accelerators)
+- [ ] **Model Versioning**: Schema evolution patterns for ML model lifecycle management
+- [ ] **Performance Framework**: Benchmarking infrastructure for multi-backend comparisons
+- [ ] **Production Features**: Model serving, monitoring, and automated deployment patterns
+- [ ] **Documentation**: API examples and integration tutorials
+
+### Phase 0.3: Unified Inference Interface Design
+- [ ] **Common API**: Design abstract interface for rule-based and ML inference
+- [ ] **Backend Enum**: `InferenceBackend` with RULE_BASED, TENSORRT_GPU, ONNX_RUNTIME, HYBRID
+- [ ] **Factory Pattern**: `create_inference_engine()` with Result<T,E> error handling
+- [ ] **Integration Points**: Seamless logging, benchmarking, and schema evolution integration
+- [ ] **Neural-Symbolic Planning**: Architecture for hybrid reasoning systems
+
 ## Phase 1: Common Module (Foundation)
 
 ### Core Error Handling
@@ -95,7 +125,39 @@
   - [ ] Write integration tests
   - [ ] Benchmark throughput and latency
 
-## Phase 2: Engines Module (Core Logic)
+## Phase 2: Engines Module (Core Logic & ML Integration)
+
+### TensorRT GPU Inference Engine (NEW - Priority)
+- [ ] Implement `engines/src/tensorrt/tensorrt_engine.hpp`
+  - [ ] TensorRT engine wrapper with RAII resource management
+  - [ ] Model loading from .engine and .onnx files with optimization
+  - [ ] GPU memory management and batch processing
+  - [ ] Integration with existing `Result<T,E>` error handling patterns
+  - [ ] Thread-safe inference execution with proper CUDA context management
+  - [ ] Write comprehensive tests with mock GPU environment
+  - [ ] Create `engines/examples/tensorrt_demo.cpp` demonstration
+  - [ ] Benchmark GPU vs CPU performance comparison
+
+### ONNX Runtime Cross-Platform Engine (NEW)
+- [ ] Implement `engines/src/onnx/onnx_engine.hpp`
+  - [ ] ONNX Runtime session management with provider selection
+  - [ ] Dynamic backend switching (CPU, GPU, DirectML, etc.)
+  - [ ] Model versioning and schema evolution integration
+  - [ ] Batch processing and memory optimization
+  - [ ] Integration with logging system for inference metrics
+  - [ ] Write cross-platform compatibility tests
+  - [ ] Create production-ready model serving examples
+  - [ ] Performance benchmarks across different backends
+
+### Unified Inference Interface (NEW)
+- [ ] Implement `engines/src/inference_engine.hpp`
+  - [ ] Abstract base class for all inference backends
+  - [ ] Factory pattern with `InferenceBackend` enum selection
+  - [ ] Common API for model loading, inference execution, and resource management
+  - [ ] Seamless integration between rule-based and ML inference
+  - [ ] Plugin architecture for custom inference backends
+  - [ ] Write integration tests with multiple backend types
+  - [ ] Performance comparison framework across all backends
 
 ### Forward Chaining Engine
 - [ ] Implement `engines/src/forward_chaining.hpp`
