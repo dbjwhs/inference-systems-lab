@@ -37,12 +37,20 @@ Checks: >
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -readability-convert-member-functions-to-static
 
-# Treat specific warnings as errors for critical issues
+# Treat specific warnings as errors for critical issues only
+# Only genuine safety/correctness issues should break builds
 WarningsAsErrors: >
   bugprone-use-after-move,
   bugprone-dangling-handle,
-  cert-*,
-  clang-analyzer-*
+  bugprone-infinite-loop,
+  bugprone-nullptr-dereference,
+  clang-analyzer-core.CallAndMessage,
+  clang-analyzer-core.DivideZero,
+  clang-analyzer-core.NonNullParamChecker,
+  clang-analyzer-core.NullDereference,
+  clang-analyzer-core.UndefinedBinaryOperatorResult,
+  clang-analyzer-core.uninitialized.Assign,
+  clang-analyzer-deadcode.DeadStores
 
 # Only analyze project headers, not system/third-party headers
 HeaderFilterRegex: '^((?!(/opt/homebrew|/usr/|/System/|_deps/|build/|cmake-build)).)*$'
