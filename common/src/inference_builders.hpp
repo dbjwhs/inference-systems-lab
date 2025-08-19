@@ -107,12 +107,12 @@ class FactBuilder {
     auto build() -> Fact;
 
   private:
-    std::string predicate_;                            ///< Predicate name for the fact
-    std::vector<Value> args_;                          ///< Arguments being accumulated
-    uint64_t id_ = 0;                                  ///< Fact ID (0 = auto-generate)
-    double confidence_ = 1.0;                          ///< Confidence level
-    uint64_t timestamp_ = 0;                           ///< Timestamp (0 = current time)
-    std::unordered_map<std::string, Value> metadata_;  ///< Metadata key-value pairs
+    std::string predicate_{};                            ///< Predicate name for the fact
+    std::vector<Value> args_{};                          ///< Arguments being accumulated
+    uint64_t id_ = 0;                                    ///< Fact ID (0 = auto-generate)
+    double confidence_ = 1.0;                            ///< Confidence level
+    uint64_t timestamp_ = 0;                             ///< Timestamp (0 = current time)
+    std::unordered_map<std::string, Value> metadata_{};  ///< Metadata key-value pairs
 
     /** @brief Generate next unique ID for facts */
     static auto next_id() -> uint64_t;
@@ -239,18 +239,18 @@ class RuleBuilder {
     auto build() -> Rule;
 
   private:
-    std::string name_;                           ///< Human-readable rule name
-    std::vector<Rule::Condition> conditions_;    ///< Completed conditions
-    std::vector<Rule::Conclusion> conclusions_;  ///< Completed conclusions
-    uint64_t id_ = 0;                            ///< Rule ID (0 = auto-generate)
-    int32_t priority_ = 0;                       ///< Priority for conflict resolution
-    double confidence_ = 1.0;                    ///< Overall rule confidence
+    std::string name_{};                           ///< Human-readable rule name
+    std::vector<Rule::Condition> conditions_{};    ///< Completed conditions
+    std::vector<Rule::Conclusion> conclusions_{};  ///< Completed conclusions
+    uint64_t id_ = 0;                              ///< Rule ID (0 = auto-generate)
+    int32_t priority_ = 0;                         ///< Priority for conflict resolution
+    double confidence_ = 1.0;                      ///< Overall rule confidence
 
     // State for building the current condition or conclusion
-    std::string current_predicate_;    ///< Predicate being built
-    std::vector<Value> current_args_;  ///< Arguments being accumulated
-    bool current_negated_ = false;     ///< Whether current condition is negated
-    double current_confidence_ = 1.0;  ///< Confidence for current conclusion
+    std::string current_predicate_{};    ///< Predicate being built
+    std::vector<Value> current_args_{};  ///< Arguments being accumulated
+    bool current_negated_ = false;       ///< Whether current condition is negated
+    double current_confidence_ = 1.0;    ///< Confidence for current conclusion
 
     /** @brief Tracks whether we're currently building a condition or conclusion */
     enum class BuildingState : std::uint8_t {  // NOLINT(performance-enum-size) - false positive,
@@ -375,17 +375,17 @@ class QueryBuilder {
     static auto explain() -> QueryBuilder;
 
   private:
-    Query::Type type_;                                 ///< Type of query to create
-    uint64_t id_ = 0;                                  ///< Query ID (0 = auto-generate)
-    uint32_t max_results_ = 100;                       ///< Maximum results to return
-    uint32_t timeout_ms_ = 5000;                       ///< Timeout in milliseconds
-    std::unordered_map<std::string, Value> metadata_;  ///< Metadata key-value pairs
+    Query::Type type_;                                   ///< Type of query to create
+    uint64_t id_ = 0;                                    ///< Query ID (0 = auto-generate)
+    uint32_t max_results_ = 100;                         ///< Maximum results to return
+    uint32_t timeout_ms_ = 5000;                         ///< Timeout in milliseconds
+    std::unordered_map<std::string, Value> metadata_{};  ///< Metadata key-value pairs
 
     // State for building the goal pattern
-    std::string goal_predicate_;    ///< Goal predicate being built
-    std::vector<Value> goal_args_;  ///< Goal arguments being accumulated
-    bool goal_negated_ = false;     ///< Whether goal is negated
-    bool goal_set_ = false;         ///< Whether goal has been set
+    std::string goal_predicate_{};    ///< Goal predicate being built
+    std::vector<Value> goal_args_{};  ///< Goal arguments being accumulated
+    bool goal_negated_ = false;       ///< Whether goal is negated
+    bool goal_set_ = false;           ///< Whether goal has been set
 
     /** @brief Generate next unique ID for queries */
     static auto next_id() -> uint64_t;

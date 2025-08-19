@@ -25,9 +25,6 @@
 #include <stdexcept>
 
 #include "../src/inference_types.hpp"
-#include "../src/logging.hpp"
-#include "../src/result.hpp"
-#include "../src/schema_evolution.hpp"
 
 namespace inference_lab::common {
 
@@ -39,7 +36,7 @@ namespace inference_lab::common {
 // object in the build() method.
 
 FactBuilder::FactBuilder(const std::string& predicate)
-    : predicate_(predicate), id_(0), confidence_(1.0), timestamp_(0) {}
+    : predicate_(predicate), args_(), id_(0), timestamp_(0), metadata_() {}
 
 auto FactBuilder::with_arg(const Value& arg) -> FactBuilder& {
     args_.push_back(arg);
@@ -115,12 +112,12 @@ auto FactBuilder::next_id() -> uint64_t {
 
 RuleBuilder::RuleBuilder(const std::string& name)
     : name_(name),
+      conditions_(),
+      conclusions_(),
       id_(0),
       priority_(0),
-      confidence_(1.0),
-      current_confidence_(1.0),
-      current_negated_(false),
-      building_state_(BuildingState::NONE) {}
+      current_predicate_(),
+      current_args_() {}
 
 auto RuleBuilder::when_condition(const std::string& predicate,
                                  const std::vector<Value>& args,
@@ -311,10 +308,11 @@ auto RuleBuilder::next_id() -> uint64_t {
 QueryBuilder::QueryBuilder(Query::Type type)
     : type_(type),
       id_(0),
-      goal_negated_(false),
-      goal_set_(false),
-      max_results_(0),
-      timeout_ms_(0) {}
+      max_results_(100),
+      timeout_ms_(5000),
+      metadata_(),
+      goal_predicate_(),
+      goal_args_() {}
 
 auto QueryBuilder::goal(const std::string& predicate, const std::vector<Value>& args, bool negated)
     -> QueryBuilder& {

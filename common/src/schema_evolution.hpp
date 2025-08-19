@@ -111,10 +111,10 @@ class SchemaVersion {
     void write_to(schemas::SchemaVersion::Builder builder) const;
 
   private:
-    uint32_t major_;
-    uint32_t minor_;
-    uint32_t patch_;
-    std::string schema_hash_;
+    uint32_t major_{};
+    uint32_t minor_{};
+    uint32_t patch_{};
+    std::string schema_hash_{};
 };
 
 /**
@@ -186,8 +186,8 @@ class MigrationPath {
     SchemaVersion to_version_;
     Strategy strategy_;
     bool reversible_;
-    std::string description_;
-    std::vector<std::string> warnings_;
+    std::string description_{};
+    std::vector<std::string> warnings_{};
 };
 
 /**
@@ -275,9 +275,9 @@ class SchemaEvolutionManager {
 
   private:
     SchemaVersion current_version_;
-    std::vector<MigrationPath> migration_paths_;
-    std::unordered_map<std::string, size_t> path_index_;  // version_string -> index in
-                                                          // migrationPaths_
+    std::vector<MigrationPath> migration_paths_{};
+    std::unordered_map<std::string, size_t> path_index_{};  // version_string -> index in
+                                                            // migrationPaths_
 
     /**
      * @brief Apply default values migration strategy
