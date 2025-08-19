@@ -299,12 +299,20 @@ class StaticAnalyzer:
         
         return report
     
-    def fix_issues(self, files: List[Path], create_backup: bool = False) -> Tuple[int, int]:
-        """Apply clang-tidy fixes to files."""
+    def fix_issues(self, files: List[Path], create_backup: bool = False, 
+                   validate_build: bool = True) -> Tuple[int, int]:
+        """Apply clang-tidy fixes to files with optional build validation."""
         fixed_count = 0
         error_count = 0
         
         print(f"Applying clang-tidy fixes to {len(files)} files...")
+        
+        # Store original content for rollback if build fails
+        original_content = {}
+        if validate_build:
+            for file_path in files:
+                with open(file_path, 'r') as f:
+                    original_content[file_path] = f.read()
         
         for file_path in files:
             print(f"Fixing {file_path.relative_to(self.project_root)}...")
@@ -342,7 +350,48 @@ class StaticAnalyzer:
                 error_count += 1
                 print(f"Error fixing {file_path}: {e}")
         
+        # Validate that fixes didn't break the build
+        if validate_build and fixed_count > 0:
+            print("\nValidating build after fixes...")
+            if not self._validate_build():
+                print("❌ Build validation failed! Rolling back changes...")
+                for file_path, content in original_content.items():
+                    with open(file_path, 'w') as f:
+                        f.write(content)
+                print("✅ Changes rolled back successfully")
+                return 0, len(files)  # All files failed
+            else:
+                print("✅ Build validation passed")
+        
         return fixed_count, error_count
+    
+    def _validate_build(self) -> bool:
+        """Validate that the project still builds after fixes."""
+        if not self.build_dir.exists():
+            print("Build directory not found, skipping validation")
+            return True
+        
+        # Try a quick compilation check with make
+        try:
+            result = subprocess.run(
+                ['make', '-C', str(self.build_dir), '-j4'],
+                capture_output=True,
+                text=True,
+                timeout=60  # 60 second timeout for build
+            )
+            
+            if result.returncode == 0:
+                return True
+            else:
+                print(f"Build failed with errors:\n{result.stderr[:500]}...")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            print("Build validation timed out")
+            return False
+        except Exception as e:
+            print(f"Could not validate build: {e}")
+            return True  # Assume OK if we can't validate
     
     def generate_suppressions(self, report: StaticAnalysisReport, 
                             output_file: Path) -> None:
@@ -421,6 +470,9 @@ Examples:
     parser.add_argument("--backup",
                        action="store_true",
                        help="Create backup files before fixing (use with --fix)")
+    parser.add_argument("--no-build-validation",
+                       action="store_true",
+                       help="Skip build validation after fixes (use with --fix)")
     
     # Tool options
     parser.add_argument("--clang-tidy-path",
@@ -546,7 +598,11 @@ Examples:
             sys.exit(0)
     
     elif args.fix:
-        fixed_count, error_count = analyzer.fix_issues(source_files, args.backup)
+        fixed_count, error_count = analyzer.fix_issues(
+            source_files, 
+            args.backup,
+            validate_build=not args.no_build_validation
+        )
         
         if error_count > 0:
             print(f"\n❌ Fixed issues in {fixed_count} files, {error_count} errors")

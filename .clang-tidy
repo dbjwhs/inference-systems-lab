@@ -58,11 +58,16 @@ CheckOptions:
   readability-identifier-naming.FunctionCase: lower_case
   readability-identifier-naming.VariableCase: lower_case
   readability-identifier-naming.ParameterCase: lower_case
-  readability-identifier-naming.MemberCase: lower_case
-  readability-identifier-naming.MemberSuffix: '_'
+  # DISABLED: Member renaming causes incomplete refactoring and build breaks
+  # readability-identifier-naming.MemberCase: lower_case
+  # readability-identifier-naming.MemberSuffix: '_'
   readability-identifier-naming.ConstantCase: UPPER_CASE
   readability-identifier-naming.MacroCase: UPPER_CASE
   readability-identifier-naming.NamespaceCase: lower_case
+  
+  # Whitelist patterns that should NOT be renamed
+  # Prevent renaming of std:: template specializations
+  readability-identifier-naming.IgnoredRegexp: '^(tuple_size|tuple_element|hash|swap)$'
   
   # Template parameter naming (modern descriptive style preferred)
   readability-identifier-naming.TemplateParameterCase: CamelCase
