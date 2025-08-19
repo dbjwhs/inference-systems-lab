@@ -53,7 +53,7 @@ class ResultTest : public ::testing::Test {
     /**
      * @brief Common error types for testing
      */
-    enum class TestError {
+    enum class TestError : std::uint8_t {
         NETWORK_FAILURE,
         PARSE_ERROR,
         INVALID_INPUT,

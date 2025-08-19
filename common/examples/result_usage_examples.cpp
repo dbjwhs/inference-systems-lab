@@ -42,7 +42,7 @@ using namespace inference_lab::common;
 /**
  * @brief Error types for file operations
  */
-enum class FileError {
+enum class FileError : std::uint8_t {
     FILE_NOT_FOUND,
     PERMISSION_DENIED,
     INVALID_FORMAT,
@@ -163,7 +163,7 @@ void example_file_operations() {
 /**
  * @brief Mathematical operation errors
  */
-enum class MathError {
+enum class MathError : std::uint8_t {
     DIVISION_BY_ZERO,
     NEGATIVE_SQUARE_ROOT,
     DOMAIN_ERROR,
@@ -286,7 +286,7 @@ void example_math_operations() {
 /**
  * @brief Network operation errors
  */
-enum class NetworkError {
+enum class NetworkError : std::uint8_t {
     CONNECTION_TIMEOUT,
     SERVER_ERROR,
     INVALID_RESPONSE,
@@ -434,7 +434,7 @@ void example_network_operations() {
 /**
  * @brief Database operation errors
  */
-enum class DbError {
+enum class DbError : std::uint8_t {
     CONNECTION_FAILED,
     QUERY_SYNTAX_ERROR,
     CONSTRAINT_VIOLATION,
@@ -554,7 +554,7 @@ void example_database_operations() {
 /**
  * @brief Performance-critical computation errors
  */
-enum class ComputeError { INVALID_INPUT, COMPUTATION_OVERFLOW, MEMORY_EXHAUSTED };
+enum class ComputeError : std::uint8_t { INVALID_INPUT, COMPUTATION_OVERFLOW, MEMORY_EXHAUSTED };
 
 /**
  * @brief Hot path computation that must be fast
@@ -662,7 +662,12 @@ int legacy_parse_int(const char* str, int* result) {
 /**
  * @brief Error type for legacy integration
  */
-enum class ParseError { NULL_POINTER, EMPTY_STRING, INVALID_CHARACTERS, NUMERIC_OVERFLOW };
+enum class ParseError : std::uint8_t {
+    NULL_POINTER,
+    EMPTY_STRING,
+    INVALID_CHARACTERS,
+    NUMERIC_OVERFLOW
+};
 
 /**
  * @brief Wrapper to convert legacy error codes to Result

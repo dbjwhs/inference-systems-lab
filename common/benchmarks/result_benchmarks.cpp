@@ -42,7 +42,7 @@ using namespace inference_lab::common;
 //=============================================================================
 
 // Common error type for benchmarks
-enum class BenchError {
+enum class BenchError : std::uint8_t {
     INVALID_INPUT,
     PROCESSING_FAILED,
     RESOURCE_EXHAUSTED,
