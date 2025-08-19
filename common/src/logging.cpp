@@ -98,9 +98,9 @@ Logger::~Logger() {
 }
 
 void Logger::set_level_enabled(LogLevel level, bool enabled) {
-    int const level_index = static_cast<int>(level);
-    if (level_index >= 0 && level_index <= static_cast<int>(LogLevel::CRITICAL)) {
-        get_instance().m_enabled_levels_[level_index] = enabled;
+    int const LEVEL_INDEX = static_cast<int>(level);
+    if (LEVEL_INDEX >= 0 && LEVEL_INDEX <= static_cast<int>(LogLevel::CRITICAL)) {
+        get_instance().m_enabled_levels_[LEVEL_INDEX] = enabled;
     }
 }
 
