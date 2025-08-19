@@ -239,8 +239,8 @@ std::vector<std::string> SchemaEvolutionManager::validate_evolution(
     errors.insert(errors.end(), version_errors.begin(), version_errors.end());
 
     // Validate migration paths
-    auto migrationPaths = evolution.getMigrationPaths();
-    for (const auto& pathReader : migrationPaths) {
+    auto migration_paths = evolution.getMigrationPaths();
+    for (const auto& pathReader : migration_paths) {
         MigrationPath path(pathReader);
         auto pathErrors = VersionValidator::validate_migration_path(path);
         errors.insert(errors.end(), pathErrors.begin(), pathErrors.end());
