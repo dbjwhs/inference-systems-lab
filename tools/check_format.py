@@ -256,13 +256,26 @@ class CodeFormatter:
         return all_violations, files_with_violations
     
     def format_all_files(self, files: List[Path], create_backup: bool = False) -> Tuple[int, int]:
-        """Format all specified files."""
+        """Format all specified files that need formatting."""
         formatted_count = 0
         error_count = 0
+        files_needing_format = []
         
-        print(f"Formatting {len(files)} files...")
+        print(f"Checking {len(files)} files for formatting issues...")
         
+        # First, check which files actually need formatting
         for file_path in files:
+            violations = self.check_file_formatting(file_path)
+            if violations:
+                files_needing_format.append(file_path)
+        
+        if not files_needing_format:
+            print(f"✅ All {len(files)} files are already properly formatted")
+            return 0, 0
+        
+        print(f"Formatting {len(files_needing_format)} files that need changes...")
+        
+        for file_path in files_needing_format:
             print(f"Formatting {file_path.relative_to(self.project_root)}...")
             
             if self.format_file(file_path, create_backup):
@@ -282,6 +295,8 @@ def main():
 Examples:
   %(prog)s --check                                   # Check all files
   %(prog)s --fix --backup                           # Fix all files with backup
+  %(prog)s --check --staged                          # Check only staged files
+  %(prog)s --fix --staged                           # Fix only staged files
   %(prog)s --check --filter "common/src/*"          # Check specific files
   %(prog)s --fix --exclude "build,third_party"      # Fix excluding certain dirs
   %(prog)s --check --show-diffs                     # Show formatting diffs
@@ -298,6 +313,9 @@ Examples:
                       help="Fix formatting issues automatically")
     
     # File selection options
+    parser.add_argument("--staged",
+                       action="store_true",
+                       help="Only check/fix files staged for commit")
     parser.add_argument("--filter",
                        help="Include only files matching this pattern (supports wildcards)")
     parser.add_argument("--filter-from-file",
@@ -356,8 +374,32 @@ Examples:
     include_patterns = [args.filter] if args.filter else None
     exclude_patterns = args.exclude.split(',') if args.exclude else None
     
-    # Handle file list input
-    if args.filter_from_file:
+    # Handle different file selection modes
+    if args.staged:
+        # Get staged files from git
+        try:
+            result = subprocess.run([
+                'git', 'diff', '--cached', '--name-only', '--diff-filter=ACM'
+            ], capture_output=True, text=True, cwd=project_root)
+            
+            if result.returncode != 0:
+                print(f"Error getting staged files: {result.stderr}")
+                sys.exit(1)
+            
+            staged_file_names = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+            
+            # Filter for C++ files and convert to absolute paths
+            source_files = []
+            for file_name in staged_file_names:
+                file_path = project_root / file_name
+                if file_path.exists() and file_path.suffix in formatter.cpp_extensions:
+                    source_files.append(file_path)
+                    
+        except Exception as e:
+            print(f"Error getting staged files: {e}")
+            sys.exit(1)
+            
+    elif args.filter_from_file:
         try:
             with open(args.filter_from_file, 'r') as f:
                 file_list = [line.strip() for line in f if line.strip()]
@@ -419,15 +461,18 @@ Examples:
             print(f"\n❌ Formatted {formatted_count} files, {error_count} errors")
             sys.exit(1)
         else:
-            print(f"\n✅ Successfully formatted {formatted_count} files")
-            
-            if args.backup:
-                print("Backup files created with .bak extension")
-            
-            print("\nRecommended next steps:")
-            print("1. Review the changes: git diff")
-            print("2. Run tests to ensure functionality: python tools/run_tests.py")
-            print("3. Commit the formatting changes: git add -A && git commit -m 'Apply clang-format'")
+            if formatted_count > 0:
+                print(f"\n✅ Successfully formatted {formatted_count} files")
+                
+                if args.backup:
+                    print("Backup files created with .bak extension")
+                
+                print("\nRecommended next steps:")
+                print("1. Review the changes: git diff")
+                print("2. Run tests to ensure functionality: python tools/run_tests.py")
+                print("3. Commit the formatting changes: git add -A && git commit -m 'Apply clang-format'")
+            else:
+                print("✅ All files are already properly formatted")
             
             sys.exit(0)
 
