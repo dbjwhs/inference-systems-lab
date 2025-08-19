@@ -305,6 +305,26 @@ When working on this project:
 - `python3 tools/check_static_analysis.py --check` - Verify static analysis
 - `python3 tools/run_benchmarks.py` - Check performance benchmarks
 
+### Pre-Commit Workflow Best Practices
+**IMPORTANT**: To avoid commit/hook/fix/commit churn, always run formatting before committing:
+
+```bash
+# Recommended workflow before any commit:
+python3 tools/check_format.py --fix --staged    # Fix formatting for staged files
+git add -A                                       # Stage formatting fixes
+git commit -m "Your commit message"              # Commit with clean formatting
+
+# Alternative: Run all quality checks at once
+python3 tools/check_format.py --fix
+python3 tools/check_static_analysis.py --check --severity warning
+git add -A && git commit -m "Your message"
+
+# Emergency bypass (use sparingly)
+git commit --no-verify -m "Your message"        # Skip pre-commit hooks
+```
+
+**Why this matters**: Pre-commit hooks will block commits with formatting violations, leading to a frustrating cycle of commit → hook failure → fix → commit again. Running the formatter first eliminates this churn and ensures smooth development workflow.
+
 ### Context Notes
 - **Developer Experience**: Extensive (coding since 1980) - assume advanced knowledge
 - **Build System**: Modular CMake with comprehensive tooling integration
