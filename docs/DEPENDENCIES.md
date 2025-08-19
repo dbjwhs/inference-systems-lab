@@ -138,6 +138,38 @@ python3 -c "import onnxruntime; print(f'Available providers: {onnxruntime.get_av
 - Single-threaded inference workloads
 - Basic benchmarking and validation
 
+### Sweet Spot System Configuration (RECOMMENDED)
+
+**Optimized ML Development Build (~$1,250)**
+- **CPU**: AMD Ryzen 5 7600 (~$230) - 6 cores/12 threads, excellent performance
+- **GPU**: RTX 4060 Ti 16GB (~$500) - 16GB VRAM crucial for larger models  
+- **RAM**: 32GB DDR5-5600 (~$150) - ML workloads are memory hungry
+- **Storage**: 1TB NVMe SSD (~$80) - Fast model loading and compilation
+- **Motherboard**: B650 chipset (~$130) - AM5 future upgrade path
+- **PSU**: 750W 80+ Gold (~$100) - Headroom for sustained ML workloads
+- **Case**: Mid-tower with good airflow (~$60)
+
+**Build Performance**: ~2-3 minutes full builds, handles 7B+ parameter models
+
+**Why These Choices**:
+- **16GB VRAM**: Handles larger models that 12GB cards cannot load
+- **6-core CPU**: Perfect for ML development without overpaying for unused cores
+- **32GB RAM**: Prevents bottlenecks when loading large datasets and development tools
+- **AM5 Platform**: Future upgrade path to next-generation CPUs
+- **750W PSU**: Sustained TensorRT workloads + future GPU upgrade headroom
+
+**💰 Cost-Benefit Analysis**:
+- **vs Cloud**: At $1,250 total cost, pays for itself in 3-4 months vs sustained cloud usage
+- No "oops I left it running" bills or surprise monthly charges
+- Full control over development environment and model storage
+- Dedicated hardware available 24/7 for experimentation
+
+**Suitable for**:
+- Serious TensorRT/ONNX development with larger models
+- Production model optimization and testing
+- Local neural-symbolic reasoning research
+- Cost-effective alternative to cloud-based development
+
 ### Top-of-the-Line System Configuration
 
 **Research/Production Machine (Enterprise ML Support)**
