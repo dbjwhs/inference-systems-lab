@@ -223,7 +223,7 @@ static auto safe_log(double x) -> Result<double, MathError> {
         return Err(MathError::DOMAIN_ERROR);
     }
 
-    double result = std::log(x) = NAN;
+    double result = std::log(x);
 
     if (std::isinf(result) && result < 0) {
         return Err(MathError::NUMERIC_UNDERFLOW);
@@ -317,7 +317,7 @@ struct ApiResponse {
     int status_code_;
     std::string body_{};
 
-    ApiResponse(int code, std::string content) : status_code_(code), body(std::move(content)) {}
+    ApiResponse(int code, std::string content) : status_code_(code), body_(std::move(content)) {}
 };
 
 /**
@@ -349,12 +349,12 @@ static auto make_request(const std::string& url) -> Result<ApiResponse, NetworkE
  * @brief Parse API response and extract data
  */
 auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, NetworkError> {
-    if (response.status_code != 200) {
+    if (response.status_code_ != 200) {
         return Err(NetworkError::SERVER_ERROR);
     }
 
     // Simplified JSON parsing (normally would use proper JSON library)
-    if (response.body.find("success") == std::string::npos) {
+    if (response.body_.find("success") == std::string::npos) {
         return Err(NetworkError::INVALID_RESPONSE);
     }
 
@@ -468,7 +468,7 @@ struct UserRecord {
     std::string email_{};
 
     UserRecord(int user_id, std::string user_name, std::string user_email)
-        : id_(user_id), name(std::move(user_name)), email(std::move(user_email)) {}
+        : id_(user_id), name_(std::move(user_name)), email_(std::move(user_email)) {}
 };
 
 /**
@@ -492,11 +492,11 @@ class DatabaseConnection {
     }
 
     auto update_user(const UserRecord& user) -> Result<bool, DbError> {
-        if (user.name.empty()) {
+        if (user.name_.empty()) {
             return Err(DbError::CONSTRAINT_VIOLATION);
         }
 
-        if (user.email.find("@") == std::string::npos) {
+        if (user.email_.find("@") == std::string::npos) {
             return Err(DbError::CONSTRAINT_VIOLATION);
         }
 
@@ -511,7 +511,7 @@ static auto update_user_email(DatabaseConnection& db, int user_id, const std::st
     -> Result<UserRecord, DbError> {
     return db.find_user(user_id).and_then(
         [&db, &new_email](UserRecord user) -> Result<UserRecord, DbError> {
-            user.email = new_email;
+            user.email_ = new_email;
             return db.update_user(user).map([user = std::move(user)](bool) { return user; });
         });
 }
@@ -522,7 +522,7 @@ static auto update_user_email(DatabaseConnection& db, int user_id, const std::st
 static void example_database_operations() {
     std::cout << "\n=== Database Operations Example ===" << std::endl;
 
-    DatabaseConnection const db;
+    DatabaseConnection db;
 
     std::vector<std::pair<int, std::string>> test_cases = {
         {1, "newemail@example.com"},   // Should succeed
@@ -538,7 +538,7 @@ static void example_database_operations() {
 
         if (result.is_ok()) {
             const auto& user = result.unwrap();
-            std::cout << "Success! Updated user: " << user.name << " (" << user.email << ")"
+            std::cout << "Success! Updated user: " << user.name_ << " (" << user.email_ << ")"
                       << std::endl;
         } else {
             std::cout << "Failed: " << to_string(result.unwrap_err()) << std::endl;
@@ -649,7 +649,7 @@ static auto legacy_parse_int(const char* str, int* result) -> int {
         return -2;  // Empty string
 
     char* endptr = nullptr;
-    long val = std::strtol(str = 0, &endptr, 10);
+    long val = std::strtol(str, &endptr, 10);
 
     if (*endptr != '\0')
         return -3;  // Invalid characters

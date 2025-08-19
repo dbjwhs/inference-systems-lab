@@ -84,7 +84,7 @@ class SerializationTest : public ::testing::Test {
         }
     }
 
-    std::string test_data_dir__;  ///< Directory for test files
+    std::string test_data_dir_;  ///< Directory for test files
 
     /**
      * @brief Utility method to clean up test files
@@ -174,18 +174,18 @@ class SerializationTest : public ::testing::Test {
         // Validate arguments
         const auto& orig_args = original.get_args();
         const auto& deser_args = deserialized.get_args();
-        EXPECT_EQ(origArgs.size(), deserArgs.size());
+        EXPECT_EQ(orig_args.size(), deser_args.size());
 
         for (size_t i = 0; i < orig_args.size(); ++i) {
-            validate_value_equality(origArgs[i], deserArgs[i]);
+            validate_value_equality(orig_args[i], deser_args[i]);
         }
 
         // Validate metadata
         const auto& orig_meta = original.get_metadata();
         const auto& deser_meta = deserialized.get_metadata();
-        EXPECT_EQ(origMeta.size(), deserMeta.size());
+        EXPECT_EQ(orig_meta.size(), deser_meta.size());
 
-        for (const auto& [key, value] : origMeta) {
+        for (const auto& [key, value] : orig_meta) {
             auto deserValue = deserialized.get_metadata(key);
             ASSERT_TRUE(deserValue.has_value());
             validate_value_equality(value, deserValue.value());
@@ -251,7 +251,7 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
     // Test default constructor (should create int64 with value 0)
     Value const default_value;
     EXPECT_TRUE(default_value.is_int64());
-    EXPECT_EQ(defaultValue.as_int64(), 0);
+    EXPECT_EQ(default_value.as_int64(), 0);
     EXPECT_FALSE(default_value.is_float64());
     EXPECT_FALSE(default_value.is_text());
     EXPECT_FALSE(default_value.is_bool());
@@ -261,7 +261,7 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
     // Test int64 value
     Value int_value = Value::from_int64(42);
     EXPECT_TRUE(int_value.is_int64());
-    EXPECT_EQ(intValue.as_int64(), 42);
+    EXPECT_EQ(int_value.as_int64(), 42);
     EXPECT_FALSE(int_value.is_float64());
 
     // Test float64 value
@@ -273,7 +273,7 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
     // Test text value
     Value text_value = Value::from_text("hello world");
     EXPECT_TRUE(text_value.is_text());
-    EXPECT_EQ(textValue.as_text(), "hello world");
+    EXPECT_EQ(text_value.as_text(), "hello world");
     EXPECT_FALSE(text_value.is_int64());
 
     // Test bool value
@@ -290,9 +290,9 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
     EXPECT_FALSE(list_value.is_struct());
 
     auto retrieved_list = list_value.as_list();
-    EXPECT_EQ(retrievedList.size(), 3);
-    EXPECT_EQ(retrievedList[0].as_int64(), 1);
-    EXPECT_EQ(retrievedList[1].as_text(), "test");
+    EXPECT_EQ(retrieved_list.size(), 3);
+    EXPECT_EQ(retrieved_list[0].as_int64(), 1);
+    EXPECT_EQ(retrieved_list[1].as_text(), "test");
     EXPECT_FALSE(retrieved_list[2].as_bool());
 
     // Test struct value
@@ -304,10 +304,10 @@ TEST_F(SerializationTest, ValueTypeCreationAndChecking) {
     EXPECT_FALSE(struct_value.is_list());
 
     auto retrieved_struct = struct_value.as_struct();
-    EXPECT_EQ(retrievedStruct.size(), 3);
-    EXPECT_EQ(retrievedStruct["name"].as_text(), "Alice");
-    EXPECT_EQ(retrievedStruct["age"].as_int64(), 30);
-    EXPECT_DOUBLE_EQ(retrievedStruct["score"].as_float64(), 95.5);
+    EXPECT_EQ(retrieved_struct.size(), 3);
+    EXPECT_EQ(retrieved_struct["name"].as_text(), "Alice");
+    EXPECT_EQ(retrieved_struct["age"].as_int64(), 30);
+    EXPECT_DOUBLE_EQ(retrieved_struct["score"].as_float64(), 95.5);
 }
 
 /**
@@ -324,8 +324,8 @@ TEST_F(SerializationTest, ValueExtractionMethods) {
     Value text_value = Value::from_text("test");
 
     // Test successful extraction
-    EXPECT_EQ(intValue.as_int64(), 123);
-    EXPECT_EQ(textValue.as_text(), "test");
+    EXPECT_EQ(int_value.as_int64(), 123);
+    EXPECT_EQ(text_value.as_text(), "test");
 
     // Test unsafe extraction with wrong type (should throw)
     EXPECT_THROW(int_value.as_text(), std::runtime_error);
@@ -337,12 +337,12 @@ TEST_F(SerializationTest, ValueExtractionMethods) {
 
     // Test safe extraction with correct type
     auto int_result = int_value.try_as_int64();
-    ASSERT_TRUE(intResult.has_value());
-    EXPECT_EQ(intResult.value(), 123);
+    ASSERT_TRUE(int_result.has_value());
+    EXPECT_EQ(int_result.value(), 123);
 
     auto text_result = text_value.try_as_text();
-    ASSERT_TRUE(textResult.has_value());
-    EXPECT_EQ(textResult.value(), "test");
+    ASSERT_TRUE(text_result.has_value());
+    EXPECT_EQ(text_result.value(), "test");
 
     // Test safe extraction with wrong type (should return nullopt)
     EXPECT_FALSE(int_value.try_as_text().has_value());
@@ -375,23 +375,23 @@ TEST_F(SerializationTest, ValueStringRepresentation) {
         Value::from_int64(1), Value::from_text("test"), Value::from_bool(true)};
     Value list_value = Value::from_list(listData);
     std::string list_str = list_value.to_string();
-    EXPECT_TRUE(listStr.find("[") != std::string::npos);
-    EXPECT_TRUE(listStr.find("]") != std::string::npos);
-    EXPECT_TRUE(listStr.find("1") != std::string::npos);
-    EXPECT_TRUE(listStr.find("\"test\"") != std::string::npos);
-    EXPECT_TRUE(listStr.find("true") != std::string::npos);
+    EXPECT_TRUE(list_str.find("[") != std::string::npos);
+    EXPECT_TRUE(list_str.find("]") != std::string::npos);
+    EXPECT_TRUE(list_str.find("1") != std::string::npos);
+    EXPECT_TRUE(list_str.find("\"test\"") != std::string::npos);
+    EXPECT_TRUE(list_str.find("true") != std::string::npos);
 
     // Test struct representation
     std::unordered_map<std::string, Value> structData = {{"name", Value::from_text("Alice")},
                                                          {"count", Value::from_int64(5)}};
     Value struct_value = Value::from_struct(structData);
     std::string struct_str = struct_value.to_string();
-    EXPECT_TRUE(structStr.find("{") != std::string::npos);
-    EXPECT_TRUE(structStr.find("}") != std::string::npos);
-    EXPECT_TRUE(structStr.find("\"name\"") != std::string::npos);
-    EXPECT_TRUE(structStr.find("\"Alice\"") != std::string::npos);
-    EXPECT_TRUE(structStr.find("\"count\"") != std::string::npos);
-    EXPECT_TRUE(structStr.find("5") != std::string::npos);
+    EXPECT_TRUE(struct_str.find("{") != std::string::npos);
+    EXPECT_TRUE(struct_str.find("}") != std::string::npos);
+    EXPECT_TRUE(struct_str.find("\"name\"") != std::string::npos);
+    EXPECT_TRUE(struct_str.find("\"Alice\"") != std::string::npos);
+    EXPECT_TRUE(struct_str.find("\"count\"") != std::string::npos);
+    EXPECT_TRUE(struct_str.find("5") != std::string::npos);
 }
 
 /**
@@ -416,7 +416,7 @@ TEST_F(SerializationTest, ValueCapnProtoInterop) {
     Value original_value = Value::from_struct(structData);
 
     // Write to Cap'n Proto and read back
-    capnp::MallocMessageBuilder const message;
+    capnp::MallocMessageBuilder message;
     auto builder = message.initRoot<schemas::Value>();
     original_value.write_to(builder);
 
@@ -447,19 +447,19 @@ TEST_F(SerializationTest, FactCreationAndOperations) {
     std::vector<Value> args = {Value::from_text("socrates"), Value::from_int64(70)};
 
     uint64_t test_timestamp = 1234567890;
-    Fact fact(42, "hasAge", args, 0.95, testTimestamp);
+    Fact fact(42, "hasAge", args, 0.95, test_timestamp);
 
     // Validate basic properties
     EXPECT_EQ(fact.get_id(), 42);
     EXPECT_EQ(fact.get_predicate(), "hasAge");
     EXPECT_DOUBLE_EQ(fact.get_confidence(), 0.95);
-    EXPECT_EQ(fact.get_timestamp(), testTimestamp);
+    EXPECT_EQ(fact.get_timestamp(), test_timestamp);
 
     // Validate arguments
     const auto& fact_args = fact.get_args();
-    EXPECT_EQ(factArgs.size(), 2);
-    EXPECT_EQ(factArgs[0].as_text(), "socrates");
-    EXPECT_EQ(factArgs[1].as_int64(), 70);
+    EXPECT_EQ(fact_args.size(), 2);
+    EXPECT_EQ(fact_args[0].as_text(), "socrates");
+    EXPECT_EQ(fact_args[1].as_int64(), 70);
 
     // Test metadata operations
     EXPECT_TRUE(fact.get_metadata().empty());
@@ -471,22 +471,22 @@ TEST_F(SerializationTest, FactCreationAndOperations) {
     EXPECT_EQ(fact.get_metadata().size(), 3);
 
     auto source_value = fact.get_metadata("source");
-    ASSERT_TRUE(sourceValue.has_value());
-    EXPECT_EQ(sourceValue->as_text(), "knowledge_base");
+    ASSERT_TRUE(source_value.has_value());
+    EXPECT_EQ(source_value->as_text(), "knowledge_base");
 
     auto version_value = fact.get_metadata("version");
-    ASSERT_TRUE(versionValue.has_value());
-    EXPECT_EQ(versionValue->as_int64(), 1);
+    ASSERT_TRUE(version_value.has_value());
+    EXPECT_EQ(version_value->as_int64(), 1);
 
     auto non_existent_value = fact.get_metadata("nonexistent");
     EXPECT_FALSE(non_existent_value.has_value());
 
     // Test string representation
     std::string fact_str = fact.to_string();
-    EXPECT_TRUE(factStr.find("hasAge") != std::string::npos);
-    EXPECT_TRUE(factStr.find("socrates") != std::string::npos);
-    EXPECT_TRUE(factStr.find("70") != std::string::npos);
-    EXPECT_TRUE(factStr.find("confidence: 0.95") != std::string::npos);
+    EXPECT_TRUE(fact_str.find("hasAge") != std::string::npos);
+    EXPECT_TRUE(fact_str.find("socrates") != std::string::npos);
+    EXPECT_TRUE(fact_str.find("70") != std::string::npos);
+    EXPECT_TRUE(fact_str.find("confidence: 0.95") != std::string::npos);
 }
 
 /**
@@ -510,13 +510,13 @@ TEST_F(SerializationTest, FactTimestampGeneration) {
                               .count();
 
     // Verify timestamp is in reasonable range
-    EXPECT_GE(fact.get_timestamp(), beforeCreation);
-    EXPECT_LE(fact.get_timestamp(), afterCreation + 1000);  // Allow 1 second buffer
+    EXPECT_GE(fact.get_timestamp(), before_creation);
+    EXPECT_LE(fact.get_timestamp(), after_creation + 1000);  // Allow 1 second buffer
 
     // Test explicit timestamp preservation
     uint64_t explicit_timestamp = 9876543210;
-    Fact explicit_fact(2, "test", {Value::from_text("arg")}, 1.0, explicitTimestamp);
-    EXPECT_EQ(explicitFact.get_timestamp(), explicitTimestamp);
+    Fact explicit_fact(2, "test", {Value::from_text("arg")}, 1.0, explicit_timestamp);
+    EXPECT_EQ(explicit_fact.get_timestamp(), explicit_timestamp);
 }
 
 /**
@@ -529,7 +529,7 @@ TEST_F(SerializationTest, FactTimestampGeneration) {
  * - Complex argument types work correctly
  */
 TEST_F(SerializationTest, FactCapnProtoSerialization) {
-    Fact original_fact = createTestFact(999);
+    Fact original_fact = create_test_fact(999);
 
     // Add complex metadata
     original_fact.set_metadata(
@@ -539,7 +539,7 @@ TEST_F(SerializationTest, FactCapnProtoSerialization) {
                           Value::from_struct({{"key", Value::from_bool(true)}})}));
 
     // Serialize to Cap'n Proto
-    capnp::MallocMessageBuilder const message;
+    capnp::MallocMessageBuilder message;
     auto builder = message.initRoot<schemas::Fact>();
     original_fact.write_to(builder);
 
@@ -565,7 +565,7 @@ TEST_F(SerializationTest, FactCapnProtoSerialization) {
  * - Complex rule structures are supported
  */
 TEST_F(SerializationTest, RuleCreationAndStructure) {
-    Rule rule = createTestRule(123);
+    Rule rule = create_test_rule(123);
 
     // Validate basic properties
     EXPECT_EQ(rule.get_id(), 123);
@@ -599,22 +599,22 @@ TEST_F(SerializationTest, RuleCreationAndStructure) {
 
     // Test condition toString
     std::string cond_str = conditions[0].to_string();
-    EXPECT_TRUE(condStr.find("isHuman") != std::string::npos);
-    EXPECT_TRUE(condStr.find("X") != std::string::npos);
+    EXPECT_TRUE(cond_str.find("isHuman") != std::string::npos);
+    EXPECT_TRUE(cond_str.find("X") != std::string::npos);
 
     // Test conclusion toString
     std::string concl_str = conclusions[0].to_string();
-    EXPECT_TRUE(conclStr.find("isMortal") != std::string::npos);
-    EXPECT_TRUE(conclStr.find("X") != std::string::npos);
-    EXPECT_TRUE(conclStr.find("confidence: 0.99") != std::string::npos);
+    EXPECT_TRUE(concl_str.find("isMortal") != std::string::npos);
+    EXPECT_TRUE(concl_str.find("X") != std::string::npos);
+    EXPECT_TRUE(concl_str.find("confidence: 0.99") != std::string::npos);
 
     // Test rule toString
     std::string rule_str = rule.to_string();
-    EXPECT_TRUE(ruleStr.find("mortality_rule") != std::string::npos);
-    EXPECT_TRUE(ruleStr.find("IF") != std::string::npos);
-    EXPECT_TRUE(ruleStr.find("AND") != std::string::npos);
-    EXPECT_TRUE(ruleStr.find("THEN") != std::string::npos);
-    EXPECT_TRUE(ruleStr.find("priority: 10") != std::string::npos);
+    EXPECT_TRUE(rule_str.find("mortality_rule") != std::string::npos);
+    EXPECT_TRUE(rule_str.find("IF") != std::string::npos);
+    EXPECT_TRUE(rule_str.find("AND") != std::string::npos);
+    EXPECT_TRUE(rule_str.find("THEN") != std::string::npos);
+    EXPECT_TRUE(rule_str.find("priority: 10") != std::string::npos);
 }
 
 /**
@@ -633,17 +633,17 @@ TEST_F(SerializationTest, RuleNegatedConditions) {
     negated_cond.predicate_ = "isDead";
     negated_cond.args_ = {Value::from_text("X")};
     negated_cond.negated_ = true;
-    conditions.push_back(negatedCond);
+    conditions.push_back(negated_cond);
 
     // Add a normal condition
     Rule::Condition normal_cond;
     normal_cond.predicate_ = "isAlive";
     normal_cond.args_ = {Value::from_text("X")};
     normal_cond.negated_ = false;
-    conditions.push_back(normalCond);
+    conditions.push_back(normal_cond);
 
     std::vector<Rule::Conclusion> conclusions;
-    Rule::Conclusion const concl;
+    Rule::Conclusion concl;
     concl.predicate_ = "canThink";
     concl.args_ = {Value::from_text("X")};
     conclusions.push_back(concl);
@@ -656,13 +656,13 @@ TEST_F(SerializationTest, RuleNegatedConditions) {
 
     // Test string representation includes NOT
     std::string cond_str = rule.get_conditions()[0].to_string();
-    EXPECT_TRUE(condStr.find("NOT") != std::string::npos);
-    EXPECT_TRUE(condStr.find("isDead") != std::string::npos);
+    EXPECT_TRUE(cond_str.find("NOT") != std::string::npos);
+    EXPECT_TRUE(cond_str.find("isDead") != std::string::npos);
 
     // Validate normal condition doesn't have NOT
     std::string normal_cond_str = rule.get_conditions()[1].to_string();
-    EXPECT_TRUE(normalCondStr.find("NOT") == std::string::npos);
-    EXPECT_TRUE(normalCondStr.find("isAlive") != std::string::npos);
+    EXPECT_TRUE(normal_cond_str.find("NOT") == std::string::npos);
+    EXPECT_TRUE(normal_cond_str.find("isAlive") != std::string::npos);
 }
 
 /**
@@ -675,10 +675,10 @@ TEST_F(SerializationTest, RuleNegatedConditions) {
  * - Complex argument structures work correctly
  */
 TEST_F(SerializationTest, RuleCapnProtoSerialization) {
-    Rule original_rule = createTestRule(456);
+    Rule original_rule = create_test_rule(456);
 
     // Serialize to Cap'n Proto
-    capnp::MallocMessageBuilder const message;
+    capnp::MallocMessageBuilder message;
     auto builder = message.initRoot<schemas::Rule>();
     original_rule.write_to(builder);
 
@@ -687,38 +687,38 @@ TEST_F(SerializationTest, RuleCapnProtoSerialization) {
     Rule deserialized_rule(reader);
 
     // Validate basic properties
-    EXPECT_EQ(originalRule.get_id(), deserializedRule.get_id());
-    EXPECT_EQ(originalRule.get_name(), deserializedRule.get_name());
-    EXPECT_EQ(originalRule.get_priority(), deserializedRule.get_priority());
+    EXPECT_EQ(original_rule.get_id(), deserialized_rule.get_id());
+    EXPECT_EQ(original_rule.get_name(), deserialized_rule.get_name());
+    EXPECT_EQ(original_rule.get_priority(), deserialized_rule.get_priority());
     EXPECT_DOUBLE_EQ(original_rule.get_confidence(), deserialized_rule.get_confidence());
 
     // Validate conditions
     const auto& orig_conditions = original_rule.get_conditions();
     const auto& deser_conditions = deserialized_rule.get_conditions();
-    EXPECT_EQ(origConditions.size(), deserConditions.size());
+    EXPECT_EQ(orig_conditions.size(), deser_conditions.size());
 
     for (size_t i = 0; i < orig_conditions.size(); ++i) {
-        EXPECT_EQ(origConditions[i].predicate_, deserConditions[i].predicate_);
-        EXPECT_EQ(origConditions[i].negated_, deserConditions[i].negated_);
-        EXPECT_EQ(origConditions[i].args_.size(), deserConditions[i].args_.size());
+        EXPECT_EQ(orig_conditions[i].predicate_, deser_conditions[i].predicate_);
+        EXPECT_EQ(orig_conditions[i].negated_, deser_conditions[i].negated_);
+        EXPECT_EQ(orig_conditions[i].args_.size(), deser_conditions[i].args_.size());
 
         for (size_t j = 0; j < orig_conditions[i].args_.size(); ++j) {
-            validate_value_equality(origConditions[i].args_[j], deserConditions[i].args_[j]);
+            validate_value_equality(orig_conditions[i].args_[j], deser_conditions[i].args_[j]);
         }
     }
 
     // Validate conclusions
     const auto& orig_conclusions = original_rule.get_conclusions();
     const auto& deser_conclusions = deserialized_rule.get_conclusions();
-    EXPECT_EQ(origConclusions.size(), deserConclusions.size());
+    EXPECT_EQ(orig_conclusions.size(), deser_conclusions.size());
 
     for (size_t i = 0; i < orig_conclusions.size(); ++i) {
-        EXPECT_EQ(origConclusions[i].predicate_, deserConclusions[i].predicate_);
-        EXPECT_DOUBLE_EQ(origConclusions[i].confidence_, deserConclusions[i].confidence_);
-        EXPECT_EQ(origConclusions[i].args_.size(), deserConclusions[i].args_.size());
+        EXPECT_EQ(orig_conclusions[i].predicate_, deser_conclusions[i].predicate_);
+        EXPECT_DOUBLE_EQ(orig_conclusions[i].confidence_, deser_conclusions[i].confidence_);
+        EXPECT_EQ(orig_conclusions[i].args_.size(), deser_conclusions[i].args_.size());
 
         for (size_t j = 0; j < orig_conclusions[i].args_.size(); ++j) {
-            validate_value_equality(origConclusions[i].args_[j], deserConclusions[i].args_[j]);
+            validate_value_equality(orig_conclusions[i].args_[j], deser_conclusions[i].args_[j]);
         }
     }
 }
@@ -737,7 +737,7 @@ TEST_F(SerializationTest, RuleCapnProtoSerialization) {
  * - Different query types display appropriate names
  */
 TEST_F(SerializationTest, QueryCreationAndTypes) {
-    Query query = createTestQuery(789);
+    Query query = create_test_query(789);
 
     // Validate basic properties
     EXPECT_EQ(query.get_id(), 789);
@@ -754,24 +754,24 @@ TEST_F(SerializationTest, QueryCreationAndTypes) {
 
     // Test string representation
     std::string query_str = query.to_string();
-    EXPECT_TRUE(queryStr.find("Query[789]") != std::string::npos);
-    EXPECT_TRUE(queryStr.find("FIND_ALL") != std::string::npos);
-    EXPECT_TRUE(queryStr.find("isMortal") != std::string::npos);
-    EXPECT_TRUE(queryStr.find("socrates") != std::string::npos);
+    EXPECT_TRUE(query_str.find("Query[789]") != std::string::npos);
+    EXPECT_TRUE(query_str.find("FIND_ALL") != std::string::npos);
+    EXPECT_TRUE(query_str.find("isMortal") != std::string::npos);
+    EXPECT_TRUE(query_str.find("socrates") != std::string::npos);
 
     // Test different query types
-    Rule::Condition const prove_goal;
+    Rule::Condition prove_goal;
     prove_goal.predicate_ = "isHuman";
     prove_goal.args_ = {Value::from_text("alice")};
 
     Query prove_query(1, Query::Type::PROVE, prove_goal);
-    EXPECT_TRUE(proveQuery.to_string().find("PROVE") != std::string::npos);
+    EXPECT_TRUE(prove_query.to_string().find("PROVE") != std::string::npos);
 
     Query find_first_query(2, Query::Type::FIND_FIRST, prove_goal);
-    EXPECT_TRUE(findFirstQuery.to_string().find("FIND_FIRST") != std::string::npos);
+    EXPECT_TRUE(find_first_query.to_string().find("FIND_FIRST") != std::string::npos);
 
     Query explain_query(3, Query::Type::EXPLAIN, prove_goal);
-    EXPECT_TRUE(explainQuery.to_string().find("EXPLAIN") != std::string::npos);
+    EXPECT_TRUE(explain_query.to_string().find("EXPLAIN") != std::string::npos);
 }
 
 //=============================================================================
@@ -788,7 +788,7 @@ TEST_F(SerializationTest, QueryCreationAndTypes) {
  * - Invalid binary data returns nullopt gracefully
  */
 TEST_F(SerializationTest, FactBinarySerialization) {
-    Fact original_fact = createTestFact(111);
+    Fact original_fact = create_test_fact(111);
 
     // Add complex nested data to test comprehensive serialization
     original_fact.set_metadata(
@@ -799,15 +799,15 @@ TEST_F(SerializationTest, FactBinarySerialization) {
                           Value::from_bool(false)}));
 
     // Serialize to binary format
-    std::vector<uint8_t> binaryData = Serializer::serialize(originalFact);
+    std::vector<uint8_t> binaryData = Serializer::serialize(original_fact);
     EXPECT_FALSE(binaryData.empty());
 
     // Deserialize from binary format
     auto deserialized_fact = Serializer::deserialize_fact(binaryData);
-    ASSERT_TRUE(deserializedFact.has_value());
+    ASSERT_TRUE(deserialized_fact.has_value());
 
     // Validate complete equality
-    validate_fact_equality(original_fact, deserializedFact.value());
+    validate_fact_equality(original_fact, deserialized_fact.value());
 
     // Test deserialization of invalid data
     std::vector<uint8_t> invalidData = {0x00, 0x01, 0x02, 0x03};
@@ -830,21 +830,21 @@ TEST_F(SerializationTest, FactBinarySerialization) {
  * - Invalid binary data is handled gracefully
  */
 TEST_F(SerializationTest, RuleBinarySerialization) {
-    Rule original_rule = createTestRule(222);
+    Rule original_rule = create_test_rule(222);
 
     // Serialize to binary format
-    std::vector<uint8_t> binaryData = Serializer::serialize(originalRule);
+    std::vector<uint8_t> binaryData = Serializer::serialize(original_rule);
     EXPECT_FALSE(binaryData.empty());
 
     // Deserialize from binary format
     auto deserialized_rule = Serializer::deserialize_rule(binaryData);
-    ASSERT_TRUE(deserializedRule.has_value());
+    ASSERT_TRUE(deserialized_rule.has_value());
 
     // Validate equality (comprehensive validation done in previous test)
-    EXPECT_EQ(originalRule.get_id(), deserializedRule->get_id());
-    EXPECT_EQ(originalRule.get_name(), deserializedRule->get_name());
-    EXPECT_EQ(originalRule.get_conditions().size(), deserializedRule->get_conditions().size());
-    EXPECT_EQ(originalRule.get_conclusions().size(), deserializedRule->get_conclusions().size());
+    EXPECT_EQ(original_rule.get_id(), deserialized_rule->get_id());
+    EXPECT_EQ(original_rule.get_name(), deserialized_rule->get_name());
+    EXPECT_EQ(original_rule.get_conditions().size(), deserialized_rule->get_conditions().size());
+    EXPECT_EQ(original_rule.get_conclusions().size(), deserialized_rule->get_conclusions().size());
 
     // Test invalid data handling
     std::vector<uint8_t> invalidData = {0xFF, 0xFE, 0xFD, 0xFC};
@@ -862,28 +862,28 @@ TEST_F(SerializationTest, RuleBinarySerialization) {
  * - Special characters are handled correctly
  */
 TEST_F(SerializationTest, JsonSerialization) {
-    Fact test_fact = createTestFact(333);
+    Fact test_fact = create_test_fact(333);
     std::string fact_json = Serializer::to_json(test_fact);
 
     // Verify JSON contains expected fields and values
-    EXPECT_TRUE(factJson.find("\"id\": 333") != std::string::npos);
-    EXPECT_TRUE(factJson.find("\"predicate\": \"isHuman\"") != std::string::npos);
-    EXPECT_TRUE(factJson.find("\"confidence\": 0.95") != std::string::npos);
-    EXPECT_TRUE(factJson.find("\"timestamp\": 1234567890") != std::string::npos);
-    EXPECT_TRUE(factJson.find("\"args\": [") != std::string::npos);
-    EXPECT_TRUE(factJson.find("\"socrates\"") != std::string::npos);
+    EXPECT_TRUE(fact_json.find("\"id\": 333") != std::string::npos);
+    EXPECT_TRUE(fact_json.find("\"predicate\": \"isHuman\"") != std::string::npos);
+    EXPECT_TRUE(fact_json.find("\"confidence\": 0.95") != std::string::npos);
+    EXPECT_TRUE(fact_json.find("\"timestamp\": 1234567890") != std::string::npos);
+    EXPECT_TRUE(fact_json.find("\"args\": [") != std::string::npos);
+    EXPECT_TRUE(fact_json.find("\"socrates\"") != std::string::npos);
 
-    Rule test_rule = createTestRule(444);
+    Rule test_rule = create_test_rule(444);
     std::string rule_json = Serializer::to_json(test_rule);
 
     // Verify JSON contains expected rule information
-    EXPECT_TRUE(ruleJson.find("\"id\": 444") != std::string::npos);
-    EXPECT_TRUE(ruleJson.find("\"name\": \"mortality_rule\"") != std::string::npos);
-    EXPECT_TRUE(ruleJson.find("\"priority\": 10") != std::string::npos);
-    EXPECT_TRUE(ruleJson.find("\"conditions\": [") != std::string::npos);
-    EXPECT_TRUE(ruleJson.find("\"conclusions\": [") != std::string::npos);
-    EXPECT_TRUE(ruleJson.find("isHuman") != std::string::npos);
-    EXPECT_TRUE(ruleJson.find("isMortal") != std::string::npos);
+    EXPECT_TRUE(rule_json.find("\"id\": 444") != std::string::npos);
+    EXPECT_TRUE(rule_json.find("\"name\": \"mortality_rule\"") != std::string::npos);
+    EXPECT_TRUE(rule_json.find("\"priority\": 10") != std::string::npos);
+    EXPECT_TRUE(rule_json.find("\"conditions\": [") != std::string::npos);
+    EXPECT_TRUE(rule_json.find("\"conclusions\": [") != std::string::npos);
+    EXPECT_TRUE(rule_json.find("isHuman") != std::string::npos);
+    EXPECT_TRUE(rule_json.find("isMortal") != std::string::npos);
 }
 
 //=============================================================================
@@ -919,10 +919,10 @@ TEST_F(SerializationTest, SchemaVersionOperations) {
     EXPECT_EQ(v1_2_3.get_version_string(), "1.2.3");
 
     auto parsed_version = SchemaVersion::from_string("2.5.7");
-    ASSERT_TRUE(parsedVersion.has_value());
-    EXPECT_EQ(parsedVersion->get_major(), 2);
-    EXPECT_EQ(parsedVersion->get_minor(), 5);
-    EXPECT_EQ(parsedVersion->get_patch(), 7);
+    ASSERT_TRUE(parsed_version.has_value());
+    EXPECT_EQ(parsed_version->get_major(), 2);
+    EXPECT_EQ(parsed_version->get_minor(), 5);
+    EXPECT_EQ(parsed_version->get_patch(), 7);
 
     // Test invalid string parsing
     EXPECT_FALSE(SchemaVersion::from_string("invalid").has_value());
@@ -1003,8 +1003,8 @@ TEST_F(SerializationTest, MigrationPathOperations) {
                        "Add default values for new fields");
 
     // Test basic properties
-    EXPECT_EQ(path.get_from_version(), fromVersion);
-    EXPECT_EQ(path.get_to_version(), toVersion);
+    EXPECT_EQ(path.get_from_version(), from_version);
+    EXPECT_EQ(path.get_to_version(), to_version);
     EXPECT_EQ(path.get_strategy(), MigrationPath::Strategy::DEFAULT_VALUES);
     EXPECT_TRUE(path.is_reversible());
     EXPECT_EQ(path.get_description(), "Add default values for new fields");
@@ -1027,10 +1027,10 @@ TEST_F(SerializationTest, MigrationPathOperations) {
 
     // Test toString
     std::string path_str = path.to_string();
-    EXPECT_TRUE(pathStr.find("1.0.0") != std::string::npos);
-    EXPECT_TRUE(pathStr.find("1.1.0") != std::string::npos);
-    EXPECT_TRUE(pathStr.find("reversible") != std::string::npos);
-    EXPECT_TRUE(pathStr.find("Add default values") != std::string::npos);
+    EXPECT_TRUE(path_str.find("1.0.0") != std::string::npos);
+    EXPECT_TRUE(path_str.find("1.1.0") != std::string::npos);
+    EXPECT_TRUE(path_str.find("reversible") != std::string::npos);
+    EXPECT_TRUE(path_str.find("Add default values") != std::string::npos);
 }
 
 /**
@@ -1046,7 +1046,7 @@ TEST_F(SerializationTest, SchemaEvolutionManagerOperations) {
     SchemaVersion current_version(1, 2, 0);
     SchemaEvolutionManager manager(current_version);
 
-    EXPECT_EQ(manager.get_current_version(), currentVersion);
+    EXPECT_EQ(manager.get_current_version(), current_version);
 
     // Test initial state - can only read current version
     EXPECT_TRUE(manager.can_read_version(current_version));
@@ -1064,9 +1064,9 @@ TEST_F(SerializationTest, SchemaEvolutionManagerOperations) {
 
     // Test migration path finding
     auto found_path = manager.find_migration_path(old_version);
-    ASSERT_TRUE(foundPath.has_value());
-    EXPECT_EQ(foundPath->get_from_version(), oldVersion);
-    EXPECT_EQ(foundPath->get_to_version(), currentVersion);
+    ASSERT_TRUE(found_path.has_value());
+    EXPECT_EQ(found_path->get_from_version(), old_version);
+    EXPECT_EQ(found_path->get_to_version(), current_version);
 
     // Test unsupported version
     SchemaVersion unsupported_version(0, 9, 0);
@@ -1075,14 +1075,14 @@ TEST_F(SerializationTest, SchemaEvolutionManagerOperations) {
 
     // Test supported versions list
     auto supported_versions = manager.get_supported_versions();
-    EXPECT_GE(supportedVersions.size(), 2);  // At least current and old version
+    EXPECT_GE(supported_versions.size(), 2);  // At least current and old version
 
     bool foundCurrent = false;
     bool foundOld = false;
-    for (const auto& version : supportedVersions) {
-        if (version == currentVersion)
+    for (const auto& version : supported_versions) {
+        if (version == current_version)
             foundCurrent = true;
-        if (version == oldVersion)
+        if (version == old_version)
             foundOld = true;
     }
     EXPECT_TRUE(foundCurrent);
@@ -1114,17 +1114,17 @@ TEST_F(SerializationTest, DataMigrationOperations) {
     manager.register_migration_path(path);
 
     // Test fact migration
-    Fact original_fact = createTestFact(555);
+    Fact original_fact = create_test_fact(555);
 
     // Same version migration (should return original)
     auto same_version_result = manager.migrate_fact(original_fact, v1_1_0);
-    ASSERT_TRUE(sameVersionResult.has_value());
-    validate_fact_equality(original_fact, sameVersionResult.value());
+    ASSERT_TRUE(same_version_result.has_value());
+    validate_fact_equality(original_fact, same_version_result.value());
 
     // Cross-version migration
     auto migrated_fact = manager.migrate_fact(original_fact, v1_0_0);
-    ASSERT_TRUE(migratedFact.has_value());
-    validate_fact_equality(original_fact, migratedFact.value());
+    ASSERT_TRUE(migrated_fact.has_value());
+    validate_fact_equality(original_fact, migrated_fact.value());
 
     // Unsupported migration
     SchemaVersion unsupported_version(0, 5, 0);
@@ -1132,12 +1132,12 @@ TEST_F(SerializationTest, DataMigrationOperations) {
     EXPECT_FALSE(unsupported_result.has_value());
 
     // Test rule migration
-    Rule original_rule = createTestRule(666);
+    Rule original_rule = create_test_rule(666);
 
     auto migrated_rule = manager.migrate_rule(original_rule, v1_0_0);
-    ASSERT_TRUE(migratedRule.has_value());
-    EXPECT_EQ(originalRule.get_id(), migratedRule->get_id());
-    EXPECT_EQ(originalRule.get_name(), migratedRule->get_name());
+    ASSERT_TRUE(migrated_rule.has_value());
+    EXPECT_EQ(original_rule.get_id(), migrated_rule->get_id());
+    EXPECT_EQ(original_rule.get_name(), migrated_rule->get_name());
 
     // Unsupported rule migration
     auto unsupported_rule_result = manager.migrate_rule(original_rule, unsupported_version);
@@ -1157,19 +1157,19 @@ TEST_F(SerializationTest, VersionValidatorOperations) {
     // Test version validation
     SchemaVersion valid_version(1, 2, 3);
     auto valid_errors = VersionValidator::validate_version(valid_version);
-    EXPECT_TRUE(validErrors.empty());
+    EXPECT_TRUE(valid_errors.empty());
 
     SchemaVersion invalid_version(0, 0, 0);
     auto invalid_errors = VersionValidator::validate_version(invalid_version);
     EXPECT_FALSE(invalid_errors.empty());
-    EXPECT_TRUE(invalidErrors[0].find("0.0.0 is not valid") != std::string::npos);
+    EXPECT_TRUE(invalid_errors[0].find("0.0.0 is not valid") != std::string::npos);
 
     // Test migration path validation
     SchemaVersion from(1, 0, 0);
     SchemaVersion to(1, 1, 0);
     MigrationPath valid_path(from, to, MigrationPath::Strategy::DEFAULT_VALUES);
     auto path_errors = VersionValidator::validate_migration_path(valid_path);
-    EXPECT_TRUE(pathErrors.empty());
+    EXPECT_TRUE(path_errors.empty());
 
     // Test invalid migration path (wrong direction)
     MigrationPath invalid_path(to, from, MigrationPath::Strategy::DIRECT_MAPPING);
@@ -1189,16 +1189,16 @@ TEST_F(SerializationTest, VersionValidatorOperations) {
 
     // Test warning generation
     auto minor_warnings = VersionValidator::generate_warnings(from, to);
-    EXPECT_TRUE(minorWarnings.empty());  // Normal minor version increase
+    EXPECT_TRUE(minor_warnings.empty());  // Normal minor version increase
 
     auto major_warnings = VersionValidator::generate_warnings(from, major_to);
     EXPECT_FALSE(major_warnings.empty());
-    EXPECT_TRUE(majorWarnings[0].find("Major version change") != std::string::npos);
+    EXPECT_TRUE(major_warnings[0].find("Major version change") != std::string::npos);
 
     SchemaVersion skip_version(1, 3, 0);  // Skips v1.2.x
     auto skip_warnings = VersionValidator::generate_warnings(from, skip_version);
     EXPECT_FALSE(skip_warnings.empty());
-    EXPECT_TRUE(skipWarnings[0].find("Skipping minor versions") != std::string::npos);
+    EXPECT_TRUE(skip_warnings[0].find("Skipping minor versions") != std::string::npos);
 }
 
 /**
@@ -1219,9 +1219,9 @@ TEST_F(SerializationTest, SchemaRegistryOperations) {
 
     // Test initial state
     SchemaVersion const default_version = registry.get_current_schema();
-    EXPECT_EQ(defaultVersion.get_major(), 1);
-    EXPECT_EQ(defaultVersion.get_minor(), 0);
-    EXPECT_EQ(defaultVersion.get_patch(), 0);
+    EXPECT_EQ(default_version.get_major(), 1);
+    EXPECT_EQ(default_version.get_minor(), 0);
+    EXPECT_EQ(default_version.get_patch(), 0);
 
     // Register schema versions
     SchemaVersion v1_2_0(1, 2, 0, "hash123");
@@ -1243,11 +1243,11 @@ TEST_F(SerializationTest, SchemaRegistryOperations) {
 
     // Test getting all versions
     auto all_versions = registry.get_all_versions();
-    EXPECT_GE(allVersions.size(), 2);
+    EXPECT_GE(all_versions.size(), 2);
 
     bool foundV1_2_0 = false;
     bool foundV1_3_0 = false;
-    for (const auto& version : allVersions) {
+    for (const auto& version : all_versions) {
         if (version == v1_2_0)
             foundV1_2_0 = true;
         if (version == v1_3_0)
@@ -1258,7 +1258,7 @@ TEST_F(SerializationTest, SchemaRegistryOperations) {
 
     // Verify versions are sorted
     for (size_t i = 1; i < all_versions.size(); ++i) {
-        EXPECT_TRUE(allVersions[i - 1] <= allVersions[i]);
+        EXPECT_TRUE(all_versions[i - 1] <= all_versions[i]);
     }
 }
 
@@ -1279,12 +1279,12 @@ TEST_F(SerializationTest, LargeScaleSerializationTest) {
     const size_t NUM_FACTS = 1000;
     const size_t NUM_RULES = 100;
 
-    std::vector<Fact> originalFacts;
-    std::vector<Rule> originalRules;
+    std::vector<Fact> original_facts;
+    std::vector<Rule> original_rules;
 
     // Generate large dataset
     for (size_t i = 0; i < NUM_FACTS; ++i) {
-        Fact fact = createTestFact(i);
+        Fact fact = create_test_fact(i);
 
         // Add some variability
         fact.set_metadata("batch_id", Value::from_int64(i / 100));
@@ -1302,35 +1302,35 @@ TEST_F(SerializationTest, LargeScaleSerializationTest) {
                      {"metadata_level", Value::from_int64(2)}}));
         }
 
-        originalFacts.push_back(fact);
+        original_facts.push_back(fact);
     }
 
     for (size_t i = 0; i < NUM_RULES; ++i) {
-        originalRules.push_back(createTestRule(i));
+        original_rules.push_back(create_test_rule(i));
     }
 
     // Measure serialization time
     auto start_time = std::chrono::high_resolution_clock::now();
 
     std::vector<std::vector<uint8_t>> factData;
-    for (const auto& fact : originalFacts) {
+    for (const auto& fact : original_facts) {
         factData.push_back(Serializer::serialize(fact));
     }
 
     std::vector<std::vector<uint8_t>> ruleData;
-    for (const auto& rule : originalRules) {
+    for (const auto& rule : original_rules) {
         ruleData.push_back(Serializer::serialize(rule));
     }
 
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
     // Performance should be reasonable (less than 5 seconds for this dataset)
     EXPECT_LT(duration.count(), 5000);
 
     // Verify all serializations succeeded
-    EXPECT_EQ(factData.size(), numFacts);
-    EXPECT_EQ(ruleData.size(), numRules);
+    EXPECT_EQ(factData.size(), NUM_FACTS);
+    EXPECT_EQ(ruleData.size(), NUM_RULES);
 
     for (const auto& data : factData) {
         EXPECT_FALSE(data.empty());
@@ -1339,20 +1339,20 @@ TEST_F(SerializationTest, LargeScaleSerializationTest) {
     // Spot check deserialization of random samples
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> factDist(0, numFacts - 1);
-    std::uniform_int_distribution<size_t> ruleDist(0, numRules - 1);
+    std::uniform_int_distribution<size_t> factDist(0, NUM_FACTS - 1);
+    std::uniform_int_distribution<size_t> ruleDist(0, NUM_RULES - 1);
 
     for (int i = 0; i < 10; ++i) {
-        size_t fact_idx = factDist(gen) = 0;
-        auto deserialized_fact = Serializer::deserialize_fact(factData[factIdx]);
-        ASSERT_TRUE(deserializedFact.has_value());
-        validateFactEquality(originalFacts[factIdx], deserializedFact.value());
+        size_t fact_idx = factDist(gen);
+        auto deserialized_fact = Serializer::deserialize_fact(factData[fact_idx]);
+        ASSERT_TRUE(deserialized_fact.has_value());
+        validate_fact_equality(original_facts[fact_idx], deserialized_fact.value());
 
-        size_t rule_idx = ruleDist(gen) = 0;
-        auto deserialized_rule = Serializer::deserialize_rule(ruleData[ruleIdx]);
-        ASSERT_TRUE(deserializedRule.has_value());
-        EXPECT_EQ(originalRules[ruleIdx].get_id(), deserializedRule->get_id());
-        EXPECT_EQ(originalRules[ruleIdx].get_name(), deserializedRule->get_name());
+        size_t rule_idx = ruleDist(gen);
+        auto deserialized_rule = Serializer::deserialize_rule(ruleData[rule_idx]);
+        ASSERT_TRUE(deserialized_rule.has_value());
+        EXPECT_EQ(original_rules[rule_idx].get_id(), deserialized_rule->get_id());
+        EXPECT_EQ(original_rules[rule_idx].get_name(), deserialized_rule->get_name());
     }
 }
 
@@ -1370,26 +1370,26 @@ TEST_F(SerializationTest, ConcurrentSerializationTest) {
     const int OPERATIONS_PER_THREAD = 50;
 
     std::vector<std::thread> threads;
-    std::vector<std::vector<std::vector<uint8_t>>> threadResults(numThreads);
+    std::vector<std::vector<std::vector<uint8_t>>> thread_results(NUM_THREADS);
     std::atomic<int> successfulOperations{0};
 
     // Create multiple threads performing serialization
     for (int thread_id = 0; thread_id < NUM_THREADS; ++thread_id) {
-        threads.emplace_back([&, threadId]() {
-            threadResults[threadId].reserve(operationsPerThread);
+        threads.emplace_back([&, thread_id]() {
+            thread_results[thread_id].reserve(OPERATIONS_PER_THREAD);
 
-            for (int i = 0; i < operationsPerThread; ++i) {
+            for (int i = 0; i < OPERATIONS_PER_THREAD; ++i) {
                 try {
-                    Fact fact = createTestFact(threadId * 1000 + i);
-                    fact.set_metadata("thread_id", Value::from_int64(threadId));
+                    Fact fact = create_test_fact(thread_id * 1000 + i);
+                    fact.set_metadata("thread_id", Value::from_int64(thread_id));
                     fact.set_metadata("operation_id", Value::from_int64(i));
 
                     auto serializedData = Serializer::serialize(fact);
-                    threadResults[threadId].push_back(serializedData);
+                    thread_results[thread_id].push_back(serializedData);
 
                     ++successfulOperations;
                 } catch (...) {
-                    FAIL() << "Thread " << threadId << " operation " << i << " failed";
+                    FAIL() << "Thread " << thread_id << " operation " << i << " failed";
                 }
             }
         });
@@ -1401,25 +1401,25 @@ TEST_F(SerializationTest, ConcurrentSerializationTest) {
     }
 
     // Verify all operations succeeded
-    EXPECT_EQ(successfulOperations.load(), numThreads * operationsPerThread);
+    EXPECT_EQ(successfulOperations.load(), NUM_THREADS * OPERATIONS_PER_THREAD);
 
     // Verify each thread's results
     for (int thread_id = 0; thread_id < NUM_THREADS; ++thread_id) {
-        EXPECT_EQ(threadResults[threadId].size(), operationsPerThread);
+        EXPECT_EQ(thread_results[thread_id].size(), OPERATIONS_PER_THREAD);
 
         // Spot check a few deserializations from each thread
-        for (int i = 0; i < std::min(5, operationsPerThread); ++i) {
-            auto deserialized_fact = Serializer::deserialize_fact(threadResults[threadId][i]);
-            ASSERT_TRUE(deserializedFact.has_value());
+        for (int i = 0; i < std::min(5, OPERATIONS_PER_THREAD); ++i) {
+            auto deserialized_fact = Serializer::deserialize_fact(thread_results[thread_id][i]);
+            ASSERT_TRUE(deserialized_fact.has_value());
 
             // Verify thread-specific metadata
-            auto thread_id_value = deserializedFact->get_metadata("thread_id");
-            ASSERT_TRUE(threadIdValue.has_value());
-            EXPECT_EQ(threadIdValue->as_int64(), threadId);
+            auto thread_id_value = deserialized_fact->get_metadata("thread_id");
+            ASSERT_TRUE(thread_id_value.has_value());
+            EXPECT_EQ(thread_id_value->as_int64(), thread_id);
 
-            auto operation_id_value = deserializedFact->get_metadata("operation_id");
-            ASSERT_TRUE(operationIdValue.has_value());
-            EXPECT_EQ(operationIdValue->as_int64(), i);
+            auto operation_id_value = deserialized_fact->get_metadata("operation_id");
+            ASSERT_TRUE(operation_id_value.has_value());
+            EXPECT_EQ(operation_id_value->as_int64(), i);
         }
     }
 }
@@ -1454,11 +1454,11 @@ TEST_F(SerializationTest, ErrorHandlingAndEdgeCases) {
     // Test edge cases with valid but minimal data
     Fact minimal_fact(0, "", {}, 0.0, 0);
     auto serialized_minimal = Serializer::serialize(minimal_fact);
-    auto deserialized_minimal = Serializer::deserialize_fact(serializedMinimal);
-    ASSERT_TRUE(deserializedMinimal.has_value());
-    EXPECT_EQ(deserializedMinimal->get_id(), 0);
-    EXPECT_EQ(deserializedMinimal->get_predicate(), "");
-    EXPECT_TRUE(deserializedMinimal->get_args().empty());
+    auto deserialized_minimal = Serializer::deserialize_fact(serialized_minimal);
+    ASSERT_TRUE(deserialized_minimal.has_value());
+    EXPECT_EQ(deserialized_minimal->get_id(), 0);
+    EXPECT_EQ(deserialized_minimal->get_predicate(), "");
+    EXPECT_TRUE(deserialized_minimal->get_args().empty());
 
     // Test very large strings
     std::string largeString(10000, 'A');
@@ -1466,9 +1466,9 @@ TEST_F(SerializationTest, ErrorHandlingAndEdgeCases) {
     Fact large_fact(1, "large_predicate", {large_value}, 1.0, 12345);
 
     auto serialized_large = Serializer::serialize(large_fact);
-    auto deserialized_large = Serializer::deserialize_fact(serializedLarge);
-    ASSERT_TRUE(deserializedLarge.has_value());
-    EXPECT_EQ(deserializedLarge->get_args()[0].as_text(), largeString);
+    auto deserialized_large = Serializer::deserialize_fact(serialized_large);
+    ASSERT_TRUE(deserialized_large.has_value());
+    EXPECT_EQ(deserialized_large->get_args()[0].as_text(), largeString);
 
     // Test deeply nested structures
     Value deeply_nested = Value::from_struct(
@@ -1481,11 +1481,11 @@ TEST_F(SerializationTest, ErrorHandlingAndEdgeCases) {
 
     Fact nested_fact(2, "nested", {deeply_nested}, 1.0, 12345);
     auto serialized_nested = Serializer::serialize(nested_fact);
-    auto deserialized_nested = Serializer::deserialize_fact(serializedNested);
-    ASSERT_TRUE(deserializedNested.has_value());
+    auto deserialized_nested = Serializer::deserialize_fact(serialized_nested);
+    ASSERT_TRUE(deserialized_nested.has_value());
 
     // Verify deep structure integrity
-    const auto& args = deserializedNested->get_args();
+    const auto& args = deserialized_nested->get_args();
     ASSERT_EQ(args.size(), 1);
     ASSERT_TRUE(args[0].is_struct());
 
@@ -1502,10 +1502,10 @@ TEST_F(SerializationTest, ErrorHandlingAndEdgeCases) {
     ASSERT_TRUE(level3["level3"].is_list());
 
     auto level3_list = level3["level3"].as_list();
-    ASSERT_EQ(level3List.size(), 1);
-    ASSERT_TRUE(level3List[0].is_struct());
+    ASSERT_EQ(level3_list.size(), 1);
+    ASSERT_TRUE(level3_list[0].is_struct());
 
-    auto level4 = level3List[0].as_struct();
+    auto level4 = level3_list[0].as_struct();
     ASSERT_TRUE(level4.count("level4") > 0);
     EXPECT_EQ(level4["level4"].as_text(), "deep_value");
 }
