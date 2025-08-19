@@ -91,6 +91,39 @@ python3 tools/run_benchmarks.py --compare-ml-backends  # Backend comparison
 # Integrate with existing Cap'n Proto versioning system
 ```
 
+#### ML Development Flow Diagram
+```
+ML Model Development Pipeline:
+
+┌─────────────────┐  conversion   ┌─────────────────┐  optimization  ┌─────────────────┐
+│ Training        │ ─────────────▶│ ONNX Format     │ ──────────────▶│ TensorRT Engine │
+│ Framework       │               │ (.onnx)         │                │ (.trt)          │
+│ PyTorch/TF/etc  │               └─────────────────┘                └─────────────────┘
+└─────────────────┘                        │                                 │
+                                           │                                 │
+                   ┌─────────────────────────────────────────────────────────┘
+                   │ Integration Development
+                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                     Inference Systems Lab Integration                              │
+│                                                                                     │
+│  ┌─────────────────┐  validate()  ┌─────────────────┐  run_inference() ┌─────────┐ │
+│  │ ModelConfig     │ ────────────▶│ InferenceEngine │ ────────────────▶│ Results │ │
+│  │ • model_path    │              │ • TensorRT      │                  │ • tensor│ │
+│  │ • batch_size    │              │ • ONNX Runtime  │                  │ • timing│ │
+│  │ • gpu_device    │              │ • Rule-Based    │                  │ • memory│ │
+│  └─────────────────┘              └─────────────────┘                  └─────────┘ │
+│                                             │                                      │
+│                                             ▼                                      │
+│  ┌─────────────────┐  testing     ┌─────────────────┐  monitoring      ┌─────────┐ │
+│  │ Mock GPU Tests  │ ◄────────────│ Error Handling  │ ────────────────▶│ Metrics │ │
+│  │ • Unit Tests    │              │ Result<T,E>     │                  │ • Perf  │ │
+│  │ • CI/CD Safety  │              │ • GPU Memory    │                  │ • Memory│ │
+│  │ • Performance   │              │ • Device Errors │                  │ • Errors│ │
+│  └─────────────────┘              └─────────────────┘                  └─────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 #### ML-Specific Testing Strategy
 ```cpp
 // GPU inference testing with mock environment

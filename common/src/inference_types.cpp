@@ -20,11 +20,13 @@
 #include "inference_types.hpp"
 
 #include <chrono>
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 
 #include <capnp/message.h>
 #include <capnp/serialize.h>
+#include <capnp/serialize-packed.h>
 
 namespace inference_lab::common {
 
@@ -505,8 +507,8 @@ auto Serializer::serialize(const Fact& fact) -> std::vector<uint8_t> {
     auto builder = message.initRoot<schemas::Fact>();
     fact.write_to(builder);
 
-    auto words = capnp::messageToFlatArray(message);
-    auto bytes = words.asBytes();
+    kj::Array<capnp::word> words = capnp::messageToFlatArray(message);
+    kj::ArrayPtr<const kj::byte> bytes = words.asBytes();
     return std::vector<uint8_t>(bytes.begin(), bytes.end());
 }
 
@@ -515,8 +517,8 @@ auto Serializer::serialize(const Rule& rule) -> std::vector<uint8_t> {
     auto builder = message.initRoot<schemas::Rule>();
     rule.write_to(builder);
 
-    auto words = capnp::messageToFlatArray(message);
-    auto bytes = words.asBytes();
+    kj::Array<capnp::word> words = capnp::messageToFlatArray(message);
+    kj::ArrayPtr<const kj::byte> bytes = words.asBytes();
     return std::vector<uint8_t>(bytes.begin(), bytes.end());
 }
 

@@ -25,12 +25,12 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include "../src/logging.hpp"
 #include "../src/result.hpp"
 
 using namespace inference_lab::common;
@@ -53,7 +53,7 @@ enum class FileError : std::uint8_t {
 /**
  * @brief Convert FileError to human-readable string
  */
-std::string to_string(FileError error) {
+static std::string to_string(FileError error) {
     switch (error) {
         case FileError::FILE_NOT_FOUND:
             return "File not found";
@@ -75,7 +75,7 @@ std::string to_string(FileError error) {
  * This example shows how to wrap file I/O operations in Results,
  * providing type-safe error handling without exceptions.
  */
-auto read_file(const std::string& filename) -> Result<std::string, FileError> {
+static auto read_file(const std::string& filename) -> Result<std::string, FileError> {
     std::ifstream file(filename);
     if (!file.is_open()) {
         return Err(FileError::FILE_NOT_FOUND);
@@ -123,7 +123,7 @@ auto parse_config(const std::string& content) -> Result<std::vector<std::string>
 /**
  * @brief Example of chained file operations using monadic composition
  */
-void example_file_operations() {
+static void example_file_operations() {
     std::cout << "=== File Operations Example ===" << std::endl;
 
     // Chain file reading and parsing operations
@@ -171,7 +171,7 @@ enum class MathError : std::uint8_t {
     NUMERIC_UNDERFLOW
 };
 
-std::string to_string(MathError error) {
+static std::string to_string(MathError error) {
     switch (error) {
         case MathError::DIVISION_BY_ZERO:
             return "Division by zero";
@@ -190,12 +190,12 @@ std::string to_string(MathError error) {
 /**
  * @brief Safe division operation
  */
-auto safe_divide(double a, double b) -> Result<double, MathError> {
+static auto safe_divide(double a, double b) -> Result<double, MathError> {
     if (b == 0.0) {
         return Err(MathError::DIVISION_BY_ZERO);
     }
 
-    double result = a / b;
+    double const result = a / b;
 
     if (std::isinf(result)) {
         return Err(MathError::NUMERIC_OVERFLOW);
@@ -207,7 +207,7 @@ auto safe_divide(double a, double b) -> Result<double, MathError> {
 /**
  * @brief Safe square root operation
  */
-auto safe_sqrt(double x) -> Result<double, MathError> {
+static auto safe_sqrt(double x) -> Result<double, MathError> {
     if (x < 0.0) {
         return Err(MathError::NEGATIVE_SQUARE_ROOT);
     }
@@ -218,12 +218,12 @@ auto safe_sqrt(double x) -> Result<double, MathError> {
 /**
  * @brief Safe logarithm operation
  */
-auto safe_log(double x) -> Result<double, MathError> {
+static auto safe_log(double x) -> Result<double, MathError> {
     if (x <= 0.0) {
         return Err(MathError::DOMAIN_ERROR);
     }
 
-    double result = std::log(x);
+    double result = std::log(x) = NAN;
 
     if (std::isinf(result) && result < 0) {
         return Err(MathError::NUMERIC_UNDERFLOW);
@@ -237,14 +237,14 @@ auto safe_log(double x) -> Result<double, MathError> {
  *
  * Computes: sqrt(log(a / b)) with comprehensive error handling
  */
-auto complex_math_operation(double a, double b) -> Result<double, MathError> {
+static auto complex_math_operation(double a, double b) -> Result<double, MathError> {
     return safe_divide(a, b).and_then(safe_log).and_then(safe_sqrt);
 }
 
 /**
  * @brief Example of mathematical operations with error handling
  */
-void example_math_operations() {
+static void example_math_operations() {
     std::cout << "\n=== Mathematical Operations Example ===" << std::endl;
 
     // Test cases with different outcomes
@@ -294,7 +294,7 @@ enum class NetworkError : std::uint8_t {
     RATE_LIMITED
 };
 
-std::string to_string(NetworkError error) {
+static std::string to_string(NetworkError error) {
     switch (error) {
         case NetworkError::CONNECTION_TIMEOUT:
             return "Connection timeout";
@@ -314,16 +314,16 @@ std::string to_string(NetworkError error) {
  * @brief Simulated API response
  */
 struct ApiResponse {
-    int status_code;
-    std::string body;
+    int status_code_;
+    std::string body_{};
 
-    ApiResponse(int code, std::string content) : status_code(code), body(std::move(content)) {}
+    ApiResponse(int code, std::string content) : status_code_(code), body(std::move(content)) {}
 };
 
 /**
  * @brief Simulated network request (normally would use actual HTTP library)
  */
-auto make_request(const std::string& url) -> Result<ApiResponse, NetworkError> {
+static auto make_request(const std::string& url) -> Result<ApiResponse, NetworkError> {
     // Simulate different outcomes based on URL
     if (url.find("timeout") != std::string::npos) {
         return Err(NetworkError::CONNECTION_TIMEOUT);
@@ -367,7 +367,8 @@ auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, Net
  * @brief Retry logic with exponential backoff
  */
 template <typename OperationType>
-auto retry_with_backoff(OperationType&& operation, int max_retries = 3) -> decltype(operation()) {
+static auto retry_with_backoff(OperationType&& operation, int max_retries = 3)
+    -> decltype(operation()) {
     for (int attempt = 0; attempt < max_retries; ++attempt) {
         auto result = operation();
 
@@ -398,7 +399,7 @@ auto retry_with_backoff(OperationType&& operation, int max_retries = 3) -> declt
 /**
  * @brief Example of network operations with retry logic
  */
-void example_network_operations() {
+static void example_network_operations() {
     std::cout << "\n=== Network Operations Example ===" << std::endl;
 
     std::vector<std::string> test_urls = {"https://api.example.com/data",
@@ -442,7 +443,7 @@ enum class DbError : std::uint8_t {
     TRANSACTION_FAILED
 };
 
-std::string to_string(DbError error) {
+static std::string to_string(DbError error) {
     switch (error) {
         case DbError::CONNECTION_FAILED:
             return "Database connection failed";
@@ -462,12 +463,12 @@ std::string to_string(DbError error) {
  * @brief Simulated database record
  */
 struct UserRecord {
-    int id;
-    std::string name;
-    std::string email;
+    int id_;
+    std::string name_{};
+    std::string email_{};
 
     UserRecord(int user_id, std::string user_name, std::string user_email)
-        : id(user_id), name(std::move(user_name)), email(std::move(user_email)) {}
+        : id_(user_id), name(std::move(user_name)), email(std::move(user_email)) {}
 };
 
 /**
@@ -506,7 +507,7 @@ class DatabaseConnection {
 /**
  * @brief Business logic operation using database
  */
-auto update_user_email(DatabaseConnection& db, int user_id, const std::string& new_email)
+static auto update_user_email(DatabaseConnection& db, int user_id, const std::string& new_email)
     -> Result<UserRecord, DbError> {
     return db.find_user(user_id).and_then(
         [&db, &new_email](UserRecord user) -> Result<UserRecord, DbError> {
@@ -518,10 +519,10 @@ auto update_user_email(DatabaseConnection& db, int user_id, const std::string& n
 /**
  * @brief Example of database operations with error handling
  */
-void example_database_operations() {
+static void example_database_operations() {
     std::cout << "\n=== Database Operations Example ===" << std::endl;
 
-    DatabaseConnection db;
+    DatabaseConnection const db;
 
     std::vector<std::pair<int, std::string>> test_cases = {
         {1, "newemail@example.com"},   // Should succeed
@@ -562,7 +563,7 @@ enum class ComputeError : std::uint8_t { INVALID_INPUT, COMPUTATION_OVERFLOW, ME
  * This example shows how Result can be used in performance-critical code
  * without significant overhead compared to raw error codes or exceptions.
  */
-auto fast_computation(const std::vector<double>& data) -> Result<double, ComputeError> {
+static auto fast_computation(const std::vector<double>& data) -> Result<double, ComputeError> {
     if (data.empty()) {
         return Err(ComputeError::INVALID_INPUT);
     }
@@ -582,7 +583,7 @@ auto fast_computation(const std::vector<double>& data) -> Result<double, Compute
 /**
  * @brief Batch processing with early termination on error
  */
-auto process_batch(const std::vector<std::vector<double>>& batches)
+auto process_batch(std::vector<std::vector<double>>& batches)
     -> Result<std::vector<double>, ComputeError> {
     std::vector<double> results;
     results.reserve(batches.size());
@@ -601,7 +602,7 @@ auto process_batch(const std::vector<std::vector<double>>& batches)
 /**
  * @brief Example of performance-critical usage
  */
-void example_performance_critical() {
+static void example_performance_critical() {
     std::cout << "\n=== Performance-Critical Example ===" << std::endl;
 
     // Generate test data
@@ -641,14 +642,14 @@ void example_performance_critical() {
 /**
  * @brief Legacy function that returns error codes
  */
-int legacy_parse_int(const char* str, int* result) {
-    if (!str || !result)
+static auto legacy_parse_int(const char* str, int* result) -> int {
+    if ((str == nullptr) || (result == nullptr))
         return -1;  // Null pointer
     if (*str == '\0')
         return -2;  // Empty string
 
-    char* endptr;
-    long val = std::strtol(str, &endptr, 10);
+    char* endptr = nullptr;
+    long val = std::strtol(str = 0, &endptr, 10);
 
     if (*endptr != '\0')
         return -3;  // Invalid characters
@@ -672,8 +673,8 @@ enum class ParseError : std::uint8_t {
 /**
  * @brief Wrapper to convert legacy error codes to Result
  */
-auto safe_parse_int(const std::string& str) -> Result<int, ParseError> {
-    int result;
+static auto safe_parse_int(const std::string& str) -> Result<int, ParseError> {
+    int result = 0;
     int error_code = legacy_parse_int(str.c_str(), &result);
 
     switch (error_code) {
@@ -695,7 +696,7 @@ auto safe_parse_int(const std::string& str) -> Result<int, ParseError> {
 /**
  * @brief Example of legacy code integration
  */
-void example_legacy_integration() {
+static void example_legacy_integration() {
     std::cout << "\n=== Legacy Code Integration Example ===" << std::endl;
 
     std::vector<std::string> test_inputs = {
@@ -724,7 +725,7 @@ void example_legacy_integration() {
 // Main Function - Run All Examples
 //=============================================================================
 
-int main() {
+auto main() -> int {
     std::cout << "Result<T, E> Usage Examples" << std::endl;
     std::cout << "===========================" << std::endl;
 
