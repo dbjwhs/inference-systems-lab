@@ -13,7 +13,7 @@ A comprehensive collection of development automation tools for the Inference Sys
   - [Project Scaffolding](#project-scaffolding)
 - [Tool Reference](#tool-reference)
 - [Integration with Development Workflow](#integration-with-development-workflow)
-- [Redundancy Analysis](#redundancy-analysis)
+- [Optimization Opportunities](#optimization-opportunities)
 - [Future Enhancements](#future-enhancements)
 
 ## Overview
@@ -108,25 +108,31 @@ python3 tools/check_static_analysis.py --check
 # Apply safe fixes with backup
 python3 tools/check_static_analysis.py --fix --backup
 
+# Auto-fix with git commit (replaces run_clang_tidy.py)
+python3 tools/check_static_analysis.py --auto-fix --auto-commit
+
+# Preview auto-fix changes
+python3 tools/check_static_analysis.py --auto-fix --dry-run
+
 # Check only errors
 python3 tools/check_static_analysis.py --check --severity error
 
 # Generate suppressions file
 python3 tools/check_static_analysis.py --generate-suppressions
-
-# Check specific file
-python3 tools/check_static_analysis.py --check --file common/src/result.hpp
 ```
 
 **Arguments**:
 - `--check`: Run analysis without fixes
-- `--fix`: Apply automated fixes
+- `--fix`: Apply automated fixes with build validation
+- `--auto-fix`: Run in simplified auto-fix mode (like run_clang_tidy.py)
 - `--backup`: Create backups before fixing
+- `--auto-commit`: Create git commit after fixes (use with --auto-fix)
+- `--dry-run`: Preview changes without making them
 - `--severity LEVEL`: Filter by severity (error/warning/note)
 - `--filter PATTERN`: Only analyze matching files
-- `--file FILE`: Analyze specific file
 - `--generate-suppressions`: Create suppressions for current issues
-- `--json-output FILE`: Export results as JSON
+- `--output-json FILE`: Export results as JSON
+- `--no-build-validation`: Skip build validation after fixes
 
 #### check_eof_newline.py
 **Purpose**: Ensures POSIX compliance by verifying files end with newlines
@@ -355,36 +361,6 @@ python3 tools/fix_static_analysis_by_file.py --phase 2 --fix-all
 - `--fix-all`: Fix all files in phase
 - `--dry-run`: Preview changes
 
-#### run_clang_tidy.py
-**Purpose**: Automated clang-tidy runner with git integration
-
-**Key Features**:
-- Automatic C++ file discovery
-- Batch processing capability
-- Git commit creation
-- macOS optimized paths
-- Dry-run mode
-
-**Usage Examples**:
-```bash
-# Run with automatic fixes
-python3 tools/run_clang_tidy.py
-
-# Dry run without changes
-python3 tools/run_clang_tidy.py --dry-run
-
-# Custom config file
-python3 tools/run_clang_tidy.py --config .clang-tidy
-
-# Specific directory
-python3 tools/run_clang_tidy.py --path common/src
-```
-
-**Arguments**:
-- `--dry-run`: Preview without changes
-- `--config FILE`: Custom config file
-- `--path PATH`: Specific directory
-- `--no-commit`: Skip git commit
 
 ### Project Scaffolding
 
@@ -543,20 +519,14 @@ To bypass in emergencies:
 git commit --no-verify -m "Emergency fix"
 ```
 
-## Redundancy Analysis
+## Optimization Opportunities
 
-Based on analysis of the tools directory:
+1. **✅ Consolidated static analysis tools**: Merged `run_clang_tidy.py` functionality into `check_static_analysis.py`
+   - Added `--auto-fix` mode for simple automated fixing with git commit support
+   - Added `--auto-commit` flag for automatic git commit creation
+   - Improved clang-tidy executable detection (macOS/PATH fallback)
+   - Maintained all existing comprehensive analysis features
 
-### Identified Redundancies
-
-1. **run_clang_tidy.py vs check_static_analysis.py**: Both run clang-tidy but serve different purposes
-   - `check_static_analysis.py`: Comprehensive analysis with reporting, severity filtering, and CI/CD integration
-   - `run_clang_tidy.py`: Simple automated fixer with git commit creation
-   - **Recommendation**: Keep both as they serve different workflows. Consider merging functionality into `check_static_analysis.py` with a `--auto-commit` flag
-
-### Optimization Opportunities
-
-1. **Consolidate static analysis tools**: Merge `run_clang_tidy.py` functionality into `check_static_analysis.py`
 2. **Unified configuration**: Create a central config file for tool settings
 3. **Shared utilities**: Extract common functions (file discovery, git operations) into a shared module
 

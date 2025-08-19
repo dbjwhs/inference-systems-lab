@@ -23,6 +23,7 @@ Usage:
 Examples:
     python tools/check_static_analysis.py --check
     python tools/check_static_analysis.py --fix --backup
+    python tools/check_static_analysis.py --auto-fix --auto-commit
     python tools/check_static_analysis.py --check --filter "common/src/*" --severity error
     python tools/check_static_analysis.py --generate-suppressions
 """
@@ -39,6 +40,7 @@ from typing import Dict, List, Optional, Set, Tuple, Any
 import shutil
 import tempfile
 import fnmatch
+import time
 
 
 class StaticAnalysisIssue:
@@ -112,9 +114,32 @@ class StaticAnalyzer:
     
     def __init__(self, project_root: Path, clang_tidy_path: str = "clang-tidy"):
         self.project_root = project_root
-        self.clang_tidy_path = clang_tidy_path
+        self.clang_tidy_path = self._find_clang_tidy(clang_tidy_path)
         self.build_dir = project_root / "build"
         self.cpp_extensions = {'.cpp', '.hpp', '.cc', '.cxx', '.hxx', '.h', '.c'}
+        self.build_dirs = {'build', 'cmake-build-debug', 'cmake-build-release', '_deps', 'CMakeFiles'}
+    
+    def _find_clang_tidy(self, clang_tidy_path: str) -> str:
+        """Find clang-tidy executable with fallback logic."""
+        # If provided path exists, use it
+        if Path(clang_tidy_path).exists():
+            return clang_tidy_path
+        
+        # Try macOS Homebrew path first
+        homebrew_path = "/opt/homebrew/Cellar/llvm/20.1.8/bin/clang-tidy"
+        if Path(homebrew_path).exists():
+            return homebrew_path
+        
+        # Try to find in PATH
+        try:
+            result = subprocess.run(['which', 'clang-tidy'], capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception:
+            pass
+        
+        # Return original path if nothing else works (will fail later with clear error)
+        return clang_tidy_path
         
     def check_clang_tidy_available(self) -> bool:
         """Check if clang-tidy is available."""
@@ -425,6 +450,199 @@ class StaticAnalyzer:
             json.dump(suppression_config, f, indent=2)
         
         print(f"Suppression suggestions saved to {output_file}")
+    
+    def find_clang_tidy_config(self) -> Optional[Path]:
+        """Find .clang-tidy configuration file."""
+        # Look for .clang-tidy in project root and parent directories
+        current_dir = self.project_root
+        while current_dir != current_dir.parent:
+            config_file = current_dir / '.clang-tidy'
+            if config_file.exists():
+                return config_file
+            current_dir = current_dir.parent
+        
+        # Check if there's a .clang-tidy in any subdirectory (like benchmark deps)
+        for config_file in self.project_root.rglob('.clang-tidy'):
+            # Skip build directories
+            if any(build_dir in config_file.parts for build_dir in self.build_dirs):
+                continue
+            return config_file
+        
+        return None
+    
+    def create_default_clang_tidy_config(self) -> Path:
+        """Create a default .clang-tidy configuration file."""
+        config_content = """---
+Checks: 'clang-analyzer-*,bugprone-*,cert-*,cppcoreguidelines-*,google-*,hicpp-*,llvm-*,misc-*,modernize-*,performance-*,portability-*,readability-*,-modernize-use-trailing-return-type,-readability-braces-around-statements,-hicpp-braces-around-statements,-google-readability-braces-around-statements'
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: false
+FormatStyle: none
+"""
+        config_file = self.project_root / '.clang-tidy'
+        config_file.write_text(config_content)
+        print(f"Created default .clang-tidy config at {config_file}")
+        return config_file
+    
+    def check_git_status(self) -> bool:
+        """Check if we're in a git repository and it's clean."""
+        try:
+            # Check if we're in a git repo
+            result = subprocess.run(['git', 'rev-parse', '--git-dir'], 
+                                  cwd=self.project_root, 
+                                  capture_output=True)
+            if result.returncode != 0:
+                print("Error: Not in a git repository")
+                return False
+            
+            # Check git status
+            result = subprocess.run(['git', 'status', '--porcelain'], 
+                                  cwd=self.project_root, 
+                                  capture_output=True, 
+                                  text=True)
+            
+            if result.stdout.strip():
+                print("Warning: Git working directory is not clean")
+                print("Uncommitted changes:")
+                print(result.stdout)
+                response = input("Continue anyway? (y/N): ")
+                return response.lower().startswith('y')
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error checking git status: {e}")
+            return False
+    
+    def create_git_commit(self, dry_run: bool = False) -> bool:
+        """Create a git commit with clang-tidy fixes."""
+        try:
+            # Check if there are any changes to commit
+            result = subprocess.run(['git', 'diff', '--name-only'], 
+                                  cwd=self.project_root, 
+                                  capture_output=True, 
+                                  text=True)
+            
+            if not result.stdout.strip():
+                print("No changes to commit")
+                return True
+            
+            changed_files = result.stdout.strip().split('\n')
+            print(f"Files modified by clang-tidy: {len(changed_files)}")
+            for file in changed_files:
+                print(f"  {file}")
+            
+            if dry_run:
+                print("[DRY RUN] Would create commit with clang-tidy fixes")
+                return True
+            
+            # Add all modified files
+            subprocess.run(['git', 'add', '-u'], cwd=self.project_root, check=True)
+            
+            # Create commit
+            commit_message = """Apply clang-tidy automatic fixes
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"""
+            
+            subprocess.run(['git', 'commit', '-m', commit_message], 
+                         cwd=self.project_root, check=True)
+            
+            print("Successfully created commit with clang-tidy fixes")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            print(f"Error creating git commit: {e}")
+            return False
+    
+    def run_auto_fix_mode(self, files: List[Path], create_backup: bool = False,
+                         auto_commit: bool = False, dry_run: bool = False) -> bool:
+        """Run clang-tidy auto-fix mode similar to run_clang_tidy.py."""
+        print(f"Starting clang-tidy auto-fix on {len(files)} files...")
+        
+        # Check git status if auto-commit is enabled
+        if auto_commit and not dry_run and not self.check_git_status():
+            return False
+        
+        # Find or create clang-tidy config
+        config_file = self.find_clang_tidy_config()
+        if not config_file:
+            if not dry_run:
+                config_file = self.create_default_clang_tidy_config()
+            else:
+                print("[DRY RUN] Would create default .clang-tidy config")
+        
+        if config_file:
+            print(f"Using clang-tidy config: {config_file}")
+        
+        # Process each file
+        successful_files = 0
+        failed_files = 0
+        
+        start_time = time.time()
+        
+        for i, file_path in enumerate(files, 1):
+            print(f"[{i}/{len(files)}] Processing {file_path.relative_to(self.project_root)}...")
+            
+            if dry_run:
+                print(f"  [DRY RUN] Would apply clang-tidy fixes")
+                successful_files += 1
+                continue
+            
+            try:
+                if create_backup:
+                    backup_path = file_path.with_suffix(file_path.suffix + '.bak')
+                    shutil.copy2(file_path, backup_path)
+                
+                cmd = [
+                    self.clang_tidy_path,
+                    str(file_path),
+                    '--fix',
+                    '--fix-errors'
+                ]
+                
+                if config_file:
+                    cmd.extend(['--config-file', str(config_file)])
+                
+                result = subprocess.run(
+                    cmd,
+                    cwd=self.project_root,
+                    capture_output=True,
+                    text=True,
+                    timeout=60  # 60 second timeout per file
+                )
+                
+                # clang-tidy returns 0 for success, non-zero for warnings/errors
+                # We consider both success and warnings as successful runs
+                if result.returncode in [0, 1]:
+                    if result.stdout.strip():
+                        print(f"  Applied fixes")
+                    successful_files += 1
+                else:
+                    print(f"  Error processing file: {result.stderr}")
+                    failed_files += 1
+                    
+            except subprocess.TimeoutExpired:
+                print(f"  Timeout processing {file_path}")
+                failed_files += 1
+            except Exception as e:
+                print(f"  Error processing {file_path}: {e}")
+                failed_files += 1
+        
+        elapsed_time = time.time() - start_time
+        
+        print(f"\nCompleted processing {len(files)} files in {elapsed_time:.1f}s")
+        print(f"  Successful: {successful_files}")
+        print(f"  Failed: {failed_files}")
+        
+        # Create git commit if changes were made and auto-commit is enabled
+        if auto_commit and successful_files > 0:
+            return self.create_git_commit(dry_run)
+        elif auto_commit and dry_run:
+            print("[DRY RUN] Would check for changes and create commit if needed")
+        
+        return failed_files == 0
 
 
 def main():
@@ -436,6 +654,8 @@ def main():
 Examples:
   %(prog)s --check                                    # Check all files
   %(prog)s --fix --backup                            # Fix issues with backup
+  %(prog)s --auto-fix --auto-commit                  # Auto-fix with git commit
+  %(prog)s --auto-fix --dry-run                      # Preview auto-fix changes
   %(prog)s --check --filter "common/src/*"           # Check specific files
   %(prog)s --check --severity error                  # Only show errors
   %(prog)s --generate-suppressions                   # Generate suppression config
@@ -450,6 +670,9 @@ Examples:
     group.add_argument("--fix",
                       action="store_true",
                       help="Fix static analysis issues automatically")
+    group.add_argument("--auto-fix",
+                      action="store_true",
+                      help="Run in auto-fix mode similar to run_clang_tidy.py (with optional git commit)")
     group.add_argument("--generate-suppressions",
                       action="store_true",
                       help="Generate suppression configuration for common issues")
@@ -473,11 +696,17 @@ Examples:
     parser.add_argument("--no-build-validation",
                        action="store_true",
                        help="Skip build validation after fixes (use with --fix)")
+    parser.add_argument("--auto-commit",
+                       action="store_true",
+                       help="Automatically create git commit after fixes (use with --auto-fix)")
+    parser.add_argument("--dry-run",
+                       action="store_true",
+                       help="Show what would be done without making changes")
     
     # Tool options
     parser.add_argument("--clang-tidy-path",
-                       default="/opt/homebrew/Cellar/llvm/20.1.8/bin/clang-tidy",
-                       help="Path to clang-tidy executable")
+                       default="clang-tidy",
+                       help="Path to clang-tidy executable (auto-detects macOS/PATH if not specified)")
     parser.add_argument("--output-json",
                        type=Path,
                        help="Output detailed results to JSON file")
@@ -619,6 +848,38 @@ Examples:
             print("3. Commit the fixes: git add -A && git commit -m 'Apply clang-tidy fixes'")
             
             sys.exit(0)
+    
+    elif args.auto_fix:
+        # Validate arguments for auto-fix mode
+        if args.auto_commit and not args.dry_run:
+            print("Auto-fix mode with automatic git commit")
+        
+        success = analyzer.run_auto_fix_mode(
+            source_files,
+            create_backup=args.backup,
+            auto_commit=args.auto_commit,
+            dry_run=args.dry_run
+        )
+        
+        if success:
+            if args.dry_run:
+                print(f"\n✅ [DRY RUN] Would successfully process {len(source_files)} files")
+            else:
+                print(f"\n✅ Successfully processed {len(source_files)} files")
+                
+                if args.backup:
+                    print("Backup files created with .bak extension")
+                
+                if not args.auto_commit:
+                    print("\nRecommended next steps:")
+                    print("1. Review the changes: git diff")
+                    print("2. Run tests to ensure functionality: ctest --test-dir build")
+                    print("3. Commit the fixes: git add -A && git commit -m 'Apply clang-tidy fixes'")
+            
+            sys.exit(0)
+        else:
+            print(f"\n❌ Auto-fix processing failed")
+            sys.exit(1)
     
     elif args.generate_suppressions:
         report = analyzer.analyze_files(source_files)
