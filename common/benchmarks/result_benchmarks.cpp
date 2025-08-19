@@ -43,11 +43,11 @@ using namespace inference_lab::common;
 
 // Common error type for benchmarks
 enum class BenchError {
-    InvalidInput,
-    ProcessingFailed,
-    ResourceExhausted,
-    NetworkTimeout,
-    Unknown
+    INVALID_INPUT,
+    PROCESSING_FAILED,
+    RESOURCE_EXHAUSTED,
+    NETWORK_TIMEOUT,
+    UNKNOWN
 };
 
 // Large data structure for testing copy/move performance
@@ -96,7 +96,7 @@ BENCHMARK(BM_Result_Construction_Small_Success);
 
 static void BM_Result_Construction_Small_Error(benchmark::State& state) {
     for (auto _ : state) {
-        Result<int, BenchError> result = Err(BenchError::InvalidInput);
+        Result<int, BenchError> result = Err(BenchError::INVALID_INPUT);
         benchmark::DoNotOptimize(result);
     }
 }
@@ -115,7 +115,7 @@ BENCHMARK(BM_Result_Construction_Large_Success)->Range(100, 10000);
 
 static void BM_Result_Construction_Large_Error(benchmark::State& state) {
     for (auto _ : state) {
-        Result<LargeData, BenchError> result = Err(BenchError::ProcessingFailed);
+        Result<LargeData, BenchError> result = Err(BenchError::PROCESSING_FAILED);
         benchmark::DoNotOptimize(result);
     }
 }
@@ -168,7 +168,7 @@ static void BM_Result_UnwrapOr_Success(benchmark::State& state) {
 BENCHMARK(BM_Result_UnwrapOr_Success);
 
 static void BM_Result_UnwrapOr_Error(benchmark::State& state) {
-    Result<int, BenchError> result = Err(BenchError::InvalidInput);
+    Result<int, BenchError> result = Err(BenchError::INVALID_INPUT);
     for (auto _ : state) {
         int value = result.unwrap_or(99);
         benchmark::DoNotOptimize(value);
@@ -188,7 +188,7 @@ static void BM_Result_UnwrapOrElse_Success(benchmark::State& state) {
 BENCHMARK(BM_Result_UnwrapOrElse_Success);
 
 static void BM_Result_UnwrapOrElse_Error(benchmark::State& state) {
-    Result<int, BenchError> result = Err(BenchError::InvalidInput);
+    Result<int, BenchError> result = Err(BenchError::INVALID_INPUT);
     auto fallback = [](BenchError) { return 99; };
 
     for (auto _ : state) {
@@ -217,7 +217,7 @@ static void BM_Result_Map_Success(benchmark::State& state) {
 BENCHMARK(BM_Result_Map_Success);
 
 static void BM_Result_Map_Error(benchmark::State& state) {
-    Result<int, BenchError> result = Err(BenchError::InvalidInput);
+    Result<int, BenchError> result = Err(BenchError::INVALID_INPUT);
     auto mapper = [](int x) { return x * 2; };
 
     for (auto _ : state) {
@@ -258,7 +258,7 @@ static void BM_Result_AndThen_Success(benchmark::State& state) {
 BENCHMARK(BM_Result_AndThen_Success);
 
 static void BM_Result_AndThen_Error(benchmark::State& state) {
-    Result<int, BenchError> result = Err(BenchError::InvalidInput);
+    Result<int, BenchError> result = Err(BenchError::INVALID_INPUT);
     auto operation = [](int x) -> Result<int, BenchError> { return Ok(x * 2); };
 
     for (auto _ : state) {
@@ -278,7 +278,7 @@ static void BM_Result_Complex_Chain(benchmark::State& state) {
         auto complex = result.map([](int x) { return x + 10; })
                            .and_then([](int x) -> Result<int, BenchError> {
                                if (x > 20) {
-                                   return Err(BenchError::ProcessingFailed);
+                                   return Err(BenchError::PROCESSING_FAILED);
                                } else {
                                    return Ok(x);
                                }
@@ -362,7 +362,7 @@ BENCHMARK(BM_Exception_Operation_Error);
  */
 static auto result_operation(int input) -> Result<int, BenchError> {
     if (input < 0) {
-        return Err(BenchError::InvalidInput);
+        return Err(BenchError::INVALID_INPUT);
     }
     return Ok(input * 2);
 }
@@ -404,7 +404,7 @@ static void BM_Result_Vector_Processing(benchmark::State& state) {
     for (size_t i = 0; i < size; ++i) {
         int value = dist(g_rng);
         if (value > 90) {
-            results.emplace_back(Err(BenchError::ProcessingFailed));
+            results.emplace_back(Err(BenchError::PROCESSING_FAILED));
         } else {
             results.emplace_back(Ok(value));
         }
@@ -457,19 +457,19 @@ BENCHMARK(BM_Result_Sequential_Access)->Range(1000, 10000);
  */
 static auto parse_stage1(const std::string& input) -> Result<int, BenchError> {
     if (input.empty())
-        return Err(BenchError::InvalidInput);
+        return Err(BenchError::INVALID_INPUT);
     return Ok(static_cast<int>(input.length()));
 }
 
 static auto parse_stage2(int length) -> Result<double, BenchError> {
     if (length > 1000)
-        return Err(BenchError::ResourceExhausted);
+        return Err(BenchError::RESOURCE_EXHAUSTED);
     return Ok(static_cast<double>(length) * 1.5);
 }
 
 static auto parse_stage3(double value) -> Result<std::string, BenchError> {
     if (value < 0)
-        return Err(BenchError::ProcessingFailed);
+        return Err(BenchError::PROCESSING_FAILED);
     return Ok("processed_" + std::to_string(value));
 }
 
@@ -505,9 +505,9 @@ BENCHMARK(BM_Result_Parsing_Pipeline);
 static auto simulate_network_request(int request_id) -> Result<std::string, BenchError> {
     // Simulate various outcomes based on request ID
     if (request_id % 20 == 0)
-        return Err(BenchError::NetworkTimeout);
+        return Err(BenchError::NETWORK_TIMEOUT);
     if (request_id % 17 == 0)
-        return Err(BenchError::ResourceExhausted);
+        return Err(BenchError::RESOURCE_EXHAUSTED);
     return Ok("response_" + std::to_string(request_id));
 }
 
@@ -556,7 +556,7 @@ static void BM_Result_Memory_Overhead(benchmark::State& state) {
 
         for (int i = 0; i < 10000; ++i) {
             if (i % 10 == 0) {
-                results.emplace_back(Err(BenchError::ProcessingFailed));
+                results.emplace_back(Err(BenchError::PROCESSING_FAILED));
             } else {
                 results.emplace_back(Ok(i));
             }

@@ -42,22 +42,28 @@ using namespace inference_lab::common;
 /**
  * @brief Error types for file operations
  */
-enum class FileError { FileNotFound, PermissionDenied, InvalidFormat, DiskFull, CorruptedData };
+enum class FileError {
+    FILE_NOT_FOUND,
+    PERMISSION_DENIED,
+    INVALID_FORMAT,
+    DISK_FULL,
+    CORRUPTED_DATA
+};
 
 /**
  * @brief Convert FileError to human-readable string
  */
 std::string to_string(FileError error) {
     switch (error) {
-        case FileError::FileNotFound:
+        case FileError::FILE_NOT_FOUND:
             return "File not found";
-        case FileError::PermissionDenied:
+        case FileError::PERMISSION_DENIED:
             return "Permission denied";
-        case FileError::InvalidFormat:
+        case FileError::INVALID_FORMAT:
             return "Invalid file format";
-        case FileError::DiskFull:
+        case FileError::DISK_FULL:
             return "Disk full";
-        case FileError::CorruptedData:
+        case FileError::CORRUPTED_DATA:
             return "Corrupted data";
     }
     return "Unknown error";
@@ -72,18 +78,18 @@ std::string to_string(FileError error) {
 auto read_file(const std::string& filename) -> Result<std::string, FileError> {
     std::ifstream file(filename);
     if (!file.is_open()) {
-        return Err(FileError::FileNotFound);
+        return Err(FileError::FILE_NOT_FOUND);
     }
 
     if (!file.good()) {
-        return Err(FileError::PermissionDenied);
+        return Err(FileError::PERMISSION_DENIED);
     }
 
     std::stringstream buffer;
     buffer << file.rdbuf();
 
     if (file.bad()) {
-        return Err(FileError::CorruptedData);
+        return Err(FileError::CORRUPTED_DATA);
     }
 
     return Ok(buffer.str());
@@ -94,7 +100,7 @@ auto read_file(const std::string& filename) -> Result<std::string, FileError> {
  */
 auto parse_config(const std::string& content) -> Result<std::vector<std::string>, FileError> {
     if (content.empty()) {
-        return Err(FileError::InvalidFormat);
+        return Err(FileError::INVALID_FORMAT);
     }
 
     std::vector<std::string> lines;
@@ -108,7 +114,7 @@ auto parse_config(const std::string& content) -> Result<std::vector<std::string>
     }
 
     if (lines.empty()) {
-        return Err(FileError::InvalidFormat);
+        return Err(FileError::INVALID_FORMAT);
     }
 
     return Ok(lines);
@@ -157,19 +163,25 @@ void example_file_operations() {
 /**
  * @brief Mathematical operation errors
  */
-enum class MathError { DivisionByZero, NegativeSquareRoot, DomainError, Overflow, Underflow };
+enum class MathError {
+    DIVISION_BY_ZERO,
+    NEGATIVE_SQUARE_ROOT,
+    DOMAIN_ERROR,
+    NUMERIC_OVERFLOW,
+    NUMERIC_UNDERFLOW
+};
 
 std::string to_string(MathError error) {
     switch (error) {
-        case MathError::DivisionByZero:
+        case MathError::DIVISION_BY_ZERO:
             return "Division by zero";
-        case MathError::NegativeSquareRoot:
+        case MathError::NEGATIVE_SQUARE_ROOT:
             return "Square root of negative number";
-        case MathError::DomainError:
+        case MathError::DOMAIN_ERROR:
             return "Value outside valid domain";
-        case MathError::Overflow:
+        case MathError::NUMERIC_OVERFLOW:
             return "Numeric overflow";
-        case MathError::Underflow:
+        case MathError::NUMERIC_UNDERFLOW:
             return "Numeric underflow";
     }
     return "Unknown math error";
@@ -180,13 +192,13 @@ std::string to_string(MathError error) {
  */
 auto safe_divide(double a, double b) -> Result<double, MathError> {
     if (b == 0.0) {
-        return Err(MathError::DivisionByZero);
+        return Err(MathError::DIVISION_BY_ZERO);
     }
 
     double result = a / b;
 
     if (std::isinf(result)) {
-        return Err(MathError::Overflow);
+        return Err(MathError::NUMERIC_OVERFLOW);
     }
 
     return Ok(result);
@@ -197,7 +209,7 @@ auto safe_divide(double a, double b) -> Result<double, MathError> {
  */
 auto safe_sqrt(double x) -> Result<double, MathError> {
     if (x < 0.0) {
-        return Err(MathError::NegativeSquareRoot);
+        return Err(MathError::NEGATIVE_SQUARE_ROOT);
     }
 
     return Ok(std::sqrt(x));
@@ -208,13 +220,13 @@ auto safe_sqrt(double x) -> Result<double, MathError> {
  */
 auto safe_log(double x) -> Result<double, MathError> {
     if (x <= 0.0) {
-        return Err(MathError::DomainError);
+        return Err(MathError::DOMAIN_ERROR);
     }
 
     double result = std::log(x);
 
     if (std::isinf(result) && result < 0) {
-        return Err(MathError::Underflow);
+        return Err(MathError::NUMERIC_UNDERFLOW);
     }
 
     return Ok(result);
@@ -275,24 +287,24 @@ void example_math_operations() {
  * @brief Network operation errors
  */
 enum class NetworkError {
-    ConnectionTimeout,
-    ServerError,
-    InvalidResponse,
-    AuthenticationFailed,
-    RateLimited
+    CONNECTION_TIMEOUT,
+    SERVER_ERROR,
+    INVALID_RESPONSE,
+    AUTHENTICATION_FAILED,
+    RATE_LIMITED
 };
 
 std::string to_string(NetworkError error) {
     switch (error) {
-        case NetworkError::ConnectionTimeout:
+        case NetworkError::CONNECTION_TIMEOUT:
             return "Connection timeout";
-        case NetworkError::ServerError:
+        case NetworkError::SERVER_ERROR:
             return "Server error";
-        case NetworkError::InvalidResponse:
+        case NetworkError::INVALID_RESPONSE:
             return "Invalid response format";
-        case NetworkError::AuthenticationFailed:
+        case NetworkError::AUTHENTICATION_FAILED:
             return "Authentication failed";
-        case NetworkError::RateLimited:
+        case NetworkError::RATE_LIMITED:
             return "Rate limited";
     }
     return "Unknown network error";
@@ -314,15 +326,15 @@ struct ApiResponse {
 auto make_request(const std::string& url) -> Result<ApiResponse, NetworkError> {
     // Simulate different outcomes based on URL
     if (url.find("timeout") != std::string::npos) {
-        return Err(NetworkError::ConnectionTimeout);
+        return Err(NetworkError::CONNECTION_TIMEOUT);
     }
 
     if (url.find("auth") != std::string::npos) {
-        return Err(NetworkError::AuthenticationFailed);
+        return Err(NetworkError::AUTHENTICATION_FAILED);
     }
 
     if (url.find("rate") != std::string::npos) {
-        return Err(NetworkError::RateLimited);
+        return Err(NetworkError::RATE_LIMITED);
     }
 
     if (url.find("error") != std::string::npos) {
@@ -338,12 +350,12 @@ auto make_request(const std::string& url) -> Result<ApiResponse, NetworkError> {
  */
 auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, NetworkError> {
     if (response.status_code != 200) {
-        return Err(NetworkError::ServerError);
+        return Err(NetworkError::SERVER_ERROR);
     }
 
     // Simplified JSON parsing (normally would use proper JSON library)
     if (response.body.find("success") == std::string::npos) {
-        return Err(NetworkError::InvalidResponse);
+        return Err(NetworkError::INVALID_RESPONSE);
     }
 
     // Extract numbers (simplified)
@@ -365,7 +377,7 @@ auto retry_with_backoff(OperationType&& operation, int max_retries = 3) -> declt
 
         // Check if error is retryable
         auto error = result.unwrap_err();
-        if (error == NetworkError::AuthenticationFailed) {
+        if (error == NetworkError::AUTHENTICATION_FAILED) {
             // Don't retry auth failures
             return result;
         }
@@ -423,24 +435,24 @@ void example_network_operations() {
  * @brief Database operation errors
  */
 enum class DbError {
-    ConnectionFailed,
-    QuerySyntaxError,
-    ConstraintViolation,
-    RecordNotFound,
-    TransactionFailed
+    CONNECTION_FAILED,
+    QUERY_SYNTAX_ERROR,
+    CONSTRAINT_VIOLATION,
+    RECORD_NOT_FOUND,
+    TRANSACTION_FAILED
 };
 
 std::string to_string(DbError error) {
     switch (error) {
-        case DbError::ConnectionFailed:
+        case DbError::CONNECTION_FAILED:
             return "Database connection failed";
-        case DbError::QuerySyntaxError:
+        case DbError::QUERY_SYNTAX_ERROR:
             return "SQL syntax error";
-        case DbError::ConstraintViolation:
+        case DbError::CONSTRAINT_VIOLATION:
             return "Database constraint violation";
-        case DbError::RecordNotFound:
+        case DbError::RECORD_NOT_FOUND:
             return "Record not found";
-        case DbError::TransactionFailed:
+        case DbError::TRANSACTION_FAILED:
             return "Transaction failed";
     }
     return "Unknown database error";
@@ -465,11 +477,11 @@ class DatabaseConnection {
   public:
     auto find_user(int user_id) -> Result<UserRecord, DbError> {
         if (user_id <= 0) {
-            return Err(DbError::QuerySyntaxError);
+            return Err(DbError::QUERY_SYNTAX_ERROR);
         }
 
         if (user_id == 404) {
-            return Err(DbError::RecordNotFound);
+            return Err(DbError::RECORD_NOT_FOUND);
         }
 
         // Simulate successful lookup
@@ -480,11 +492,11 @@ class DatabaseConnection {
 
     auto update_user(const UserRecord& user) -> Result<bool, DbError> {
         if (user.name.empty()) {
-            return Err(DbError::ConstraintViolation);
+            return Err(DbError::CONSTRAINT_VIOLATION);
         }
 
         if (user.email.find("@") == std::string::npos) {
-            return Err(DbError::ConstraintViolation);
+            return Err(DbError::CONSTRAINT_VIOLATION);
         }
 
         return Ok(true);
@@ -542,7 +554,7 @@ void example_database_operations() {
 /**
  * @brief Performance-critical computation errors
  */
-enum class ComputeError { InvalidInput, ComputationOverflow, MemoryExhausted };
+enum class ComputeError { INVALID_INPUT, COMPUTATION_OVERFLOW, MEMORY_EXHAUSTED };
 
 /**
  * @brief Hot path computation that must be fast
@@ -552,7 +564,7 @@ enum class ComputeError { InvalidInput, ComputationOverflow, MemoryExhausted };
  */
 auto fast_computation(const std::vector<double>& data) -> Result<double, ComputeError> {
     if (data.empty()) {
-        return Err(ComputeError::InvalidInput);
+        return Err(ComputeError::INVALID_INPUT);
     }
 
     double sum = 0.0;
@@ -560,7 +572,7 @@ auto fast_computation(const std::vector<double>& data) -> Result<double, Compute
         sum += value * value;  // Sum of squares
 
         if (std::isinf(sum)) {
-            return Err(ComputeError::ComputationOverflow);
+            return Err(ComputeError::COMPUTATION_OVERFLOW);
         }
     }
 
@@ -650,7 +662,7 @@ int legacy_parse_int(const char* str, int* result) {
 /**
  * @brief Error type for legacy integration
  */
-enum class ParseError { NullPointer, EmptyString, InvalidCharacters, Overflow };
+enum class ParseError { NULL_POINTER, EMPTY_STRING, INVALID_CHARACTERS, NUMERIC_OVERFLOW };
 
 /**
  * @brief Wrapper to convert legacy error codes to Result
@@ -663,15 +675,15 @@ auto safe_parse_int(const std::string& str) -> Result<int, ParseError> {
         case 0:
             return Ok(result);
         case -1:
-            return Err(ParseError::NullPointer);
+            return Err(ParseError::NULL_POINTER);
         case -2:
-            return Err(ParseError::EmptyString);
+            return Err(ParseError::EMPTY_STRING);
         case -3:
-            return Err(ParseError::InvalidCharacters);
+            return Err(ParseError::INVALID_CHARACTERS);
         case -4:
-            return Err(ParseError::Overflow);
+            return Err(ParseError::NUMERIC_OVERFLOW);
         default:
-            return Err(ParseError::InvalidCharacters);
+            return Err(ParseError::INVALID_CHARACTERS);
     }
 }
 
