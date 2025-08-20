@@ -1,0 +1,126 @@
+# Docker ignore file for Inference Systems Lab
+# Excludes files and directories that shouldn't be included in Docker build context
+
+# Build directories
+build/
+cmake-build-*/
+.cmake/
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+
+# Git directory (but keep .gitignore)
+.git/
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary and cache files
+*.tmp
+*.temp
+*.cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+
+# Log files
+*.log
+logs/
+*.out
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+
+# Python virtual environments
+venv/
+env/
+.env
+
+# Documentation build output
+docs/_build/
+docs/html/
+docs/latex/
+
+# Test and benchmark output
+test-results/
+benchmark-results/
+coverage/
+htmlcov/
+.coverage
+
+# Static analysis output
+static_analysis_report.json
+.clang-tidy-cache/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Local development files
+.local/
+.cache/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archives
+*.tar
+*.tar.gz
+*.tar.bz2
+*.zip
+*.rar
+*.7z
+
+# Large data files and models (should be in volumes)
+data/
+models/
+datasets/
+checkpoints/
+*.h5
+*.pth
+*.onnx
+*.trt
+*.pb
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Development scripts output
+*.pid
+*.sock
+
+# Docker files (avoid recursive copies)
+Dockerfile.dev
+docker-compose*.yml
+.dockerignore
+
+# README and documentation (included selectively in Dockerfile)
+# README.md (included)
+# docs/ (partially included)
+
+# Examples that might contain large files
+examples/data/
+examples/models/
+
+# Experimental directories
+experiments/data/
+experiments/models/
+experiments/output/

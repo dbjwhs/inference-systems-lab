@@ -1,0 +1,219 @@
+# Docker Compose configuration for Inference Systems Lab development
+# Provides CUDA development environment with TensorRT and ONNX Runtime
+#
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up -d
+#   docker-compose -f docker-compose.dev.yml exec dev bash
+#
+# Services:
+#   - dev: Main development container with full ML stack
+#   - jupyter: Jupyter Lab for interactive development (optional)
+#   - tensorboard: TensorBoard for training visualization (optional)
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Main Development Container
+  # =============================================================================
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: final
+    image: inference-lab:dev
+    container_name: inference-lab-dev
+    
+    # GPU access (requires nvidia-docker2)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # Environment variables
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CUDA_VISIBLE_DEVICES=all
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      
+    # Volume mappings
+    volumes:
+      # Project source code
+      - .:/workspace:cached
+      # Persistent data directory
+      - inference_lab_data:/data
+      # Model storage
+      - inference_lab_models:/models
+      # Persistent build cache
+      - inference_lab_build:/workspace/build
+      # Git configuration from host
+      - ~/.gitconfig:/home/developer/.gitconfig:ro
+      - ~/.ssh:/home/developer/.ssh:ro
+      # X11 forwarding for GUI applications (Linux only)
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      
+    # Port mappings for development servers
+    ports:
+      - "8888:8888"   # Jupyter Lab
+      - "6006:6006"   # TensorBoard
+      - "8080:8080"   # Development server
+      - "3000:3000"   # Alternative development server
+      
+    # Network configuration
+    networks:
+      - inference_lab_network
+      
+    # Keep container running
+    tty: true
+    stdin_open: true
+    
+    # Working directory
+    working_dir: /workspace
+    
+    # Custom startup command
+    command: >
+      bash -c "
+        echo '🚀 Starting Inference Systems Lab development environment...' &&
+        ./dev_setup.sh &&
+        echo '✅ Development environment ready!' &&
+        echo 'To get started:' &&
+        echo '  - Run: source cmake_config.sh' &&
+        echo '  - Configure: cmake_debug' &&
+        echo '  - Build: cmake --build build/debug' &&
+        exec /bin/bash
+      "
+
+  # =============================================================================
+  # Jupyter Lab Service (Optional)
+  # =============================================================================
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: final
+    image: inference-lab:dev
+    container_name: inference-lab-jupyter
+    
+    # GPU access
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=inference-lab-dev
+      
+    volumes:
+      - .:/workspace:cached
+      - inference_lab_data:/data
+      - inference_lab_models:/models
+      - jupyter_notebooks:/workspace/notebooks
+      
+    ports:
+      - "8889:8888"  # Alternative port to avoid conflicts
+      
+    networks:
+      - inference_lab_network
+      
+    working_dir: /workspace
+    
+    # Jupyter startup command
+    command: >
+      bash -c "
+        echo '🔬 Starting Jupyter Lab for ML development...' &&
+        mkdir -p notebooks &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root \
+          --NotebookApp.token=inference-lab-dev \
+          --NotebookApp.allow_origin='*' \
+          --NotebookApp.base_url='/lab'
+      "
+    
+    # Only start if explicitly requested
+    profiles:
+      - jupyter
+
+  # =============================================================================
+  # TensorBoard Service (Optional)
+  # =============================================================================
+  tensorboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: final
+    image: inference-lab:dev
+    container_name: inference-lab-tensorboard
+    
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      
+    volumes:
+      - .:/workspace:cached
+      - inference_lab_data:/data
+      - tensorboard_logs:/workspace/logs
+      
+    ports:
+      - "6007:6006"  # Alternative port
+      
+    networks:
+      - inference_lab_network
+      
+    working_dir: /workspace
+    
+    # TensorBoard startup command
+    command: >
+      bash -c "
+        echo '📊 Starting TensorBoard for training visualization...' &&
+        mkdir -p logs &&
+        tensorboard --logdir=logs --host=0.0.0.0 --port=6006
+      "
+    
+    # Only start if explicitly requested
+    profiles:
+      - tensorboard
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+networks:
+  inference_lab_network:
+    driver: bridge
+    name: inference-lab-network
+
+# =============================================================================
+# Volume Configuration
+# =============================================================================
+volumes:
+  # Persistent data storage
+  inference_lab_data:
+    driver: local
+    name: inference-lab-data
+    
+  # Model storage (can be large)
+  inference_lab_models:
+    driver: local
+    name: inference-lab-models
+    
+  # Build cache for faster rebuilds
+  inference_lab_build:
+    driver: local
+    name: inference-lab-build
+    
+  # Jupyter notebooks
+  jupyter_notebooks:
+    driver: local
+    name: inference-lab-notebooks
+    
+  # TensorBoard logs
+  tensorboard_logs:
+    driver: local
+    name: inference-lab-tensorboard-logs
