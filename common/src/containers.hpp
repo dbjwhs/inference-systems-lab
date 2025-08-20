@@ -53,13 +53,22 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <atomic>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <functional>
+#include <initializer_list>
 #include <memory>
 #include <new>
+#include <numeric>
 #include <optional>
+#include <random>
+#include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -1350,5 +1359,550 @@ auto LockFreeQueue<ElementType>::cas_tagged_pointer(std::atomic<TaggedPointer>& 
     return target.compare_exchange_weak(
         expected, desired, std::memory_order_release, std::memory_order_relaxed);
 }
+
+//=============================================================================
+// TensorContainer Implementation
+//=============================================================================
+
+/**
+ * @brief Multi-dimensional tensor container optimized for ML workloads
+ *
+ * TensorContainer provides efficient storage and access for multi-dimensional
+ * arrays commonly used in machine learning applications. It supports:
+ * - N-dimensional indexing with compile-time bounds checking
+ * - Memory-aligned storage for SIMD operations
+ * - Integration with memory pools for allocation efficiency
+ * - Broadcasting and reshaping operations
+ * - GPU memory compatibility (CUDA/OpenCL)
+ *
+ * @tparam ElementType The type of elements stored (typically float, double, int)
+ * @tparam Allocator Custom allocator (defaults to pool allocator)
+ */
+template <typename ElementType, typename Allocator = MemoryPool<ElementType>>
+class TensorContainer {
+  public:
+    using value_type = ElementType;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using reference = ElementType&;
+    using const_reference = const ElementType&;
+    using pointer = ElementType*;
+    using const_pointer = const ElementType*;
+    using iterator = pointer;
+    using const_iterator = const_pointer;
+
+    /**
+     * @brief Shape information and statistics
+     */
+    struct TensorInfo {
+        std::vector<size_type> shape;    ///< Dimensions of the tensor
+        std::vector<size_type> strides;  ///< Strides for each dimension
+        size_type total_elements;        ///< Total number of elements
+        size_type memory_usage_bytes;    ///< Memory usage in bytes
+        bool is_contiguous;              ///< Whether memory layout is contiguous
+        std::string dtype_name;          ///< Element type name
+    };
+
+    /**
+     * @brief Construct empty tensor
+     */
+    TensorContainer() noexcept : data_(nullptr), total_elements_(0), allocator_() {}
+
+    /**
+     * @brief Construct tensor with specified shape
+     * @param shape Dimensions of the tensor (e.g., {224, 224, 3} for RGB image)
+     * @param allocator Custom allocator instance
+     */
+    explicit TensorContainer(const std::vector<size_type>& shape, Allocator allocator = Allocator())
+        : shape_(shape), allocator_(std::move(allocator)) {
+        initialize_tensor();
+    }
+
+    /**
+     * @brief Construct tensor with initializer list shape
+     * @param shape Dimensions as initializer list
+     * @param allocator Custom allocator instance
+     */
+    TensorContainer(std::initializer_list<size_type> shape, Allocator allocator = Allocator())
+        : shape_(shape.begin(), shape.end()), allocator_(std::move(allocator)) {
+        initialize_tensor();
+    }
+
+    /**
+     * @brief Construct tensor with shape and fill value
+     * @param shape Dimensions of the tensor
+     * @param fill_value Value to initialize all elements
+     * @param allocator Custom allocator instance
+     */
+    TensorContainer(const std::vector<size_type>& shape,
+                    const ElementType& fill_value,
+                    Allocator allocator = Allocator())
+        : shape_(shape), allocator_(std::move(allocator)) {
+        initialize_tensor();
+        std::fill_n(data_, total_elements_, fill_value);
+    }
+
+    /**
+     * @brief Destructor - ensures proper cleanup
+     */
+    ~TensorContainer() {
+        if (data_) {
+            allocator_.deallocate(data_, total_elements_);
+        }
+    }
+
+    // Non-copyable but movable for performance
+    TensorContainer(const TensorContainer&) = delete;
+    TensorContainer& operator=(const TensorContainer&) = delete;
+
+    /**
+     * @brief Move constructor
+     */
+    TensorContainer(TensorContainer&& other) noexcept
+        : data_(std::exchange(other.data_, nullptr)),
+          shape_(std::move(other.shape_)),
+          strides_(std::move(other.strides_)),
+          total_elements_(std::exchange(other.total_elements_, 0)),
+          allocator_(std::move(other.allocator_)) {}
+
+    /**
+     * @brief Move assignment operator
+     */
+    TensorContainer& operator=(TensorContainer&& other) noexcept {
+        if (this != &other) {
+            if (data_) {
+                allocator_.deallocate(data_, total_elements_);
+            }
+            data_ = std::exchange(other.data_, nullptr);
+            shape_ = std::move(other.shape_);
+            strides_ = std::move(other.strides_);
+            total_elements_ = std::exchange(other.total_elements_, 0);
+            allocator_ = std::move(other.allocator_);
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Access element using multi-dimensional indices
+     * @param indices Indices for each dimension
+     * @return Reference to element at specified position
+     */
+    template <typename... Indices>
+    auto operator()(Indices... indices) -> reference {
+        static_assert(sizeof...(indices) <= 8, "Maximum 8 dimensions supported");
+        auto flat_index = compute_flat_index(indices...);
+        assert(flat_index < total_elements_ && "Index out of bounds");
+        return data_[flat_index];
+    }
+
+    /**
+     * @brief Access element using multi-dimensional indices (const)
+     */
+    template <typename... Indices>
+    auto operator()(Indices... indices) const -> const_reference {
+        static_assert(sizeof...(indices) <= 8, "Maximum 8 dimensions supported");
+        auto flat_index = compute_flat_index(indices...);
+        assert(flat_index < total_elements_ && "Index out of bounds");
+        return data_[flat_index];
+    }
+
+    /**
+     * @brief Access element using index vector
+     * @param indices Vector of indices for each dimension
+     * @return Reference to element at specified position
+     */
+    auto at(const std::vector<size_type>& indices) -> reference {
+        auto flat_index = compute_flat_index(indices);
+        if (flat_index >= total_elements_) {
+            throw std::out_of_range("Tensor index out of bounds");
+        }
+        return data_[flat_index];
+    }
+
+    /**
+     * @brief Access element using index vector (const)
+     */
+    auto at(const std::vector<size_type>& indices) const -> const_reference {
+        auto flat_index = compute_flat_index(indices);
+        if (flat_index >= total_elements_) {
+            throw std::out_of_range("Tensor index out of bounds");
+        }
+        return data_[flat_index];
+    }
+
+    /**
+     * @brief Get flat array access (useful for BLAS/LAPACK)
+     * @return Pointer to underlying data
+     */
+    auto data() noexcept -> pointer { return data_; }
+    auto data() const noexcept -> const_pointer { return data_; }
+
+    /**
+     * @brief Get tensor shape
+     * @return Vector containing size of each dimension
+     */
+    auto shape() const noexcept -> const std::vector<size_type>& { return shape_; }
+
+    /**
+     * @brief Get tensor strides
+     * @return Vector containing stride for each dimension
+     */
+    auto strides() const noexcept -> const std::vector<size_type>& { return strides_; }
+
+    /**
+     * @brief Get number of dimensions
+     * @return Number of dimensions in the tensor
+     */
+    auto ndim() const noexcept -> size_type { return shape_.size(); }
+
+    /**
+     * @brief Get total number of elements
+     * @return Total element count
+     */
+    auto size() const noexcept -> size_type { return total_elements_; }
+
+    /**
+     * @brief Check if tensor is empty
+     * @return True if tensor has no elements
+     */
+    auto empty() const noexcept -> bool { return total_elements_ == 0; }
+
+    /**
+     * @brief Get memory usage in bytes
+     * @return Total memory used by tensor data
+     */
+    auto memory_usage() const noexcept -> size_type {
+        return total_elements_ * sizeof(ElementType);
+    }
+
+    /**
+     * @brief Check if tensor memory is contiguous
+     * @return True if elements are stored contiguously
+     */
+    auto is_contiguous() const noexcept -> bool {
+        if (shape_.empty()) {
+            return true;
+        }
+
+        size_type expected_stride = 1;
+        for (auto i = static_cast<std::ptrdiff_t>(shape_.size() - 1); i >= 0; --i) {
+            if (strides_[static_cast<size_type>(i)] != expected_stride) {
+                return false;
+            }
+            expected_stride *= shape_[static_cast<size_type>(i)];
+        }
+        return true;
+    }
+
+    /**
+     * @brief Fill tensor with specified value
+     * @param value Value to fill all elements
+     */
+    void fill(const ElementType& value) { std::fill_n(data_, total_elements_, value); }
+
+    /**
+     * @brief Fill tensor with zeros
+     */
+    void zero() {
+        if constexpr (std::is_arithmetic_v<ElementType>) {
+            std::memset(data_, 0, memory_usage());
+        } else {
+            fill(ElementType{});
+        }
+    }
+
+    /**
+     * @brief Reshape tensor (total elements must remain same)
+     * @param new_shape New dimensions for the tensor
+     * @return True if reshape successful, false if incompatible
+     */
+    auto reshape(const std::vector<size_type>& new_shape) -> bool {
+        size_type new_total = 1;
+        for (auto dim : new_shape) {
+            if (dim == 0) {
+                return false;  // Invalid dimension
+            }
+            new_total *= dim;
+        }
+
+        if (new_total != total_elements_) {
+            return false;  // Incompatible total size
+        }
+
+        shape_ = new_shape;
+        compute_strides();
+        return true;
+    }
+
+    /**
+     * @brief Create a view of subset of data (no data copy)
+     * @param start_indices Starting indices for the slice
+     * @param sizes Size of slice in each dimension
+     * @return New tensor view (shares memory with original)
+     *
+     * @note This creates a view that shares memory with the original tensor.
+     *       Changes to the view affect the original tensor.
+     */
+    auto slice(const std::vector<size_type>& start_indices,
+               const std::vector<size_type>& sizes) const -> TensorContainer {
+        if (start_indices.size() != shape_.size() || sizes.size() != shape_.size()) {
+            throw std::invalid_argument("Slice dimensions must match tensor dimensions");
+        }
+
+        // Verify slice is within bounds
+        for (size_type i = 0; i < shape_.size(); ++i) {
+            if (start_indices[i] + sizes[i] > shape_[i]) {
+                throw std::out_of_range("Slice extends beyond tensor bounds");
+            }
+        }
+
+        // Create view tensor (shares memory)
+        TensorContainer view;
+        view.shape_ = sizes;
+        view.strides_ = strides_;  // Keep same strides
+        view.total_elements_ =
+            std::accumulate(sizes.begin(), sizes.end(), size_type{1}, std::multiplies<size_type>());
+
+        // Calculate offset to starting position
+        size_type offset = 0;
+        for (size_type i = 0; i < start_indices.size(); ++i) {
+            offset += start_indices[i] * strides_[i];
+        }
+        view.data_ = data_ + offset;
+
+        return view;
+    }
+
+    /**
+     * @brief Get iterator to beginning of data
+     */
+    auto begin() noexcept -> iterator { return data_; }
+    auto begin() const noexcept -> const_iterator { return data_; }
+    auto cbegin() const noexcept -> const_iterator { return data_; }
+
+    /**
+     * @brief Get iterator to end of data
+     */
+    auto end() noexcept -> iterator { return data_ + total_elements_; }
+    auto end() const noexcept -> const_iterator { return data_ + total_elements_; }
+    auto cend() const noexcept -> const_iterator { return data_ + total_elements_; }
+
+    /**
+     * @brief Get comprehensive tensor information
+     * @return TensorInfo struct with shape, strides, and metadata
+     */
+    auto get_info() const -> TensorInfo {
+        return TensorInfo{.shape = shape_,
+                          .strides = strides_,
+                          .total_elements = total_elements_,
+                          .memory_usage_bytes = memory_usage(),
+                          .is_contiguous = is_contiguous(),
+                          .dtype_name = get_dtype_name()};
+    }
+
+    /**
+     * @brief Copy data from another tensor (must have same shape)
+     * @param other Source tensor to copy from
+     * @return True if copy successful
+     */
+    auto copy_from(const TensorContainer& other) -> bool {
+        if (shape_ != other.shape_) {
+            return false;
+        }
+
+        if (is_contiguous() && other.is_contiguous()) {
+            // Fast path: direct memory copy
+            std::memcpy(data_, other.data_, memory_usage());
+        } else {
+            // Slow path: element-by-element copy
+            std::copy(other.begin(), other.end(), begin());
+        }
+        return true;
+    }
+
+    /**
+     * @brief Get allocator instance
+     * @return Reference to allocator
+     */
+    auto get_allocator() const noexcept -> const Allocator& { return allocator_; }
+
+  private:
+    pointer data_{nullptr};                      ///< Pointer to tensor data
+    std::vector<size_type> shape_;               ///< Tensor dimensions
+    std::vector<size_type> strides_;             ///< Memory strides for each dimension
+    size_type total_elements_{0};                ///< Total number of elements
+    [[no_unique_address]] Allocator allocator_;  ///< Memory allocator
+
+    /**
+     * @brief Initialize tensor after shape is set
+     */
+    void initialize_tensor() {
+        if (shape_.empty()) {
+            total_elements_ = 0;
+            data_ = nullptr;
+            return;
+        }
+
+        // Calculate total elements
+        total_elements_ = 1;
+        for (auto dim : shape_) {
+            if (dim == 0) {
+                throw std::invalid_argument("Tensor dimension cannot be zero");
+            }
+            total_elements_ *= dim;
+        }
+
+        // Allocate memory
+        data_ = allocator_.allocate(total_elements_);
+        if (!data_) {
+            throw std::bad_alloc();
+        }
+
+        // Compute strides for row-major layout
+        compute_strides();
+    }
+
+    /**
+     * @brief Compute memory strides for current shape
+     */
+    void compute_strides() {
+        strides_.resize(shape_.size());
+        if (shape_.empty()) {
+            return;
+        }
+
+        // Row-major order: rightmost dimension has stride 1
+        strides_.back() = 1;
+        for (auto i = static_cast<std::ptrdiff_t>(shape_.size() - 2); i >= 0; --i) {
+            auto idx = static_cast<size_type>(i);
+            strides_[idx] = strides_[idx + 1] * shape_[idx + 1];
+        }
+    }
+
+    /**
+     * @brief Compute flat index from multi-dimensional indices
+     */
+    template <typename... Indices>
+    auto compute_flat_index(Indices... indices) const -> size_type {
+        std::array<size_type, sizeof...(indices)> idx_array = {static_cast<size_type>(indices)...};
+
+        if (idx_array.size() != shape_.size()) {
+            throw std::invalid_argument("Number of indices must match tensor dimensions");
+        }
+
+        size_type flat_index = 0;
+        for (size_type i = 0; i < idx_array.size(); ++i) {
+            if (idx_array[i] >= shape_[i]) {
+                throw std::out_of_range("Index out of bounds");
+            }
+            flat_index += idx_array[i] * strides_[i];
+        }
+        return flat_index;
+    }
+
+    /**
+     * @brief Compute flat index from vector of indices
+     */
+    auto compute_flat_index(const std::vector<size_type>& indices) const -> size_type {
+        if (indices.size() != shape_.size()) {
+            throw std::invalid_argument("Number of indices must match tensor dimensions");
+        }
+
+        size_type flat_index = 0;
+        for (size_type i = 0; i < indices.size(); ++i) {
+            if (indices[i] >= shape_[i]) {
+                throw std::out_of_range("Index out of bounds");
+            }
+            flat_index += indices[i] * strides_[i];
+        }
+        return flat_index;
+    }
+
+    /**
+     * @brief Get string representation of element type
+     */
+    auto get_dtype_name() const -> std::string {
+        if constexpr (std::is_same_v<ElementType, float>) {
+            return "float32";
+        } else if constexpr (std::is_same_v<ElementType, double>) {
+            return "float64";
+        } else if constexpr (std::is_same_v<ElementType, int32_t>) {
+            return "int32";
+        } else if constexpr (std::is_same_v<ElementType, int64_t>) {
+            return "int64";
+        } else if constexpr (std::is_same_v<ElementType, uint8_t>) {
+            return "uint8";
+        } else {
+            return "unknown";
+        }
+    }
+};
+
+/**
+ * @brief Type aliases for common tensor types
+ */
+using FloatTensor = TensorContainer<float>;
+using DoubleTensor = TensorContainer<double>;
+using IntTensor = TensorContainer<int32_t>;
+using LongTensor = TensorContainer<int64_t>;
+using ByteTensor = TensorContainer<uint8_t>;
+
+/**
+ * @brief Utility functions for tensor operations
+ */
+namespace tensor_utils {
+
+/**
+ * @brief Create tensor filled with zeros
+ * @param shape Dimensions of the tensor
+ * @return Zero-initialized tensor
+ */
+template <typename ElementType>
+auto zeros(const std::vector<std::size_t>& shape) -> TensorContainer<ElementType> {
+    TensorContainer<ElementType> tensor(shape);
+    tensor.zero();
+    return tensor;
+}
+
+/**
+ * @brief Create tensor filled with ones
+ * @param shape Dimensions of the tensor
+ * @return One-initialized tensor
+ */
+template <typename ElementType>
+auto ones(const std::vector<std::size_t>& shape) -> TensorContainer<ElementType> {
+    TensorContainer<ElementType> tensor(shape);
+    tensor.fill(ElementType{1});
+    return tensor;
+}
+
+/**
+ * @brief Create tensor with random values (requires <random>)
+ * @param shape Dimensions of the tensor
+ * @param min_val Minimum random value
+ * @param max_val Maximum random value
+ * @return Random-initialized tensor
+ */
+template <typename ElementType>
+auto random(const std::vector<std::size_t>& shape,
+            ElementType min_val = ElementType{0},
+            ElementType max_val = ElementType{1}) -> TensorContainer<ElementType> {
+    TensorContainer<ElementType> tensor(shape);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    if constexpr (std::is_floating_point_v<ElementType>) {
+        std::uniform_real_distribution<ElementType> dist(min_val, max_val);
+        std::generate(tensor.begin(), tensor.end(), [&]() { return dist(gen); });
+    } else {
+        std::uniform_int_distribution<ElementType> dist(min_val, max_val);
+        std::generate(tensor.begin(), tensor.end(), [&]() { return dist(gen); });
+    }
+
+    return tensor;
+}
+
+}  // namespace tensor_utils
 
 }  // namespace inference_lab::common
