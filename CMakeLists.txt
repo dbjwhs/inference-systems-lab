@@ -25,6 +25,7 @@ configure_packages()
 
 include(CompilerOptions)
 configure_compiler_options()
+make_strict_warnings_available()
 
 include(Sanitizers)
 configure_sanitizers()

@@ -22,6 +22,7 @@
  */
 
 #include <chrono>
+#include <climits>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -98,7 +99,7 @@ static auto read_file(const std::string& filename) -> Result<std::string, FileEr
 /**
  * @brief Parse configuration from file content
  */
-auto parse_config(const std::string& content) -> Result<std::vector<std::string>, FileError> {
+static auto parse_config(const std::string& content) -> Result<std::vector<std::string>, FileError> {
     if (content.empty()) {
         return Err(FileError::INVALID_FORMAT);
     }
@@ -294,7 +295,7 @@ enum class NetworkError : std::uint8_t {
     RATE_LIMITED
 };
 
-static std::string to_string(NetworkError error) {
+[[maybe_unused]] static std::string to_string(NetworkError error) {
     switch (error) {
         case NetworkError::CONNECTION_TIMEOUT:
             return "Connection timeout";
@@ -348,7 +349,7 @@ static auto make_request(const std::string& url) -> Result<ApiResponse, NetworkE
 /**
  * @brief Parse API response and extract data
  */
-auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, NetworkError> {
+static auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, NetworkError> {
     if (response.status_code_ != 200) {
         return Err(NetworkError::SERVER_ERROR);
     }
@@ -369,7 +370,7 @@ auto parse_response(const ApiResponse& response) -> Result<std::vector<int>, Net
 template <typename OperationType>
 static auto retry_with_backoff(OperationType&& operation, int max_retries = 3)
     -> decltype(operation()) {
-    for (int attempt = 0; attempt < max_retries; ++attempt) {
+    for (size_t attempt = 0; attempt < static_cast<size_t>(max_retries); ++attempt) {
         auto result = operation();
 
         if (result.is_ok()) {
@@ -383,7 +384,7 @@ static auto retry_with_backoff(OperationType&& operation, int max_retries = 3)
             return result;
         }
 
-        if (attempt < max_retries - 1) {
+        if (attempt < static_cast<size_t>(max_retries) - 1) {
             std::cout << "Attempt " << (attempt + 1) << " failed: " << to_string(error)
                       << ". Retrying..." << std::endl;
 
@@ -583,7 +584,7 @@ static auto fast_computation(const std::vector<double>& data) -> Result<double, 
 /**
  * @brief Batch processing with early termination on error
  */
-auto process_batch(std::vector<std::vector<double>>& batches)
+static auto process_batch(std::vector<std::vector<double>>& batches)
     -> Result<std::vector<double>, ComputeError> {
     std::vector<double> results;
     results.reserve(batches.size());

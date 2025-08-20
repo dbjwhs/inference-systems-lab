@@ -42,6 +42,9 @@ target_link_libraries(common
     CapnProto::capnp
 )
 
+# Apply strict warnings to our common library
+apply_strict_warnings(common)
+
 # Demo executable
 add_executable(demo_logging
     examples/demo_logging.cpp
@@ -50,6 +53,7 @@ add_executable(demo_logging
 target_link_libraries(demo_logging
     common
 )
+apply_strict_warnings(demo_logging)
 
 # Enable testing
 enable_testing()
@@ -73,6 +77,7 @@ target_link_libraries(logging_tests
     common
     ${GTEST_MAIN_TARGET}
 )
+apply_strict_warnings(logging_tests)
 
 # Add test to CTest
 add_test(NAME LoggingUnitTests COMMAND logging_tests)
@@ -86,6 +91,7 @@ target_link_libraries(result_tests
     common
     ${GTEST_MAIN_TARGET}
 )
+apply_strict_warnings(result_tests)
 
 # Add Result tests to CTest
 add_test(NAME ResultUnitTests COMMAND result_tests)
@@ -99,6 +105,7 @@ target_link_libraries(serialization_tests
     common
     ${GTEST_MAIN_TARGET}
 )
+apply_strict_warnings(serialization_tests)
 
 # Add Serialization tests to CTest
 add_test(NAME SerializationUnitTests COMMAND serialization_tests)
@@ -112,6 +119,7 @@ target_link_libraries(container_tests
     common
     ${GTEST_MAIN_TARGET}
 )
+apply_strict_warnings(container_tests)
 
 # Add Container tests to CTest
 add_test(NAME ContainerUnitTests COMMAND container_tests)
@@ -125,6 +133,7 @@ target_link_libraries(ml_types_tests
     common
     ${GTEST_MAIN_TARGET}
 )
+apply_strict_warnings(ml_types_tests)
 
 # Add ML types tests to CTest
 add_test(NAME MLTypesUnitTests COMMAND ml_types_tests)
@@ -137,6 +146,7 @@ add_executable(inference_types_demo
 target_link_libraries(inference_types_demo
     common
 )
+apply_strict_warnings(inference_types_demo)
 
 # Schema evolution demo
 add_executable(schema_evolution_demo
@@ -146,6 +156,7 @@ add_executable(schema_evolution_demo
 target_link_libraries(schema_evolution_demo
     common
 )
+apply_strict_warnings(schema_evolution_demo)
 
 # Result usage examples
 add_executable(result_usage_examples
@@ -155,6 +166,7 @@ add_executable(result_usage_examples
 target_link_libraries(result_usage_examples
     common
 )
+apply_strict_warnings(result_usage_examples)
 
 # Result benchmarks (only if Google Benchmark is available)
 if(TARGET benchmark::benchmark)
@@ -176,6 +188,7 @@ if(TARGET benchmark::benchmark)
         common
         benchmark::benchmark
     )
+    apply_strict_warnings(container_benchmarks)
 
     # Create benchmark alias for the main benchmarks target
     add_custom_target(common_benchmarks DEPENDS result_benchmarks container_benchmarks)
@@ -191,6 +204,7 @@ else()
             common
             benchmark::benchmark
         )
+        apply_strict_warnings(result_benchmarks)
 
         add_executable(container_benchmarks
             benchmarks/container_benchmarks.cpp
@@ -200,6 +214,7 @@ else()
             common
             benchmark::benchmark
         )
+        apply_strict_warnings(container_benchmarks)
 
         add_custom_target(common_benchmarks DEPENDS result_benchmarks container_benchmarks)
     else()

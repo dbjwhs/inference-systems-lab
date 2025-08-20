@@ -187,20 +187,21 @@ class Logger {
     }
 };
 
-// C++17 compatible template-based logging macros
-// Accept GNU extension for broader compatibility but suppress warnings
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+// Modern C++17 logging interface - use inline functions instead of macros to avoid variadic issues
+inline void LOG_BASE_PRINT(LogLevel level, const std::string& message) {
+    Logger::get_instance().print_log(level, message);
+}
 
-#define LOG_BASE_PRINT(level, message, ...) \
-    Logger::get_instance().print_log(level, message, ##__VA_ARGS__)
-#define LOG_INFO_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::INFO, message, ##__VA_ARGS__)
-#define LOG_NORMAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::NORMAL, message, ##__VA_ARGS__)
-#define LOG_WARNING_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::WARNING, message, ##__VA_ARGS__)
-#define LOG_DEBUG_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::DEBUG, message, ##__VA_ARGS__)
-#define LOG_ERROR_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::ERROR, message, ##__VA_ARGS__)
-#define LOG_CRITICAL_PRINT(message, ...) LOG_BASE_PRINT(LogLevel::CRITICAL, message, ##__VA_ARGS__)
+template<typename... Args>
+inline void LOG_BASE_PRINT(LogLevel level, const std::string& format, Args&&... args) {
+    Logger::get_instance().print_log(level, format, std::forward<Args>(args)...);
+}
 
-#pragma GCC diagnostic pop
+#define LOG_INFO_PRINT(...) LOG_BASE_PRINT(LogLevel::INFO, __VA_ARGS__)
+#define LOG_NORMAL_PRINT(...) LOG_BASE_PRINT(LogLevel::NORMAL, __VA_ARGS__)
+#define LOG_WARNING_PRINT(...) LOG_BASE_PRINT(LogLevel::WARNING, __VA_ARGS__)
+#define LOG_DEBUG_PRINT(...) LOG_BASE_PRINT(LogLevel::DEBUG, __VA_ARGS__)
+#define LOG_ERROR_PRINT(...) LOG_BASE_PRINT(LogLevel::ERROR, __VA_ARGS__)
+#define LOG_CRITICAL_PRINT(...) LOG_BASE_PRINT(LogLevel::CRITICAL, __VA_ARGS__)
 
 }  // namespace inference_lab::common
