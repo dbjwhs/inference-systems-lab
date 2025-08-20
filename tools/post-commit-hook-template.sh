@@ -48,8 +48,16 @@ update_documentation() {
     cd "$PROJECT_ROOT"
     
     # Generate documentation with coverage check
-    if python3 "$TOOLS_DIR/check_documentation.py" --generate --check --coverage-threshold 70.0 2>/dev/null; then
-        log_success "Documentation generated successfully"
+    if python3 "$TOOLS_DIR/check_documentation.py" --generate --copy --stage --coverage-threshold 70.0 2>/dev/null; then
+        log_success "Documentation generated and copied to docs/ directory"
+        
+        # Check if files were staged
+        if git diff --cached --quiet; then
+            log_info "No documentation changes to commit"
+        else
+            log_info "📝 Documentation files have been updated and staged"
+            log_info "💡 Consider running: git commit -m \"Update API documentation\""
+        fi
     else
         log_warning "Documentation generated with warnings (see full output with --verbose)"
     fi
