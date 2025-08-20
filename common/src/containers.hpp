@@ -473,4 +473,410 @@ void MemoryPool<ElementType>::release_lock() const noexcept {
     modification_lock_.clear(std::memory_order_release);
 }
 
+/**
+ * @brief Lock-free ring buffer for streaming inference data
+ * @tparam ElementType Type of elements to store (e.g., InferenceRequest, BatchData)
+ *
+ * High-performance ring buffer designed for streaming ML inference scenarios where:
+ * - Continuous data flow needs efficient buffering
+ * - Single producer/single consumer patterns are common
+ * - Low latency is critical for real-time inference
+ * - Memory allocation should be avoided during operation
+ *
+ * Features:
+ * - Lock-free single producer/single consumer operations
+ * - O(1) push and pop operations
+ * - Fixed capacity with overflow detection
+ * - Cache-friendly circular buffer design
+ * - Wait-free operations for maximum throughput
+ * - Memory alignment optimized for cache lines
+ *
+ * Thread Safety:
+ * Safe for single producer/single consumer scenarios.
+ * Multiple producers or consumers require external synchronization.
+ */
+template <typename ElementType>
+class RingBuffer {
+  public:
+    /**
+     * @brief Construct ring buffer with specified capacity
+     * @param capacity Maximum number of elements (must be power of 2)
+     */
+    explicit RingBuffer(std::size_t capacity);
+
+    /**
+     * @brief Destructor - properly destroys all elements
+     */
+    ~RingBuffer();
+
+    // Non-copyable but movable
+    RingBuffer(const RingBuffer&) = delete;
+    auto operator=(const RingBuffer&) -> RingBuffer& = delete;
+    RingBuffer(RingBuffer&& other) noexcept;
+    auto operator=(RingBuffer&& other) noexcept -> RingBuffer&;
+
+    /**
+     * @brief Push element to buffer (producer operation)
+     * @param element Element to add
+     * @return true if successful, false if buffer is full
+     *
+     * This operation is wait-free and safe for single producer.
+     * Returns false if buffer is full (producer should handle backpressure).
+     */
+    auto push(const ElementType& element) -> bool;
+
+    /**
+     * @brief Push element to buffer with move semantics
+     * @param element Element to move into buffer
+     * @return true if successful, false if buffer is full
+     */
+    auto push(ElementType&& element) -> bool;
+
+    /**
+     * @brief Emplace element directly in buffer
+     * @tparam Args Constructor argument types
+     * @param args Arguments to forward to ElementType constructor
+     * @return true if successful, false if buffer is full
+     */
+    template <typename... Args>
+    auto emplace(Args&&... args) -> bool;
+
+    /**
+     * @brief Pop element from buffer (consumer operation)
+     * @return Optional containing element if available, nullopt if empty
+     *
+     * This operation is wait-free and safe for single consumer.
+     * Returns nullopt if buffer is empty (consumer should handle starvation).
+     */
+    auto pop() -> std::optional<ElementType>;
+
+    /**
+     * @brief Try to pop element without copying
+     * @param output Reference to store popped element
+     * @return true if element was popped, false if buffer empty
+     *
+     * More efficient than pop() when you want to avoid copy/move.
+     */
+    auto try_pop(ElementType& output) -> bool;
+
+    /**
+     * @brief Get current buffer size
+     * @return Number of elements currently in buffer
+     *
+     * Note: This is an approximation in concurrent scenarios.
+     */
+    auto size() const noexcept -> std::size_t;
+
+    /**
+     * @brief Check if buffer is empty
+     * @return true if empty, false otherwise
+     */
+    auto empty() const noexcept -> bool;
+
+    /**
+     * @brief Check if buffer is full
+     * @return true if full, false otherwise
+     */
+    auto full() const noexcept -> bool;
+
+    /**
+     * @brief Get buffer capacity
+     * @return Maximum number of elements
+     */
+    auto capacity() const noexcept -> std::size_t;
+
+    /**
+     * @brief Clear all elements from buffer
+     *
+     * WARNING: Not thread-safe. Only call when no concurrent access.
+     */
+    void clear() noexcept;
+
+    /**
+     * @brief Get buffer utilization statistics
+     * @return BufferStats with usage information
+     */
+    struct BufferStats {
+        std::size_t current_size;       ///< Current number of elements
+        std::size_t total_capacity;     ///< Maximum capacity
+        std::size_t total_pushes;       ///< Total push operations attempted
+        std::size_t successful_pushes;  ///< Successful push operations
+        std::size_t total_pops;         ///< Total pop operations attempted
+        std::size_t successful_pops;    ///< Successful pop operations
+        double utilization_ratio;       ///< current_size / total_capacity
+    };
+
+    auto get_stats() const noexcept -> BufferStats;
+
+  private:
+    // Buffer configuration
+    std::size_t capacity_;
+    std::size_t mask_;  // capacity - 1 (for power-of-2 optimization)
+
+    // Buffer storage
+    std::unique_ptr<ElementType[]> buffer_;
+
+    // Atomic indices for lock-free operation
+    alignas(64) std::atomic<std::size_t> head_{0};  // Producer index
+    alignas(64) std::atomic<std::size_t> tail_{0};  // Consumer index
+
+    // Statistics (relaxed memory order for performance)
+    mutable std::atomic<std::size_t> total_pushes_{0};
+    mutable std::atomic<std::size_t> successful_pushes_{0};
+    mutable std::atomic<std::size_t> total_pops_{0};
+    mutable std::atomic<std::size_t> successful_pops_{0};
+
+    /**
+     * @brief Check if capacity is power of 2
+     * @param n Number to check
+     * @return true if power of 2, false otherwise
+     */
+    static auto is_power_of_two(std::size_t n) noexcept -> bool;
+
+    /**
+     * @brief Get next index in ring buffer
+     * @param index Current index
+     * @return Next index (wrapped around)
+     */
+    auto next_index(std::size_t index) const noexcept -> std::size_t;
+};
+
+// Template implementation
+
+template <typename ElementType>
+RingBuffer<ElementType>::RingBuffer(std::size_t capacity) : capacity_(capacity) {
+    if (capacity == 0) {
+        throw std::invalid_argument("RingBuffer capacity must be greater than 0");
+    }
+
+    if (!is_power_of_two(capacity)) {
+        // Find next power of 2
+        std::size_t power_of_2 = 1;
+        while (power_of_2 < capacity) {
+            power_of_2 <<= 1;
+        }
+        capacity_ = power_of_2;
+    }
+
+    mask_ = capacity_ - 1;
+    buffer_ = std::make_unique<ElementType[]>(capacity_);
+}
+
+template <typename ElementType>
+RingBuffer<ElementType>::~RingBuffer() {
+    // Destructor for elements handled automatically by unique_ptr
+}
+
+template <typename ElementType>
+RingBuffer<ElementType>::RingBuffer(RingBuffer&& other) noexcept
+    : capacity_(other.capacity_),
+      mask_(other.mask_),
+      buffer_(std::move(other.buffer_)),
+      head_(other.head_.load()),
+      tail_(other.tail_.load()),
+      total_pushes_(other.total_pushes_.load()),
+      successful_pushes_(other.successful_pushes_.load()),
+      total_pops_(other.total_pops_.load()),
+      successful_pops_(other.successful_pops_.load()) {
+    other.capacity_ = 0;
+    other.mask_ = 0;
+    other.head_ = 0;
+    other.tail_ = 0;
+    other.total_pushes_ = 0;
+    other.successful_pushes_ = 0;
+    other.total_pops_ = 0;
+    other.successful_pops_ = 0;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::operator=(RingBuffer&& other) noexcept -> RingBuffer& {
+    if (this != &other) {
+        capacity_ = other.capacity_;
+        mask_ = other.mask_;
+        buffer_ = std::move(other.buffer_);
+        head_ = other.head_.load();
+        tail_ = other.tail_.load();
+        total_pushes_ = other.total_pushes_.load();
+        successful_pushes_ = other.successful_pushes_.load();
+        total_pops_ = other.total_pops_.load();
+        successful_pops_ = other.successful_pops_.load();
+
+        other.capacity_ = 0;
+        other.mask_ = 0;
+        other.head_ = 0;
+        other.tail_ = 0;
+        other.total_pushes_ = 0;
+        other.successful_pushes_ = 0;
+        other.total_pops_ = 0;
+        other.successful_pops_ = 0;
+    }
+    return *this;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::push(const ElementType& element) -> bool {
+    total_pushes_.fetch_add(1, std::memory_order_relaxed);
+
+    const auto current_head = head_.load(std::memory_order_relaxed);
+    const auto next_head = next_index(current_head);
+
+    // Check if buffer is full (next head would equal tail)
+    if (next_head == tail_.load(std::memory_order_acquire)) {
+        return false;  // Buffer full
+    }
+
+    // Store element
+    buffer_[current_head] = element;
+
+    // Update head index (release semantics ensures element write is visible)
+    head_.store(next_head, std::memory_order_release);
+
+    successful_pushes_.fetch_add(1, std::memory_order_relaxed);
+    return true;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::push(ElementType&& element) -> bool {
+    total_pushes_.fetch_add(1, std::memory_order_relaxed);
+
+    const auto current_head = head_.load(std::memory_order_relaxed);
+    const auto next_head = next_index(current_head);
+
+    // Check if buffer is full
+    if (next_head == tail_.load(std::memory_order_acquire)) {
+        return false;  // Buffer full
+    }
+
+    // Move element
+    buffer_[current_head] = std::move(element);
+
+    // Update head index
+    head_.store(next_head, std::memory_order_release);
+
+    successful_pushes_.fetch_add(1, std::memory_order_relaxed);
+    return true;
+}
+
+template <typename ElementType>
+template <typename... Args>
+auto RingBuffer<ElementType>::emplace(Args&&... args) -> bool {
+    total_pushes_.fetch_add(1, std::memory_order_relaxed);
+
+    const auto current_head = head_.load(std::memory_order_relaxed);
+    const auto next_head = next_index(current_head);
+
+    // Check if buffer is full
+    if (next_head == tail_.load(std::memory_order_acquire)) {
+        return false;  // Buffer full
+    }
+
+    // Construct element in-place
+    buffer_[current_head] = ElementType(std::forward<Args>(args)...);
+
+    // Update head index
+    head_.store(next_head, std::memory_order_release);
+
+    successful_pushes_.fetch_add(1, std::memory_order_relaxed);
+    return true;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::pop() -> std::optional<ElementType> {
+    total_pops_.fetch_add(1, std::memory_order_relaxed);
+
+    const auto current_tail = tail_.load(std::memory_order_relaxed);
+
+    // Check if buffer is empty
+    if (current_tail == head_.load(std::memory_order_acquire)) {
+        return std::nullopt;  // Buffer empty
+    }
+
+    // Get element
+    ElementType result = std::move(buffer_[current_tail]);
+
+    // Update tail index
+    tail_.store(next_index(current_tail), std::memory_order_release);
+
+    successful_pops_.fetch_add(1, std::memory_order_relaxed);
+    return result;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::try_pop(ElementType& output) -> bool {
+    total_pops_.fetch_add(1, std::memory_order_relaxed);
+
+    const auto current_tail = tail_.load(std::memory_order_relaxed);
+
+    // Check if buffer is empty
+    if (current_tail == head_.load(std::memory_order_acquire)) {
+        return false;  // Buffer empty
+    }
+
+    // Move element to output
+    output = std::move(buffer_[current_tail]);
+
+    // Update tail index
+    tail_.store(next_index(current_tail), std::memory_order_release);
+
+    successful_pops_.fetch_add(1, std::memory_order_relaxed);
+    return true;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::size() const noexcept -> std::size_t {
+    const auto head = head_.load(std::memory_order_acquire);
+    const auto tail = tail_.load(std::memory_order_acquire);
+    return (head - tail) & mask_;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::empty() const noexcept -> bool {
+    return head_.load(std::memory_order_acquire) == tail_.load(std::memory_order_acquire);
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::full() const noexcept -> bool {
+    const auto head = head_.load(std::memory_order_acquire);
+    const auto tail = tail_.load(std::memory_order_acquire);
+    return next_index(head) == tail;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::capacity() const noexcept -> std::size_t {
+    return capacity_;
+}
+
+template <typename ElementType>
+void RingBuffer<ElementType>::clear() noexcept {
+    head_.store(0, std::memory_order_relaxed);
+    tail_.store(0, std::memory_order_relaxed);
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::get_stats() const noexcept -> BufferStats {
+    const auto current_size = size();
+    const auto total_pushes = total_pushes_.load(std::memory_order_relaxed);
+    const auto successful_pushes = successful_pushes_.load(std::memory_order_relaxed);
+    const auto total_pops = total_pops_.load(std::memory_order_relaxed);
+    const auto successful_pops = successful_pops_.load(std::memory_order_relaxed);
+
+    return BufferStats{.current_size = current_size,
+                       .total_capacity = capacity_,
+                       .total_pushes = total_pushes,
+                       .successful_pushes = successful_pushes,
+                       .total_pops = total_pops,
+                       .successful_pops = successful_pops,
+                       .utilization_ratio = static_cast<double>(current_size) / capacity_};
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::is_power_of_two(std::size_t n) noexcept -> bool {
+    return n > 0 && (n & (n - 1)) == 0;
+}
+
+template <typename ElementType>
+auto RingBuffer<ElementType>::next_index(std::size_t index) const noexcept -> std::size_t {
+    return (index + 1) & mask_;
+}
+
 }  // namespace inference_lab::common
