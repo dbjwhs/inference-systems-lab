@@ -115,10 +115,18 @@ add_executable(container_tests
     tests/test_containers.cpp
 )
 
+# Link atomic library conditionally (not needed on macOS with modern Clang)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR 
+   (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT APPLE))
+    set(ATOMIC_LIBRARY atomic)
+else()
+    set(ATOMIC_LIBRARY)
+endif()
+
 target_link_libraries(container_tests
     common
     ${GTEST_MAIN_TARGET}
-    atomic
+    ${ATOMIC_LIBRARY}
 )
 apply_strict_warnings(container_tests)
 
@@ -189,7 +197,7 @@ if(TARGET benchmark::benchmark)
     target_link_libraries(container_benchmarks
         common
         benchmark::benchmark
-        atomic
+        ${ATOMIC_LIBRARY}
     )
     apply_strict_warnings(container_benchmarks)
 
@@ -216,7 +224,7 @@ else()
         target_link_libraries(container_benchmarks
             common
             benchmark::benchmark
-            atomic
+            ${ATOMIC_LIBRARY}
         )
         apply_strict_warnings(container_benchmarks)
 
