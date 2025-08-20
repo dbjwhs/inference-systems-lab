@@ -103,6 +103,19 @@ target_link_libraries(serialization_tests
 # Add Serialization tests to CTest
 add_test(NAME SerializationUnitTests COMMAND serialization_tests)
 
+# Container tests
+add_executable(container_tests
+    tests/test_containers.cpp
+)
+
+target_link_libraries(container_tests
+    common
+    ${GTEST_MAIN_TARGET}
+)
+
+# Add Container tests to CTest
+add_test(NAME ContainerUnitTests COMMAND container_tests)
+
 # Inference types demo
 add_executable(inference_types_demo
     examples/inference_types_demo.cpp

@@ -1406,14 +1406,16 @@ class TensorContainer {
     /**
      * @brief Construct empty tensor
      */
-    TensorContainer() noexcept : data_(nullptr), total_elements_(0), allocator_() {}
+    TensorContainer()
+        : data_(nullptr), total_elements_(0), allocator_(MemoryPool<ElementType>(1024)) {}
 
     /**
      * @brief Construct tensor with specified shape
      * @param shape Dimensions of the tensor (e.g., {224, 224, 3} for RGB image)
      * @param allocator Custom allocator instance
      */
-    explicit TensorContainer(const std::vector<size_type>& shape, Allocator allocator = Allocator())
+    explicit TensorContainer(const std::vector<size_type>& shape,
+                             Allocator allocator = MemoryPool<ElementType>(1024))
         : shape_(shape), allocator_(std::move(allocator)) {
         initialize_tensor();
     }
@@ -1423,7 +1425,8 @@ class TensorContainer {
      * @param shape Dimensions as initializer list
      * @param allocator Custom allocator instance
      */
-    TensorContainer(std::initializer_list<size_type> shape, Allocator allocator = Allocator())
+    TensorContainer(std::initializer_list<size_type> shape,
+                    Allocator allocator = MemoryPool<ElementType>(1024))
         : shape_(shape.begin(), shape.end()), allocator_(std::move(allocator)) {
         initialize_tensor();
     }
@@ -1436,7 +1439,7 @@ class TensorContainer {
      */
     TensorContainer(const std::vector<size_type>& shape,
                     const ElementType& fill_value,
-                    Allocator allocator = Allocator())
+                    Allocator allocator = MemoryPool<ElementType>(1024))
         : shape_(shape), allocator_(std::move(allocator)) {
         initialize_tensor();
         std::fill_n(data_, total_elements_, fill_value);
@@ -1859,7 +1862,10 @@ namespace tensor_utils {
  */
 template <typename ElementType>
 auto zeros(const std::vector<std::size_t>& shape) -> TensorContainer<ElementType> {
-    TensorContainer<ElementType> tensor(shape);
+    std::size_t total_elements =
+        std::accumulate(shape.begin(), shape.end(), std::size_t{1}, std::multiplies<std::size_t>());
+    TensorContainer<ElementType> tensor(
+        shape, MemoryPool<ElementType>(std::max(total_elements, std::size_t{1024})));
     tensor.zero();
     return tensor;
 }
@@ -1871,7 +1877,10 @@ auto zeros(const std::vector<std::size_t>& shape) -> TensorContainer<ElementType
  */
 template <typename ElementType>
 auto ones(const std::vector<std::size_t>& shape) -> TensorContainer<ElementType> {
-    TensorContainer<ElementType> tensor(shape);
+    std::size_t total_elements =
+        std::accumulate(shape.begin(), shape.end(), std::size_t{1}, std::multiplies<std::size_t>());
+    TensorContainer<ElementType> tensor(
+        shape, MemoryPool<ElementType>(std::max(total_elements, std::size_t{1024})));
     tensor.fill(ElementType{1});
     return tensor;
 }
@@ -1887,7 +1896,10 @@ template <typename ElementType>
 auto random(const std::vector<std::size_t>& shape,
             ElementType min_val = ElementType{0},
             ElementType max_val = ElementType{1}) -> TensorContainer<ElementType> {
-    TensorContainer<ElementType> tensor(shape);
+    std::size_t total_elements =
+        std::accumulate(shape.begin(), shape.end(), std::size_t{1}, std::multiplies<std::size_t>());
+    TensorContainer<ElementType> tensor(
+        shape, MemoryPool<ElementType>(std::max(total_elements, std::size_t{1024})));
 
     std::random_device rd;
     std::mt19937 gen(rd());
