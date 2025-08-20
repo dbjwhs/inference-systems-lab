@@ -248,6 +248,46 @@ python3 tools/check_coverage.py --clean-build --threshold 90.0
 - `--skip-build`: Use existing build
 - `--skip-tests`: Use existing coverage data
 
+#### check_documentation.py
+**Purpose**: Comprehensive Doxygen documentation generation and validation
+
+**Key Features**:
+- Automated Doxygen documentation generation with error handling
+- Documentation coverage analysis for undocumented public APIs
+- Integration with existing build system and quality gates  
+- CI/CD friendly with structured output and exit codes
+- Performance optimized for large codebases
+
+**Usage Examples**:
+```bash
+# Generate documentation
+python3 tools/check_documentation.py --generate
+
+# Check coverage only
+python3 tools/check_documentation.py --check
+
+# Full workflow with coverage validation
+python3 tools/check_documentation.py --generate --check
+
+# Clean generated documentation
+python3 tools/check_documentation.py --clean
+
+# Custom coverage threshold
+python3 tools/check_documentation.py --check --coverage-threshold 90.0
+
+# Export results as JSON
+python3 tools/check_documentation.py --check --json-output coverage.json
+```
+
+**Arguments**:
+- `--generate`: Generate Doxygen documentation  
+- `--check`: Check documentation coverage against threshold
+- `--clean`: Clean generated documentation files
+- `--build-dir DIR`: Specify build directory (default: build)
+- `--coverage-threshold PERCENT`: Set minimum coverage requirement (default: 80.0)
+- `--json-output FILE`: Export results as JSON
+- `--quiet`: Reduce output verbosity
+
 #### run_benchmarks.py
 **Purpose**: Performance regression detection with baseline management
 
