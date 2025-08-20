@@ -32,7 +32,7 @@
  * @code
  * // Create a neural network input tensor
  * auto input = FloatTensor::zeros({1, 3, 224, 224});  // NCHW format
- * 
+ *
  * // Define model configuration
  * ModelConfig config{
  *     .name = "resnet50",
@@ -41,7 +41,7 @@
  *     .precision = Precision::FP16,
  *     .backend = InferenceBackend::TENSORRT_GPU
  * };
- * 
+ *
  * // Run inference with uncertainty quantification
  * auto result = model.predict_with_uncertainty(input);
  * if (result.is_ok()) {
@@ -151,20 +151,20 @@ constexpr const char* dtype_to_string(DataType dtype) noexcept {
  * @brief Inference precision settings
  */
 enum class Precision : std::uint8_t {
-    FP32 = 0,   ///< Full 32-bit precision
-    FP16 = 1,   ///< Half precision (faster on modern GPUs)
-    INT8 = 2,   ///< Quantized 8-bit inference
-    MIXED = 3   ///< Mixed precision (FP16 compute, FP32 accumulate)
+    FP32 = 0,  ///< Full 32-bit precision
+    FP16 = 1,  ///< Half precision (faster on modern GPUs)
+    INT8 = 2,  ///< Quantized 8-bit inference
+    MIXED = 3  ///< Mixed precision (FP16 compute, FP32 accumulate)
 };
 
 /**
  * @brief Supported inference backends
  */
 enum class InferenceBackend : std::uint8_t {
-    CPU_NATIVE = 0,         ///< CPU-only inference
-    TENSORRT_GPU = 1,       ///< NVIDIA TensorRT GPU acceleration
-    ONNX_RUNTIME = 2,       ///< ONNX Runtime (cross-platform)
-    RULE_BASED = 3,         ///< Traditional rule-based inference
+    CPU_NATIVE = 0,             ///< CPU-only inference
+    TENSORRT_GPU = 1,           ///< NVIDIA TensorRT GPU acceleration
+    ONNX_RUNTIME = 2,           ///< ONNX Runtime (cross-platform)
+    RULE_BASED = 3,             ///< Traditional rule-based inference
     HYBRID_NEURAL_SYMBOLIC = 4  ///< Combined neural+symbolic reasoning
 };
 
@@ -189,11 +189,11 @@ using Confidence = float;
 
 /**
  * @brief Generic ML tensor with automatic memory management
- * 
+ *
  * This is a specialized version of TensorContainer optimized for ML workloads.
  * It provides additional functionality for common ML operations while maintaining
  * compatibility with the existing container framework.
- * 
+ *
  * @tparam T Element type (float, int, etc.)
  * @tparam Allocator Memory allocator type
  */
@@ -210,7 +210,9 @@ class MLTensor : public TensorContainer<T, Allocator> {
     /**
      * @brief Create tensor with specific data type
      */
-    static auto create(const Shape& shape, DataType dtype, AllocatorType allocator = AllocatorType(1024))
+    static auto create(const Shape& shape,
+                       DataType dtype,
+                       AllocatorType allocator = AllocatorType(1024))
         -> Result<MLTensor, std::string> {
         if (!is_compatible_dtype<T>(dtype)) {
             return Err(std::string("Incompatible data type for tensor element type"));
@@ -226,9 +228,7 @@ class MLTensor : public TensorContainer<T, Allocator> {
     /**
      * @brief Get total memory usage including metadata
      */
-    auto total_memory_usage() const -> std::size_t {
-        return this->memory_usage() + sizeof(*this);
-    }
+    auto total_memory_usage() const -> std::size_t { return this->memory_usage() + sizeof(*this); }
 
     /**
      * @brief Reshape tensor with validation
@@ -256,7 +256,8 @@ class MLTensor : public TensorContainer<T, Allocator> {
     /**
      * @brief Extract a batch from the tensor
      */
-    auto extract_batch(std::size_t batch_idx, std::size_t batch_size) -> Result<MLTensor, std::string> {
+    auto extract_batch(std::size_t batch_idx, std::size_t batch_size)
+        -> Result<MLTensor, std::string> {
         if (this->ndim() == 0) {
             return Err(std::string("Cannot extract batch from scalar tensor"));
         }
@@ -281,7 +282,9 @@ class MLTensor : public TensorContainer<T, Allocator> {
         std::size_t start_idx = batch_idx * elements_per_batch;
         std::size_t copy_elements = batch_size * elements_per_batch;
 
-        std::copy(this->data() + start_idx, this->data() + start_idx + copy_elements, batch_tensor.data());
+        std::copy(this->data() + start_idx,
+                  this->data() + start_idx + copy_elements,
+                  batch_tensor.data());
 
         return Ok(std::move(batch_tensor));
     }
@@ -355,12 +358,12 @@ using BoolTensor = MLTensor<bool>;
  * @brief Model input/output specification
  */
 struct TensorSpec {
-    std::string name;        ///< Tensor name (e.g., "input", "logits")
-    Shape shape;             ///< Tensor dimensions
-    DataType dtype;          ///< Data type
-    bool is_dynamic;         ///< Whether shape can change at runtime
-    Shape min_shape;         ///< Minimum shape (for dynamic tensors)
-    Shape max_shape;         ///< Maximum shape (for dynamic tensors)
+    std::string name;  ///< Tensor name (e.g., "input", "logits")
+    Shape shape;       ///< Tensor dimensions
+    DataType dtype;    ///< Data type
+    bool is_dynamic;   ///< Whether shape can change at runtime
+    Shape min_shape;   ///< Minimum shape (for dynamic tensors)
+    Shape max_shape;   ///< Maximum shape (for dynamic tensors)
 
     /**
      * @brief Get total number of elements
@@ -404,11 +407,11 @@ struct TensorSpec {
  * @brief Model performance requirements
  */
 struct PerformanceRequirements {
-    std::optional<float> max_latency_ms;      ///< Maximum acceptable latency
-    std::optional<float> min_throughput_fps;  ///< Minimum throughput requirement
-    std::optional<std::size_t> max_memory_mb; ///< Maximum memory usage
-    std::optional<float> min_accuracy;        ///< Minimum accuracy requirement
-    bool prefer_low_latency = true;           ///< Optimize for latency vs throughput
+    std::optional<float> max_latency_ms;       ///< Maximum acceptable latency
+    std::optional<float> min_throughput_fps;   ///< Minimum throughput requirement
+    std::optional<std::size_t> max_memory_mb;  ///< Maximum memory usage
+    std::optional<float> min_accuracy;         ///< Minimum accuracy requirement
+    bool prefer_low_latency = true;            ///< Optimize for latency vs throughput
 };
 
 /**
@@ -416,28 +419,28 @@ struct PerformanceRequirements {
  */
 struct ModelConfig {
     // Basic model information
-    std::string name;                                     ///< Model name
-    std::string version = "1.0.0";                       ///< Model version
-    std::string description;                              ///< Human-readable description
-    std::vector<TensorSpec> input_specs;                 ///< Input tensor specifications
-    std::vector<TensorSpec> output_specs;                ///< Output tensor specifications
+    std::string name;                      ///< Model name
+    std::string version = "1.0.0";         ///< Model version
+    std::string description;               ///< Human-readable description
+    std::vector<TensorSpec> input_specs;   ///< Input tensor specifications
+    std::vector<TensorSpec> output_specs;  ///< Output tensor specifications
 
     // Runtime configuration
     InferenceBackend backend = InferenceBackend::CPU_NATIVE;  ///< Inference backend to use
     Precision precision = Precision::FP32;                    ///< Computation precision
     BatchSize max_batch_size = 1;                             ///< Maximum batch size
-    std::uint32_t max_sequence_length = 0;                    ///< For sequence models (0 = not applicable)
+    std::uint32_t max_sequence_length = 0;  ///< For sequence models (0 = not applicable)
 
     // Model file paths
-    std::string model_path;                               ///< Path to model file (.onnx, .trt, etc.)
-    std::string config_path;                              ///< Path to config file (optional)
-    std::string weights_path;                             ///< Path to weights file (optional)
+    std::string model_path;    ///< Path to model file (.onnx, .trt, etc.)
+    std::string config_path;   ///< Path to config file (optional)
+    std::string weights_path;  ///< Path to weights file (optional)
 
     // Performance and optimization
-    PerformanceRequirements performance;                  ///< Performance requirements
-    bool enable_optimization = true;                      ///< Enable backend-specific optimizations
-    bool enable_profiling = false;                        ///< Enable performance profiling
-    std::uint32_t gpu_device_id = 0;                     ///< GPU device ID (if applicable)
+    PerformanceRequirements performance;  ///< Performance requirements
+    bool enable_optimization = true;      ///< Enable backend-specific optimizations
+    bool enable_profiling = false;        ///< Enable performance profiling
+    std::uint32_t gpu_device_id = 0;      ///< GPU device ID (if applicable)
 
     // Model-specific metadata
     std::unordered_map<std::string, std::string> metadata;  ///< Additional metadata
@@ -512,7 +515,7 @@ struct ModelConfig {
  * @brief Single tensor input for inference
  */
 struct TensorInput {
-    std::string name;              ///< Input tensor name
+    std::string name;                                                     ///< Input tensor name
     std::variant<FloatTensor, IntTensor, ByteTensor, BoolTensor> tensor;  ///< Actual tensor data
     std::unordered_map<std::string, std::string> metadata;  ///< Input-specific metadata
 
@@ -549,10 +552,17 @@ struct TensorInput {
  * @brief Inference request containing multiple inputs
  */
 struct InferenceRequest {
-    std::vector<TensorInput> inputs;                         ///< Input tensors
+    std::vector<TensorInput> inputs;                        ///< Input tensors
     BatchSize batch_size = 1;                               ///< Actual batch size
     std::unordered_map<std::string, std::string> metadata;  ///< Request metadata
     std::optional<std::uint64_t> request_id;                ///< Unique request identifier
+
+    // Make it move-only to match TensorInput semantics
+    InferenceRequest() = default;
+    InferenceRequest(const InferenceRequest&) = delete;
+    InferenceRequest& operator=(const InferenceRequest&) = delete;
+    InferenceRequest(InferenceRequest&&) = default;
+    InferenceRequest& operator=(InferenceRequest&&) = default;
 
     /**
      * @brief Validate inference request
@@ -580,7 +590,8 @@ struct InferenceRequest {
             const auto& spec = config.input_specs[i];
 
             if (input.name != spec.name) {
-                return Err(std::string("Input name mismatch: expected " + spec.name + ", got " + input.name));
+                return Err(std::string("Input name mismatch: expected " + spec.name + ", got " +
+                                       input.name));
             }
 
             auto input_shape = input.get_shape();
@@ -601,7 +612,7 @@ struct InferenceRequest {
  * @brief Single tensor output from inference
  */
 struct TensorOutput {
-    std::string name;              ///< Output tensor name
+    std::string name;                                                     ///< Output tensor name
     std::variant<FloatTensor, IntTensor, ByteTensor, BoolTensor> tensor;  ///< Result tensor data
     Confidence confidence = 1.0f;  ///< Confidence in the output (0.0 to 1.0)
     std::unordered_map<std::string, std::string> metadata;  ///< Output-specific metadata
@@ -638,10 +649,18 @@ struct InferenceResponse {
     std::unordered_map<std::string, std::string> metadata;  ///< Response metadata
     std::optional<std::uint64_t> request_id;                ///< Corresponding request ID
 
+    // Make it move-only to match TensorOutput semantics
+    InferenceResponse() = default;
+    InferenceResponse(const InferenceResponse&) = delete;
+    InferenceResponse& operator=(const InferenceResponse&) = delete;
+    InferenceResponse(InferenceResponse&&) = default;
+    InferenceResponse& operator=(InferenceResponse&&) = default;
+
     /**
      * @brief Get output by name
      */
-    auto get_output(const std::string& name) const -> std::optional<std::reference_wrapper<const TensorOutput>> {
+    auto get_output(const std::string& name) const
+        -> std::optional<std::reference_wrapper<const TensorOutput>> {
         for (const auto& output : outputs) {
             if (output.name == name) {
                 return std::cref(output);
@@ -686,7 +705,10 @@ struct ClassificationResult {
             indexed_probs.emplace_back(i, probabilities[i]);
         }
 
-        std::partial_sort(indexed_probs.begin(), indexed_probs.begin() + k, indexed_probs.end(),
+        std::size_t sort_k = std::min(k, indexed_probs.size());
+        std::partial_sort(indexed_probs.begin(),
+                          indexed_probs.begin() + sort_k,
+                          indexed_probs.end(),
                           [](const auto& a, const auto& b) { return a.second > b.second; });
 
         indexed_probs.resize(std::min(k, indexed_probs.size()));
@@ -713,11 +735,11 @@ struct UncertaintyEstimate {
  * @brief Batch processing result with per-sample statistics
  */
 struct BatchResult {
-    std::vector<TensorOutput> batch_outputs;                   ///< Outputs for each sample in batch
-    std::vector<UncertaintyEstimate> uncertainties;            ///< Uncertainty for each sample
-    std::chrono::milliseconds total_time;                      ///< Total batch processing time
-    std::chrono::milliseconds avg_per_sample_time;             ///< Average time per sample
-    float batch_efficiency;                                    ///< Batch efficiency (0.0 to 1.0)
+    std::vector<TensorOutput> batch_outputs;         ///< Outputs for each sample in batch
+    std::vector<UncertaintyEstimate> uncertainties;  ///< Uncertainty for each sample
+    std::chrono::milliseconds total_time;            ///< Total batch processing time
+    std::chrono::milliseconds avg_per_sample_time;   ///< Average time per sample
+    float batch_efficiency;                          ///< Batch efficiency (0.0 to 1.0)
 
     /**
      * @brief Get throughput in samples per second
