@@ -116,6 +116,19 @@ target_link_libraries(container_tests
 # Add Container tests to CTest
 add_test(NAME ContainerUnitTests COMMAND container_tests)
 
+# ML types tests
+add_executable(ml_types_tests
+    tests/test_ml_types.cpp
+)
+
+target_link_libraries(ml_types_tests
+    common
+    ${GTEST_MAIN_TARGET}
+)
+
+# Add ML types tests to CTest
+add_test(NAME MLTypesUnitTests COMMAND ml_types_tests)
+
 # Inference types demo
 add_executable(inference_types_demo
     examples/inference_types_demo.cpp
