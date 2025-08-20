@@ -157,30 +157,30 @@ The laboratory is expanding to include modern machine learning inference capabil
 ```
                            Unified Inference Interface
                          ┌─────────────────────────────┐
-┌─────────────────┐     │ InferenceEngine (Abstract) │     ┌──────────────────┐
-│   User Code     │────▶│                             │────▶│ InferenceResponse│
-│                 │     │ • run_inference()           │     │ • output_tensors │
-│ ModelConfig     │     │ • get_backend_info()        │     │ • inference_time │
-│ InferenceRequest│     │ • is_ready()                │     │ • memory_usage   │
-└─────────────────┘     │ • get_performance_stats()  │     └──────────────────┘
-                        └─────────────────────────────┘
+┌─────────────────┐     │ InferenceEngine (Abstract)   │     ┌──────────────────┐
+│   User Code     │────▶│                              │────▶│ InferenceResponse│
+│                 │     │ • run_inference()            │     │ • output_tensors │
+│ ModelConfig     │     │ • get_backend_info()         │     │ • inference_time │
+│ InferenceRequest│     │ • is_ready()                 │     │ • memory_usage   │
+└─────────────────┘     │ • get_performance_stats()    │     └──────────────────┘
+                        └──────────────────────────────┘
                                      │
                    ┌─────────────────┼─────────────────────┐
                    │                 │                     │
-         ┌─────────▼──────┐ ┌────────▼───────┐  ┌─────────▼──────────┐
+         ┌─────────▼──────┐ ┌────────▼───────┐  ┌──────────▼─────────┐
          │ RuleBasedEngine│ │ TensorRTEngine │  │   ONNXEngine       │
          │ Forward Chain  │ │ GPU Accelerated│  │ Cross-Platform     │
          │ Backward Chain │ │ CUDA Memory    │  │ CPU/GPU Backends   │
          │ RETE Networks  │ │ RAII Wrappers  │  │ Model Versioning   │
          └────────────────┘ └────────────────┘  └────────────────────┘
 
-Backend Selection via Factory Pattern:
+                   Backend Selection via Factory Pattern:
 ┌─────────────────────────────────────────────────────────────────────┐
-│ create_inference_engine(backend_type, config)                      │
-│   ├─ RULE_BASED          → RuleBasedEngine::create()              │
-│   ├─ TENSORRT_GPU        → TensorRTEngine::create()               │
-│   ├─ ONNX_RUNTIME        → ONNXEngine::create()                   │
-│   └─ HYBRID_NEURAL_SYMBOLIC → HybridEngine::create() (future)     │
+│ create_inference_engine(backend_type, config)                       │
+│   ├─ RULE_BASED             → RuleBasedEngine::create()             │
+│   ├─ TENSORRT_GPU           → TensorRTEngine::create()              │
+│   ├─ ONNX_RUNTIME           → ONNXEngine::create()                  │
+│   └─ HYBRID_NEURAL_SYMBOLIC → HybridEngine::create() (future)       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 

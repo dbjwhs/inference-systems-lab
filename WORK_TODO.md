@@ -36,35 +36,120 @@
   - [X] Fix unused function warnings (placeholder files)
   - [X] Eliminate ranlib empty symbol table warnings (all modules)
 
-## Phase 0: ML Inference Integration Planning (CURRENT)
+## CURRENT PRIORITY: ML Development Infrastructure Readiness
 
-### Documentation and Architecture (In Progress)
-- [X] **README.md Integration**: Updated with TensorRT/ONNX vision, roadmap, and prerequisites
-- [X] **CLAUDE.md Context**: Added ML integration roadmap and technical integration points
-- [X] **WORK_TODO.md Phases**: Document detailed implementation phases for TensorRT/ONNX
-- [ ] **DEVELOPMENT.md Workflow**: ML-specific development processes and model management
-- [ ] **Dependencies Documentation**: TensorRT 8.5+, ONNX Runtime 1.15+, CUDA 11.8+ setup guides
+### Phase 1: Critical Foundation (1-2 weeks) - IMMEDIATE PRIORITY
 
-### Phase 0.1: TensorRT Integration Architecture
-- [ ] **API Design**: Plan unified inference interface extending `Result<T,E>` patterns
-- [ ] **Error Handling**: Design `InferenceError` enum for TensorRT-specific error types
-- [ ] **Memory Management**: RAII patterns for GPU memory and TensorRT engine lifecycle
-- [ ] **Build Integration**: CMake modules for TensorRT dependency detection and linking
-- [ ] **Testing Strategy**: Unit test framework for GPU inference validation
+#### Core Data Structures Implementation - CRITICAL FOR ML
+- [ ] **Implement `common/src/containers.hpp`** - Cache-friendly containers for ML performance
+  - [ ] **Memory Pool Allocator** - Reusable GPU/CPU memory for tensor allocations (avoids allocation overhead)
+  - [ ] **Ring Buffer** - Streaming inference data handling for continuous model inference
+  - [ ] **Lock-Free Queue** - Multi-threaded batch aggregation for server scenarios
+  - [ ] **Tensor Container** - Efficient multi-dimensional array storage with zero-copy views
+  - [ ] Write comprehensive tests for all container types
+  - [ ] Benchmark against std containers for performance validation
 
-### Phase 0.2: ONNX Runtime Integration Architecture  
-- [ ] **Cross-Platform Design**: Backend selection (CPU, GPU, specialized accelerators)
-- [ ] **Model Versioning**: Schema evolution patterns for ML model lifecycle management
-- [ ] **Performance Framework**: Benchmarking infrastructure for multi-backend comparisons
-- [ ] **Production Features**: Model serving, monitoring, and automated deployment patterns
-- [ ] **Documentation**: API examples and integration tutorials
+#### ML-Specific Type System - IMPORTANT FOR TYPE SAFETY
+- [ ] **Create `common/src/ml_types.hpp`** - ML-specific type definitions
+  - [ ] **Tensor Types**: TensorShape, DataType enum, TensorData variant
+  - [ ] **Model Metadata**: ModelInfo struct with input/output shapes
+  - [ ] **Inference Types**: InferenceRequest/Response structures
+  - [ ] **Strong Type Aliases**: ModelPath, BatchSize, DeviceId for safety
+  - [ ] **Error Types**: Extend InferenceError enum for ML scenarios
+  - [ ] Write tests in `common/tests/test_ml_types.cpp`
 
-### Phase 0.3: Unified Inference Interface Design
-- [ ] **Common API**: Design abstract interface for rule-based and ML inference
-- [ ] **Backend Enum**: `InferenceBackend` with RULE_BASED, TENSORRT_GPU, ONNX_RUNTIME, HYBRID
-- [ ] **Factory Pattern**: `create_inference_engine()` with Result<T,E> error handling
-- [ ] **Integration Points**: Seamless logging, benchmarking, and schema evolution integration
-- [ ] **Neural-Symbolic Planning**: Architecture for hybrid reasoning systems
+#### Docker Development Environment - PLATFORM COMPATIBILITY
+- [ ] **Create `Dockerfile.dev`** - CUDA development environment for macOS→Linux workflow
+  - [ ] CUDA Toolkit 11.8+ with TensorRT 8.5+ runtime
+  - [ ] ONNX Runtime with all providers (CPU, GPU, DirectML)
+  - [ ] Jupyter notebook environment for ML experimentation
+  - [ ] Volume mounting for source code development
+  - [ ] Remote debugging configuration
+
+### Phase 2: ML Tooling Infrastructure (1-2 weeks) - HIGH PRIORITY  
+
+#### Model Lifecycle Management
+- [ ] **Create `tools/model_manager.py`** - Model version control and lifecycle
+  - [ ] Model registration with versioning (--register model.onnx --version 1.2.0)
+  - [ ] Version listing and rollback capabilities
+  - [ ] Model validation and metadata extraction
+  - [ ] Integration with schema evolution system
+
+#### Model Conversion Pipeline  
+- [ ] **Create `tools/convert_model.py`** - Automated model conversion
+  - [ ] PyTorch→ONNX conversion automation
+  - [ ] ONNX→TensorRT engine optimization
+  - [ ] Precision conversion (FP32→FP16→INT8)
+  - [ ] Validation pipeline ensuring accuracy preservation
+
+#### Performance Testing Framework
+- [ ] **Create `tools/benchmark_inference.py`** - ML performance analysis
+  - [ ] Latency percentiles (p50, p95, p99) measurement
+  - [ ] Throughput testing with batch size optimization
+  - [ ] Multi-model comparison framework
+  - [ ] GPU profiling integration (CUDA kernel timing, memory analysis)
+
+#### Model Validation Suite
+- [ ] **Create `tools/validate_model.py`** - Correctness and accuracy testing
+  - [ ] Dataset-based validation with ground truth comparison
+  - [ ] Regression testing for model updates
+  - [ ] Edge case testing (out-of-distribution detection)
+  - [ ] Numerical stability and boundary condition validation
+
+### Phase 3: Integration Support (1 week) - MEDIUM PRIORITY
+
+#### Logging Extensions for ML
+- [ ] **Extend `common/src/logging.hpp`** - ML-specific metrics
+  - [ ] Structured logs for inference requests with timing
+  - [ ] Model version tracking in log context
+  - [ ] Performance metrics integration (latency, throughput)
+  - [ ] Error categorization for ML-specific failures
+
+#### Build System ML Integration
+- [ ] **Update CMake configuration** - ML dependency management
+  - [ ] Add ENABLE_TENSORRT and ENABLE_ONNX options
+  - [ ] Conditional compilation for GPU features
+  - [ ] CUDA detection and configuration
+  - [ ] Package manager integration for ML dependencies
+
+#### Example Inference Servers
+- [ ] **Create `engines/examples/`** - Real-world ML demonstrations
+  - [ ] Simple HTTP inference server with ONNX
+  - [ ] Batch processing server with queue management
+  - [ ] Multi-model serving with load balancing
+  - [ ] Performance monitoring dashboards
+
+### Phase 4: Production Readiness (ongoing) - LOWER PRIORITY
+
+#### Monitoring and Observability
+- [ ] **Implement metrics collection** - Production monitoring
+  - [ ] Inference latency histograms with percentile tracking
+  - [ ] Request queue depth monitoring
+  - [ ] Model load time tracking
+  - [ ] Error rate categorization and alerting
+
+#### A/B Testing Framework
+- [ ] **Create model comparison tools** - Statistical validation
+  - [ ] Traffic splitting for model variants
+  - [ ] Statistical significance testing
+  - [ ] Automated rollback on performance degradation
+  - [ ] Comprehensive reporting and analysis
+
+#### Deployment Automation
+- [ ] **CI/CD for ML models** - Production deployment
+  - [ ] Automated model testing on GPU runners
+  - [ ] Performance regression detection in CI
+  - [ ] Model artifact management and versioning
+  - [ ] Blue-green deployment strategies
+
+## DEPRECATED: Previous ML Planning (Completed)
+
+### ✅ Phase 0: ML Integration Planning (COMPLETED)
+- [X] **README.md Integration**: TensorRT/ONNX vision and roadmap
+- [X] **CLAUDE.md Context**: ML integration technical points  
+- [X] **TensorRT Infrastructure**: Complete CMake detection and engine wrapper
+- [X] **Unified Interface**: Abstract InferenceEngine with factory pattern
+- [X] **Error Handling**: InferenceError enum with Result<T,E> integration
 
 ## Phase 1: Common Module (Foundation)
 
@@ -86,12 +171,12 @@
   - [X] Write tests in `common/tests/test_logger.cpp`
   - [-] Benchmark logging overhead (not needed yet but perhaps in future)
 
-### Type System
-- [ ] Create `common/src/types.hpp` - Common type definitions
-  - [ ] Strong type aliases
-  - [ ] Common concepts (Serializable, Hashable, etc.)
-  - [ ] Type traits utilities
-  - [ ] Write tests in `common/tests/test_types.cpp`
+### Type System - SUPERSEDED BY ML_TYPES
+- [-] Create `common/src/types.hpp` - Basic type definitions (replaced by ml_types.hpp)
+  - [-] Strong type aliases (moved to ML-specific implementation)
+  - [-] Common concepts (focus on ML concepts first)
+  - [-] Type traits utilities (ML-focused implementation)
+  - [-] Write tests (integrated with ML types testing)
 
 ### Serialization Framework
 - [X] Integrate Cap'n Proto for serialization
@@ -111,14 +196,11 @@
     - [X] Comprehensive test suite demonstrating all features
   - [X] Write tests in `common/tests/test_serialization.cpp`
 
-### Data Structures
-- [ ] Implement `common/src/containers.hpp` - Cache-friendly containers
-  - [ ] Fixed-size ring buffer
-  - [ ] Lock-free queue
-  - [ ] Memory pool allocator
-  - [ ] Flat map/set implementations
-  - [ ] Write comprehensive tests
-  - [ ] Benchmark against std containers
+### Data Structures - MOVED TO PHASE 1 PRIORITY
+- [-] Implement `common/src/containers.hpp` - MOVED TO CURRENT PRIORITY PHASE 1
+  - [-] Ring buffer, lock-free queue, memory pool - Now in ML Critical Foundation
+  - [-] Flat map/set implementations - Lower priority, implement after ML containers
+  - [-] Tests and benchmarks - Integrated with Phase 1 implementation
 
 ### Networking Abstractions
 - [ ] Implement `common/src/network.hpp`
@@ -345,13 +427,20 @@
 - [ ] Historical performance tracking
 - [ ] Performance dashboard
 
-## Current Priority Order
+## Current Priority Order - ML INFRASTRUCTURE READINESS
 
-1. **NEXT**: Complete ONNX Runtime integration (`engines/src/onnx/onnx_engine.hpp`) - Cross-platform ML inference backend
-2. **THEN**: Create TensorRT/ONNX demonstration examples - Real-world ML inference showcases
-3. **FOLLOWED BY**: Implement forward chaining engine - Rule-based inference to complement ML
-4. **ALSO**: Complete remaining static analysis phases - Continue systematic modernization
-5. **THEN**: Implement `common/src/containers.hpp` - Cache-friendly data structures for performance
+1. **IMMEDIATE NEXT**: Implement `common/src/containers.hpp` - Critical foundation for ML performance
+2. **THEN**: Create `common/src/ml_types.hpp` - Type safety for ML operations  
+3. **THEN**: Set up `Dockerfile.dev` - Enable TensorRT development on macOS via Linux containers
+4. **FOLLOWED BY**: Create ML tooling suite - Model management, validation, benchmarking tools
+5. **THEN**: Complete ONNX Runtime integration - Start with cross-platform backend (works on macOS)
+6. **FINALLY**: TensorRT integration via Docker - GPU acceleration development and testing
+
+**DEFERRED UNTIL AFTER ML FOUNDATION**:
+- Forward chaining engine implementation 
+- Remaining static analysis cleanup
+- Advanced networking abstractions
+- Distributed systems components
 
 ## Notes for Claude Code
 
@@ -364,10 +453,17 @@ When tackling any item:
 
 ## Completion Tracking
 
-- Total Tasks: ~180
-- Completed: 60 (Build System: 11, Development Tooling: 9, Logging: 4, Serialization: 15, Schema Evolution: 9, Error Handling: 6, Static Analysis Phase 4: 1, Build Quality: 1, Documentation: 1, Build Tool Fixes: 5, **ML Integration: 13**)
-- In Progress: 0  
-- Blocked: 0
+- **Total Tasks**: ~200 (reorganized with ML infrastructure focus)
+- **Completed**: 65 (Build System: 11, Development Tooling: 9, Core Foundation: 25, ML Architecture: 13, Quality Assurance: 7)
+- **Current Focus**: 16 tasks in ML Infrastructure Readiness (Phases 1-4)
+- **In Progress**: 0  
+- **Blocked**: 0
+
+### NEW PRIORITY BREAKDOWN:
+- **Phase 1 (Critical Foundation)**: 6 immediate tasks - containers, ML types, Docker
+- **Phase 2 (ML Tooling)**: 4 high-priority tasks - model management and validation tools  
+- **Phase 3 (Integration)**: 3 medium-priority tasks - logging, build system, examples
+- **Phase 4 (Production)**: 3 ongoing tasks - monitoring, A/B testing, deployment
 
 ### Recently Completed (2025-08-19)
 
