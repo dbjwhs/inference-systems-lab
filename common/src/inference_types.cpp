@@ -25,8 +25,8 @@
 #include <stdexcept>
 
 #include <capnp/message.h>
-#include <capnp/serialize.h>
 #include <capnp/serialize-packed.h>
+#include <capnp/serialize.h>
 
 namespace inference_lab::common {
 
