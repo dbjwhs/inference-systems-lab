@@ -154,8 +154,18 @@ if(TARGET benchmark::benchmark)
         benchmark::benchmark
     )
 
+    # Container benchmarks
+    add_executable(container_benchmarks
+        benchmarks/container_benchmarks.cpp
+    )
+
+    target_link_libraries(container_benchmarks
+        common
+        benchmark::benchmark
+    )
+
     # Create benchmark alias for the main benchmarks target
-    add_custom_target(common_benchmarks DEPENDS result_benchmarks)
+    add_custom_target(common_benchmarks DEPENDS result_benchmarks container_benchmarks)
 else()
     # If building standalone, try to find benchmark package
     find_package(benchmark QUIET)
@@ -169,7 +179,16 @@ else()
             benchmark::benchmark
         )
 
-        add_custom_target(common_benchmarks DEPENDS result_benchmarks)
+        add_executable(container_benchmarks
+            benchmarks/container_benchmarks.cpp
+        )
+
+        target_link_libraries(container_benchmarks
+            common
+            benchmark::benchmark
+        )
+
+        add_custom_target(common_benchmarks DEPENDS result_benchmarks container_benchmarks)
     else()
         message(STATUS "Google Benchmark not found - benchmarks will not be built")
         message(STATUS "To build benchmarks, either:")
