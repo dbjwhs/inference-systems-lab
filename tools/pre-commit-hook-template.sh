@@ -56,6 +56,10 @@ check_tools() {
         missing_tools+=("check_eof_newline.py")
     fi
     
+    if [[ ! -f "$TOOLS_DIR/check_documentation.py" ]]; then
+        missing_tools+=("check_documentation.py")
+    fi
+    
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
         log_error "Missing required tools: ${missing_tools[*]}"
         log_error "Please ensure all development tools are available."
@@ -206,6 +210,50 @@ check_basic_validation() {
     return 0
 }
 
+# Check documentation coverage for staged files (validation only)
+check_documentation() {
+    local staged_files=("$@")
+    
+    # Only run documentation check if header files are modified
+    local has_headers=false
+    for file in "${staged_files[@]}"; do
+        if [[ "$file" == *.hpp || "$file" == *.h ]]; then
+            has_headers=true
+            break
+        fi
+    done
+    
+    if [[ "$has_headers" == "false" ]]; then
+        log_info "No header files modified, skipping documentation check"
+        return 0
+    fi
+    
+    log_info "Validating documentation coverage (not generating docs in pre-commit)..."
+    
+    # Run documentation check (coverage validation only, no generation in pre-commit)
+    # Lower threshold for pre-commit to avoid blocking commits
+    if python3 "$TOOLS_DIR/check_documentation.py" --check --coverage-threshold 60.0 --quiet; then
+        log_success "Documentation coverage validation passed"
+        
+        # Create marker file to trigger post-commit documentation update
+        touch "$PROJECT_ROOT/.git/hooks/needs_docs_update"
+        log_info "📖 Documentation will be updated after commit completes"
+        
+        return 0
+    else
+        log_warning "Documentation coverage below threshold"
+        log_info "Documentation will be updated after commit completes"
+        log_info "To check current coverage, run:"
+        log_info "  python3 tools/check_documentation.py --check"
+        
+        # Still create marker file even if coverage is low
+        touch "$PROJECT_ROOT/.git/hooks/needs_docs_update" 
+        
+        # Don't fail pre-commit for documentation coverage
+        return 0
+    fi
+}
+
 # Build verification check
 check_build() {
     log_info "Running build verification..."
@@ -280,6 +328,15 @@ main() {
     # Run basic validation
     if ! check_basic_validation; then
         overall_success=false
+    fi
+    
+    # Run documentation check for header files
+    if [[ "$overall_success" == "true" ]]; then
+        if ! check_documentation "${staged_cpp_files[@]}"; then
+            overall_success=false
+        fi
+    else
+        log_info "Skipping documentation check due to previous check failures"
     fi
     
     # Run build verification (only if other checks passed to avoid noise)

@@ -309,6 +309,37 @@ python3 tools/new_module.py my_module --author "Your Name" --description "Module
 - [`docs/PRE_COMMIT_HOOKS.md`](docs/PRE_COMMIT_HOOKS.md) - Pre-commit hook system documentation
 - [`docs/EOF_NEWLINES.md`](docs/EOF_NEWLINES.md) - POSIX compliance and text file standards
 
+### **📖 API Documentation**
+
+**Comprehensive API documentation is automatically generated using Doxygen:**
+
+- **📘 [Full API Reference](build/docs/html/index.html)** - Complete class and function documentation
+- **🔍 [Class Hierarchy](build/docs/html/hierarchy.html)** - Inheritance and relationship diagrams  
+- **📁 [File Documentation](build/docs/html/files.html)** - Source file organization and dependencies
+- **🔧 [Examples](build/docs/html/examples.html)** - Usage examples and tutorials
+
+**Generate Documentation Locally:**
+```bash
+# Build documentation (requires Doxygen)
+mkdir -p build && cd build
+cmake .. 
+make docs
+
+# Open documentation in browser
+open docs/html/index.html  # macOS
+xdg-open docs/html/index.html  # Linux
+```
+
+**Key API Highlights:**
+- **[Result<T,E>](build/docs/html/classinference__lab_1_1common_1_1_result.html)** - Monadic error handling without exceptions
+- **[TensorRTEngine](build/docs/html/classinference__lab_1_1engines_1_1tensorrt_1_1_tensor_r_t_engine.html)** - GPU-accelerated inference engine
+- **[MemoryPool<T>](build/docs/html/classinference__lab_1_1common_1_1_memory_pool.html)** - High-performance custom allocator
+- **[LockFreeQueue<T>](build/docs/html/classinference__lab_1_1common_1_1_lock_free_queue.html)** - Multi-producer/consumer queue
+- **[SchemaEvolutionManager](build/docs/html/classinference__lab_1_1common_1_1_schema_evolution_manager.html)** - Version-aware serialization
+
+### **📋 Technical Deep Dive**
+- **[TECHNICAL_DIVE.md](TECHNICAL_DIVE.md)** - Comprehensive system architecture analysis with cross-module interactions
+
 ### **Performance Goals**
 - **Development Velocity**: Sub-second feedback via pre-commit hooks and incremental analysis
 - **Code Quality**: Zero warnings, comprehensive coverage, automated regression detection
