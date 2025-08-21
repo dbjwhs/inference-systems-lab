@@ -37,3 +37,7 @@ target_link_libraries(engines_benchmarks
     benchmark::benchmark_main
 )
 
+# Python bindings (Phase 1: Foundation setup)
+# Temporarily disabled - enable in Phase 2 when testing
+# add_subdirectory(src/python_bindings)
+

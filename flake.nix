@@ -42,6 +42,9 @@
             # Dependencies
             capnproto
             
+            # Python-C++ Bindings
+            python3Packages.pybind11
+            
             # ML Dependencies (cross-platform)
             onnxruntime
             opencv4
@@ -106,6 +109,8 @@
             echo "  ctest --test-dir build"
             echo ""
             echo "🧠 ML Development:"
+            echo "  python3 test_ml_dependencies.py              # Test ML libraries"
+            echo "  python3 test_python_bindings.py              # Test C++/Python bindings"
             echo "  python3 -c \"import torch; print(f'PyTorch {torch.__version__} ready!')\""
             echo "  python3 -c \"import numpy; print('NumPy ready!')\""
             echo "  python3 -c \"import onnx; print('ONNX ready!')\""
