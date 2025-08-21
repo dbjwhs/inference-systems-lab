@@ -13,21 +13,26 @@ namespace inference_lab::common {
 // Logger implementation
 
 void Logger::write_log_message(const LogLevel LEVEL, const std::string& message) {
-    std::lock_guard<std::mutex> lock(m_mutex_);
+    // Fast atomic checks first - no global lock needed
+    const bool level_enabled = is_level_enabled(LEVEL);
+    if (!level_enabled) {
+        return;  // Early exit if level disabled
+    }
 
-    // write to file if file logging is enabled for this level
-    if (is_level_enabled(LEVEL) && m_file_output_enabled_) {
+    // File output with dedicated mutex only when needed
+    if (m_file_output_enabled_.load(std::memory_order_acquire)) {
+        std::lock_guard<std::mutex> file_lock(m_file_mutex_);
         m_log_file_ << message;
         m_log_file_.flush();
     }
 
-    // write to console if console logging is enabled for this level
-    if (is_level_enabled(LEVEL)) {
-        if ((LEVEL == LogLevel::CRITICAL || LEVEL == LogLevel::ERROR) && m_stderr_enabled_) {
-            std::cerr << message;
-        } else {  // info, normal, debug
-            std::cout << message;
+    // Console output - inherently thread-safe for single writes
+    if ((LEVEL == LogLevel::CRITICAL || LEVEL == LogLevel::ERROR)) {
+        if (m_stderr_enabled_.load(std::memory_order_acquire)) {
+            std::cerr << message;  // stderr for errors
         }
+    } else {
+        std::cout << message;  // stdout for info/debug/normal
     }
 }
 
@@ -52,7 +57,7 @@ Logger::Logger(const std::string& path, bool append) {
 
     // initialize enabled levels - all levels enabled by default
     for (int ndx = 0; ndx < static_cast<int>(LogLevel::CRITICAL) + 1; ++ndx) {
-        m_enabled_levels_[ndx] = true;
+        m_enabled_levels_[ndx].store(true, std::memory_order_relaxed);
     }
 }
 
@@ -100,34 +105,34 @@ Logger::~Logger() {
 void Logger::set_level_enabled(LogLevel level, bool enabled) {
     int const LEVEL_INDEX = static_cast<int>(level);
     if (LEVEL_INDEX >= 0 && LEVEL_INDEX <= static_cast<int>(LogLevel::CRITICAL)) {
-        get_instance().m_enabled_levels_[LEVEL_INDEX] = enabled;
+        get_instance().m_enabled_levels_[LEVEL_INDEX].store(enabled, std::memory_order_release);
     }
 }
 
 void Logger::disable_stderr() {
-    m_stderr_enabled_ = false;
+    m_stderr_enabled_.store(false, std::memory_order_release);
 }
 
 void Logger::enable_stderr() {
-    m_stderr_enabled_ = true;
+    m_stderr_enabled_.store(true, std::memory_order_release);
 }
 
 auto Logger::is_stderr_enabled() const -> bool {
-    return m_stderr_enabled_;
+    return m_stderr_enabled_.load(std::memory_order_acquire);
 }
 
 void Logger::set_file_output_enabled(bool enabled) {
-    m_file_output_enabled_ = enabled;
+    m_file_output_enabled_.store(enabled, std::memory_order_release);
 }
 
 auto Logger::is_file_output_enabled() const -> bool {
-    return m_file_output_enabled_;
+    return m_file_output_enabled_.load(std::memory_order_acquire);
 }
 
 auto Logger::is_level_enabled(LogLevel level) -> bool {
     if (const int LEVEL_INDEX = static_cast<int>(level);
         LEVEL_INDEX >= 0 && LEVEL_INDEX <= static_cast<int>(LogLevel::CRITICAL)) {
-        return get_instance().m_enabled_levels_[LEVEL_INDEX];
+        return get_instance().m_enabled_levels_[LEVEL_INDEX].load(std::memory_order_acquire);
     }
     return false;
 }
