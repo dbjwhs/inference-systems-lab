@@ -99,7 +99,8 @@ static auto read_file(const std::string& filename) -> Result<std::string, FileEr
 /**
  * @brief Parse configuration from file content
  */
-static auto parse_config(const std::string& content) -> Result<std::vector<std::string>, FileError> {
+static auto parse_config(const std::string& content)
+    -> Result<std::vector<std::string>, FileError> {
     if (content.empty()) {
         return Err(FileError::INVALID_FORMAT);
     }
