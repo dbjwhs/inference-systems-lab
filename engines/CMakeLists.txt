@@ -20,7 +20,6 @@ target_link_libraries(engines
 # Engines tests
 add_executable(engines_tests
     tests/placeholder.cpp
-    tests/test_forward_chaining.cpp
 )
 
 target_link_libraries(engines_tests
@@ -40,14 +39,7 @@ target_link_libraries(engines_benchmarks
     benchmark::benchmark_main
 )
 
-# Forward chaining demo
-add_executable(socrates_mortality_demo
-    examples/socrates_mortality_demo.cpp
-)
-
-target_link_libraries(socrates_mortality_demo
-    engines
-)
+# Forward chaining demos have been replaced with simple_forward_chaining_demo
 
 # Simple forward chaining demo
 add_executable(simple_forward_chaining_demo
