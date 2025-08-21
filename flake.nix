@@ -37,18 +37,35 @@
             # Dependencies
             capnproto
             
-            # Python for tooling scripts
+            # ML Dependencies (cross-platform)
+            onnxruntime
+            opencv4
+            
+            # Python for tooling scripts and ML development
             python3
             python3Packages.pip
+            python3Packages.numpy
+            python3Packages.onnx
+            python3Packages.opencv4  # Python OpenCV bindings
+            # python3Packages.torch-bin  # Available but large download, enable when needed
             
             # Development utilities
             git
             ripgrep
             fd
+            curl
+            wget
           ] ++ lib.optionals stdenv.isLinux [
             # Linux-only tools
             gdb
             valgrind
+            
+            # CUDA/GPU Dependencies (Linux only) - commented out for now, enable when needed
+            # cudaPackages.cudatoolkit
+            # cudaPackages.cudnn
+            # cudaPackages.tensorrt
+          ] ++ lib.optionals stdenv.isDarwin [
+            # macOS-specific tools (Metal and Accelerate are included with clang on macOS)
           ];
 
           shellHook = ''
@@ -57,6 +74,24 @@
             echo "Compiler: $(clang++ --version | head -n1)"
             echo "CMake:    $(cmake --version | head -n1)"
             echo "Python:   $(python3 --version)"
+            
+            # Show ML dependencies
+            echo ""
+            echo "🤖 ML Dependencies:"
+            echo "ONNX Runtime: Available"
+            echo "OpenCV:       Available"
+            if command -v python3 >/dev/null; then
+              echo "NumPy:        $(python3 -c "import numpy; print(f'v{numpy.__version__}')" 2>/dev/null || echo 'Available')"
+              echo "ONNX:         $(python3 -c "import onnx; print(f'v{onnx.__version__}')" 2>/dev/null || echo 'Available')"
+            fi
+            
+            # Platform-specific info
+            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+              echo "Platform:     Linux (CUDA available when enabled)"
+            else
+              echo "Platform:     macOS (Metal/Accelerate available)"
+            fi
+            
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo ""
             echo "Quick commands:"
@@ -64,10 +99,21 @@
             echo "  cmake --build build -j"
             echo "  ctest --test-dir build"
             echo ""
+            echo "🧠 ML Development:"
+            echo "  python3 -c \"import numpy; print('NumPy ready!')\""
+            echo "  python3 -c \"import onnx; print('ONNX ready!')\""
+            echo "  python3 -c \"import cv2; print('OpenCV ready!')\""
+            echo ""
             
             # Set up development environment
             export INFERENCE_LAB_ROOT="$PWD"
             export PATH="$PWD/tools:$PATH"
+            
+            # ML environment variables
+            export PYTHONPATH="$PWD:$PYTHONPATH"
+            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+              export CUDA_ROOT="$(dirname $(dirname $(which nvcc)))" 2>/dev/null || true
+            fi
             
             # Ensure compile_commands.json is generated for clang-tidy
             export CMAKE_EXPORT_COMPILE_COMMANDS=ON

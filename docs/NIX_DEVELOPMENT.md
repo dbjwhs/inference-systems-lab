@@ -37,7 +37,8 @@ The Nix environment provides:
 - **Testing**: GoogleTest, Google Benchmark
 - **Coverage**: gcovr, lcov
 - **Dependencies**: Cap'n Proto, Python 3
-- **Utilities**: ripgrep, fd, git
+- **ML Libraries**: ONNX Runtime, OpenCV, NumPy, ONNX
+- **Utilities**: ripgrep, fd, git, curl, wget
 
 ## Common Commands
 
@@ -110,17 +111,37 @@ GitHub Actions can use the same Nix environment:
 - run: nix develop -c ctest --test-dir build
 ```
 
-## Next Steps: ML Dependencies
+## ML Development Ready
 
-The flake.nix can be extended for ML development:
+The environment includes ML libraries out of the box:
+
+```bash
+# Test ML libraries
+python3 -c "import numpy; print('NumPy ready!')"
+python3 -c "import onnx; print('ONNX ready!')"
+python3 -c "import cv2; print('OpenCV ready!')"
+
+# C++ development with ONNX Runtime and OpenCV
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+```
+
+### GPU Development (Linux)
+
+For CUDA/TensorRT development, uncomment in `flake.nix`:
 
 ```nix
-# Coming soon: CUDA, TensorRT, ONNX Runtime
-buildInputs = with pkgs; [
-  cudaPackages.cudatoolkit
-  tensorrt
-  onnxruntime
-];
+# CUDA/GPU Dependencies (Linux only)
+cudaPackages.cudatoolkit
+cudaPackages.cudnn
+cudaPackages.tensorrt
+```
+
+### Large Dependencies (Optional)
+
+```nix
+# Add when needed (large downloads)
+python3Packages.torch-bin  # PyTorch with CUDA
+python3Packages.tensorflow-bin  # TensorFlow
 ```
 
 ## Resources
