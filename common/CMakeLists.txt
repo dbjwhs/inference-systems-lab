@@ -133,6 +133,36 @@ apply_strict_warnings(container_tests)
 # Add Container tests to CTest
 add_test(NAME ContainerUnitTests COMMAND container_tests)
 
+# Advanced containers tests (Phase 2)
+add_executable(advanced_containers_tests
+    tests/test_advanced_containers.cpp
+)
+
+target_link_libraries(advanced_containers_tests
+    common
+    ${GTEST_MAIN_TARGET}
+    ${ATOMIC_LIBRARY}
+)
+apply_strict_warnings(advanced_containers_tests)
+
+# Add advanced containers tests to CTest
+add_test(NAME AdvancedContainersTests COMMAND advanced_containers_tests)
+
+# Type system tests (Phase 2)
+add_executable(type_system_tests
+    tests/test_type_system.cpp
+)
+
+target_link_libraries(type_system_tests
+    common
+    ${GTEST_MAIN_TARGET}
+    ${ATOMIC_LIBRARY}
+)
+apply_strict_warnings(type_system_tests)
+
+# Add type system tests to CTest
+add_test(NAME TypeSystemTests COMMAND type_system_tests)
+
 # ML types tests - temporarily disabled due to C++20 designated initializer issues
 # TODO: Fix field order and aggregate type compatibility issues in test_ml_types.cpp
 # add_executable(ml_types_tests

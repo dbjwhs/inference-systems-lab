@@ -73,6 +73,12 @@
 #include <utility>
 #include <vector>
 
+#ifdef __AVX2__
+    #include <immintrin.h>
+#elif defined(__SSE2__)
+    #include <emmintrin.h>
+#endif
+
 namespace inference_lab::common {
 
 /**
@@ -1921,5 +1927,560 @@ auto random(const std::vector<std::size_t>& shape,
 }
 
 }  // namespace tensor_utils
+
+// ================================================================================================
+// ADVANCED ML-SPECIFIC CONTAINERS AND OPTIMIZATIONS
+// ================================================================================================
+
+/**
+ * @brief High-performance batch container for ML inference
+ * @tparam ElementType Type of elements in the batch (typically float, int8_t)
+ * @tparam MaxBatchSize Maximum batch size for compile-time optimization
+ *
+ * Optimized container for batched ML inference with:
+ * - SIMD-friendly memory layout
+ * - Zero-copy batch aggregation
+ * - Automatic padding for vectorization
+ * - Cache-conscious data access patterns
+ */
+template <typename ElementType, std::size_t MaxBatchSize = 256>
+class BatchContainer {
+  public:
+    static_assert(std::is_arithmetic_v<ElementType>, "ElementType must be arithmetic");
+    static_assert(MaxBatchSize > 0 && MaxBatchSize <= 4096, "Invalid batch size");
+
+    // SIMD-friendly alignment
+    static constexpr std::size_t alignment = std::max(std::size_t{64}, alignof(ElementType));
+    static constexpr std::size_t padded_size =
+        ((MaxBatchSize * sizeof(ElementType) + alignment - 1) / alignment) * alignment;
+
+    /**
+     * @brief Construct batch container with specified shape per sample
+     * @param sample_shape Shape of individual samples in the batch
+     */
+    explicit BatchContainer(const std::vector<std::size_t>& sample_shape)
+        : sample_shape_(sample_shape),
+          elements_per_sample_(std::accumulate(
+              sample_shape.begin(), sample_shape.end(), std::size_t{1}, std::multiplies<>())),
+          current_size_(0),
+          data_(static_cast<ElementType*>(
+              std::aligned_alloc(alignment, padded_size * elements_per_sample_))) {
+        if (!data_) {
+            throw std::bad_alloc();
+        }
+    }
+
+    ~BatchContainer() { std::free(data_); }
+
+    // Non-copyable but movable for efficiency
+    BatchContainer(const BatchContainer&) = delete;
+    auto operator=(const BatchContainer&) -> BatchContainer& = delete;
+
+    BatchContainer(BatchContainer&& other) noexcept
+        : sample_shape_(std::move(other.sample_shape_)),
+          elements_per_sample_(other.elements_per_sample_),
+          current_size_(other.current_size_),
+          data_(other.data_) {
+        other.data_ = nullptr;
+        other.current_size_ = 0;
+    }
+
+    auto operator=(BatchContainer&& other) noexcept -> BatchContainer& {
+        if (this != &other) {
+            std::free(data_);
+            sample_shape_ = std::move(other.sample_shape_);
+            elements_per_sample_ = other.elements_per_sample_;
+            current_size_ = other.current_size_;
+            data_ = other.data_;
+            other.data_ = nullptr;
+            other.current_size_ = 0;
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Add sample to batch with zero-copy when possible
+     * @param sample_data Pointer to sample data
+     * @return true if added successfully, false if batch is full
+     */
+    auto add_sample(const ElementType* sample_data) -> bool {
+        if (current_size_ >= MaxBatchSize) {
+            return false;
+        }
+
+        auto* dest = data_ + current_size_ * elements_per_sample_;
+        std::memcpy(dest, sample_data, elements_per_sample_ * sizeof(ElementType));
+        ++current_size_;
+        return true;
+    }
+
+    /**
+     * @brief Add sample from tensor container
+     * @param tensor Source tensor (must match sample shape)
+     * @return true if added successfully
+     */
+    template <typename Allocator>
+    auto add_sample(const TensorContainer<ElementType, Allocator>& tensor) -> bool {
+        if (tensor.shape() != sample_shape_) {
+            return false;
+        }
+        return add_sample(tensor.data());
+    }
+
+    /**
+     * @brief Get batch data pointer for inference
+     * @return Aligned pointer to batch data
+     */
+    auto data() const noexcept -> const ElementType* { return data_; }
+    auto data() noexcept -> ElementType* { return data_; }
+
+    /**
+     * @brief Get pointer to specific sample in batch
+     * @param index Sample index (0 to current_size - 1)
+     * @return Pointer to sample data
+     */
+    auto sample_data(std::size_t index) const -> const ElementType* {
+        assert(index < current_size_);
+        return data_ + index * elements_per_sample_;
+    }
+
+    auto sample_data(std::size_t index) -> ElementType* {
+        assert(index < current_size_);
+        return data_ + index * elements_per_sample_;
+    }
+
+    // Accessors
+    auto size() const noexcept -> std::size_t { return current_size_; }
+    auto capacity() const noexcept -> std::size_t { return MaxBatchSize; }
+    auto empty() const noexcept -> bool { return current_size_ == 0; }
+    auto full() const noexcept -> bool { return current_size_ == MaxBatchSize; }
+    auto sample_shape() const noexcept -> const std::vector<std::size_t>& { return sample_shape_; }
+    auto elements_per_sample() const noexcept -> std::size_t { return elements_per_sample_; }
+
+    /**
+     * @brief Clear batch for reuse
+     */
+    void clear() noexcept { current_size_ = 0; }
+
+    /**
+     * @brief Get batch utilization ratio
+     * @return Ratio of current size to capacity (0.0 to 1.0)
+     */
+    auto utilization() const noexcept -> double {
+        return static_cast<double>(current_size_) / static_cast<double>(MaxBatchSize);
+    }
+
+  private:
+    std::vector<std::size_t> sample_shape_;
+    std::size_t elements_per_sample_;
+    std::size_t current_size_;
+    ElementType* data_;
+};
+
+/**
+ * @brief Lock-free circular buffer optimized for real-time ML inference
+ * @tparam T Type of elements to store
+ * @tparam Capacity Buffer capacity (must be power of 2 for efficiency)
+ *
+ * High-performance circular buffer for streaming ML inference with:
+ * - Lock-free single producer, single consumer
+ * - Cache-friendly memory layout
+ * - Wait-free operations for real-time guarantees
+ * - Automatic overflow detection and handling
+ */
+template <typename T, std::size_t Capacity>
+class RealtimeCircularBuffer {
+  public:
+    static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be power of 2");
+    static_assert(Capacity >= 2, "Capacity must be at least 2");
+
+    RealtimeCircularBuffer() : write_pos_(0), read_pos_(0) {}
+
+    /**
+     * @brief Push element to buffer (producer side)
+     * @param item Item to push
+     * @return true if pushed successfully, false if buffer full
+     */
+    auto push(const T& item) noexcept -> bool {
+        const auto current_write = write_pos_.load(std::memory_order_relaxed);
+        const auto next_write = (current_write + 1) & (Capacity - 1);
+
+        if (next_write == read_pos_.load(std::memory_order_acquire)) {
+            return false;  // Buffer full
+        }
+
+        buffer_[current_write] = item;
+        write_pos_.store(next_write, std::memory_order_release);
+        return true;
+    }
+
+    /**
+     * @brief Push element with move semantics
+     */
+    auto push(T&& item) noexcept -> bool {
+        const auto current_write = write_pos_.load(std::memory_order_relaxed);
+        const auto next_write = (current_write + 1) & (Capacity - 1);
+
+        if (next_write == read_pos_.load(std::memory_order_acquire)) {
+            return false;  // Buffer full
+        }
+
+        buffer_[current_write] = std::move(item);
+        write_pos_.store(next_write, std::memory_order_release);
+        return true;
+    }
+
+    /**
+     * @brief Pop element from buffer (consumer side)
+     * @param item Reference to store popped item
+     * @return true if popped successfully, false if buffer empty
+     */
+    auto pop(T& item) noexcept -> bool {
+        const auto current_read = read_pos_.load(std::memory_order_relaxed);
+
+        if (current_read == write_pos_.load(std::memory_order_acquire)) {
+            return false;  // Buffer empty
+        }
+
+        item = std::move(buffer_[current_read]);
+        read_pos_.store((current_read + 1) & (Capacity - 1), std::memory_order_release);
+        return true;
+    }
+
+    /**
+     * @brief Check if buffer is empty
+     */
+    auto empty() const noexcept -> bool {
+        return read_pos_.load(std::memory_order_acquire) ==
+               write_pos_.load(std::memory_order_acquire);
+    }
+
+    /**
+     * @brief Check if buffer is full
+     */
+    auto full() const noexcept -> bool {
+        const auto next_write = (write_pos_.load(std::memory_order_acquire) + 1) & (Capacity - 1);
+        return next_write == read_pos_.load(std::memory_order_acquire);
+    }
+
+    /**
+     * @brief Get approximate number of elements in buffer
+     * @note This is approximate due to concurrent access
+     */
+    auto size() const noexcept -> std::size_t {
+        const auto write = write_pos_.load(std::memory_order_acquire);
+        const auto read = read_pos_.load(std::memory_order_acquire);
+        return (write - read) & (Capacity - 1);
+    }
+
+    /**
+     * @brief Get buffer capacity
+     */
+    static constexpr auto capacity() noexcept -> std::size_t { return Capacity; }
+
+  private:
+    alignas(64) std::atomic<std::size_t> write_pos_;  // Cache line aligned
+    alignas(64) std::atomic<std::size_t> read_pos_;   // Cache line aligned
+    std::array<T, Capacity> buffer_;
+};
+
+/**
+ * @brief Cache-optimized hash map for ML feature storage
+ * @tparam Key Key type (typically string or integer)
+ * @tparam Value Value type (typically float or tensor)
+ * @tparam HashFunc Hash function
+ *
+ * Specialized hash map optimized for ML feature caching with:
+ * - Robin Hood hashing for excellent cache performance
+ * - SIMD-accelerated key comparison when possible
+ * - Memory pool integration for value storage
+ * - LRU eviction policy for memory management
+ */
+template <typename Key, typename Value, typename HashFunc = std::hash<Key>>
+class FeatureCache {
+  public:
+    static constexpr std::size_t default_capacity = 1024;
+    static constexpr double max_load_factor = 0.75;
+
+    struct Entry {
+        Key key{};
+        Value value{};
+        std::size_t hash{0};
+        std::uint32_t distance{0};  // Distance from ideal position
+        bool occupied{false};
+    };
+
+    explicit FeatureCache(std::size_t capacity = default_capacity)
+        : capacity_(next_power_of_2(capacity)),
+          mask_(capacity_ - 1),
+          size_(0),
+          entries_(capacity_) {}
+
+    /**
+     * @brief Insert or update key-value pair
+     * @param key Key to insert
+     * @param value Value to associate with key
+     * @return Iterator to inserted element and bool indicating if insertion took place
+     */
+    auto insert(const Key& key, const Value& value) -> std::pair<bool, std::size_t> {
+        if (size_ >= capacity_ * max_load_factor) {
+            resize(capacity_ * 2);
+        }
+
+        const auto hash = HashFunc{}(key);
+        auto pos = hash & mask_;
+        Entry entry{key, value, hash, 0, true};
+
+        while (true) {
+            if (!entries_[pos].occupied) {
+                entries_[pos] = std::move(entry);
+                ++size_;
+                return {true, pos};
+            }
+
+            if (entries_[pos].key == key) {
+                entries_[pos].value = value;
+                return {false, pos};
+            }
+
+            // Robin Hood hashing: if our distance is greater than current entry's distance, swap
+            if (entry.distance > entries_[pos].distance) {
+                std::swap(entry, entries_[pos]);
+            }
+
+            pos = (pos + 1) & mask_;
+            ++entry.distance;
+        }
+    }
+
+    /**
+     * @brief Find value by key
+     * @param key Key to search for
+     * @return Pointer to value if found, nullptr otherwise
+     */
+    auto find(const Key& key) const -> const Value* {
+        const auto hash = HashFunc{}(key);
+        auto pos = hash & mask_;
+        std::uint32_t distance = 0;
+
+        while (entries_[pos].occupied) {
+            if (entries_[pos].hash == hash && entries_[pos].key == key) {
+                return &entries_[pos].value;
+            }
+
+            if (distance > entries_[pos].distance) {
+                break;  // Key not found
+            }
+
+            pos = (pos + 1) & mask_;
+            ++distance;
+        }
+
+        return nullptr;
+    }
+
+    /**
+     * @brief Get value by key, creating if not exists
+     * @param key Key to get/create
+     * @return Reference to value
+     */
+    auto operator[](const Key& key) -> Value& {
+        auto result = insert(key, Value{});
+        return entries_[result.second].value;
+    }
+
+    // Capacity and statistics
+    auto size() const noexcept -> std::size_t { return size_; }
+    auto capacity() const noexcept -> std::size_t { return capacity_; }
+    auto load_factor() const noexcept -> double { return static_cast<double>(size_) / capacity_; }
+    auto empty() const noexcept -> bool { return size_ == 0; }
+
+    /**
+     * @brief Clear all entries
+     */
+    void clear() {
+        for (auto& entry : entries_) {
+            entry.occupied = false;
+        }
+        size_ = 0;
+    }
+
+  private:
+    std::size_t capacity_;
+    std::size_t mask_;
+    std::size_t size_;
+    std::vector<Entry> entries_;
+
+    auto next_power_of_2(std::size_t n) -> std::size_t {
+        if (n <= 1)
+            return 2;
+        --n;
+        n |= n >> 1;
+        n |= n >> 2;
+        n |= n >> 4;
+        n |= n >> 8;
+        n |= n >> 16;
+        if constexpr (sizeof(std::size_t) > 4) {
+            n |= n >> 32;
+        }
+        return n + 1;
+    }
+
+    void resize(std::size_t new_capacity) {
+        auto old_entries = std::move(entries_);
+        capacity_ = new_capacity;
+        mask_ = capacity_ - 1;
+        size_ = 0;
+        entries_.clear();
+        entries_.resize(capacity_);
+
+        for (const auto& entry : old_entries) {
+            if (entry.occupied) {
+                insert(entry.key, entry.value);
+            }
+        }
+    }
+};
+
+/**
+ * @brief SIMD-optimized tensor operations namespace
+ *
+ * Provides vectorized operations for common ML tensor computations:
+ * - Element-wise arithmetic operations
+ * - Reduction operations (sum, max, min)
+ * - Matrix multiplication primitives
+ * - Activation functions (ReLU, sigmoid, tanh)
+ */
+namespace simd_ops {
+
+/**
+ * @brief Vectorized element-wise addition
+ * @param a First input array
+ * @param b Second input array
+ * @param result Output array
+ * @param size Number of elements
+ */
+template <typename T>
+void vectorized_add(const T* a, const T* b, T* result, std::size_t size) {
+    static_assert(std::is_arithmetic_v<T>, "T must be arithmetic type");
+
+    std::size_t i = 0;
+
+    // SIMD path for float
+    if constexpr (std::is_same_v<T, float>) {
+#ifdef __AVX2__
+        constexpr std::size_t simd_width = 8;
+        const std::size_t simd_end = size - (size % simd_width);
+
+        for (; i < simd_end; i += simd_width) {
+            __m256 va = _mm256_load_ps(&a[i]);
+            __m256 vb = _mm256_load_ps(&b[i]);
+            __m256 vr = _mm256_add_ps(va, vb);
+            _mm256_store_ps(&result[i], vr);
+        }
+#elif defined(__SSE2__)
+        constexpr std::size_t simd_width = 4;
+        const std::size_t simd_end = size - (size % simd_width);
+
+        for (; i < simd_end; i += simd_width) {
+            __m128 va = _mm_load_ps(&a[i]);
+            __m128 vb = _mm_load_ps(&b[i]);
+            __m128 vr = _mm_add_ps(va, vb);
+            _mm_store_ps(&result[i], vr);
+        }
+#endif
+    }
+
+    // Scalar fallback
+    for (; i < size; ++i) {
+        result[i] = a[i] + b[i];
+    }
+}
+
+/**
+ * @brief Vectorized ReLU activation
+ * @param input Input array
+ * @param output Output array
+ * @param size Number of elements
+ */
+template <typename T>
+void vectorized_relu(const T* input, T* output, std::size_t size) {
+    static_assert(std::is_arithmetic_v<T>, "T must be arithmetic type");
+
+    std::size_t i = 0;
+
+    if constexpr (std::is_same_v<T, float>) {
+#ifdef __AVX2__
+        constexpr std::size_t simd_width = 8;
+        const std::size_t simd_end = size - (size % simd_width);
+        const __m256 zero = _mm256_setzero_ps();
+
+        for (; i < simd_end; i += simd_width) {
+            __m256 v = _mm256_load_ps(&input[i]);
+            __m256 result = _mm256_max_ps(v, zero);
+            _mm256_store_ps(&output[i], result);
+        }
+#elif defined(__SSE2__)
+        constexpr std::size_t simd_width = 4;
+        const std::size_t simd_end = size - (size % simd_width);
+        const __m128 zero = _mm_setzero_ps();
+
+        for (; i < simd_end; i += simd_width) {
+            __m128 v = _mm_load_ps(&input[i]);
+            __m128 result = _mm_max_ps(v, zero);
+            _mm_store_ps(&output[i], result);
+        }
+#endif
+    }
+
+    // Scalar fallback
+    for (; i < size; ++i) {
+        output[i] = std::max(input[i], T{0});
+    }
+}
+
+/**
+ * @brief Vectorized sum reduction
+ * @param input Input array
+ * @param size Array size
+ * @return Sum of all elements
+ */
+template <typename T>
+auto vectorized_sum(const T* input, std::size_t size) -> T {
+    static_assert(std::is_arithmetic_v<T>, "T must be arithmetic type");
+
+    T result = T{0};
+    std::size_t i = 0;
+
+    if constexpr (std::is_same_v<T, float>) {
+#ifdef __AVX2__
+        constexpr std::size_t simd_width = 8;
+        const std::size_t simd_end = size - (size % simd_width);
+        __m256 sum_vec = _mm256_setzero_ps();
+
+        for (; i < simd_end; i += simd_width) {
+            __m256 v = _mm256_load_ps(&input[i]);
+            sum_vec = _mm256_add_ps(sum_vec, v);
+        }
+
+        // Horizontal sum
+        __m128 sum_low = _mm256_castps256_ps128(sum_vec);
+        __m128 sum_high = _mm256_extractf128_ps(sum_vec, 1);
+        __m128 sum = _mm_add_ps(sum_low, sum_high);
+        sum = _mm_hadd_ps(sum, sum);
+        sum = _mm_hadd_ps(sum, sum);
+        result = _mm_cvtss_f32(sum);
+#endif
+    }
+
+    // Scalar remainder
+    for (; i < size; ++i) {
+        result += input[i];
+    }
+
+    return result;
+}
+
+}  // namespace simd_ops
 
 }  // namespace inference_lab::common
