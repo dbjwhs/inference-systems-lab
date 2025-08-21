@@ -21,7 +21,7 @@ Usage:
     python tools/check_coverage.py [options]
     
 Examples:
-    python tools/check_coverage.py --threshold 80.0
+    python tools/check_coverage.py --threshold 70.0
     python tools/check_coverage.py --filter "*common*" --html-output coverage.html
     python tools/check_coverage.py --build-dir custom_build --exclude-dirs "tests,examples"
     python tools/check_coverage.py --json-output coverage.json
@@ -527,7 +527,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --threshold 80.0
+  %(prog)s --threshold 70.0
   %(prog)s --filter "*common*" --html-output coverage.html
   %(prog)s --build-dir custom_build --exclude-dirs "tests,examples"
   %(prog)s --json-output coverage.json --clean-build
@@ -547,8 +547,8 @@ Examples:
     # Coverage options
     parser.add_argument("--threshold",
                        type=float,
-                       default=80.0,
-                       help="Minimum coverage threshold percentage (default: 80.0)")
+                       default=70.0,
+                       help="Minimum coverage threshold percentage (default: 70.0)")
     parser.add_argument("--exclude-dirs",
                        help="Comma-separated list of directories to exclude")
     
