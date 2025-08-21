@@ -58,13 +58,13 @@
   - [X] **Error Types**: Extended DataType and InferenceBackend enums for ML scenarios
   - [X] Write comprehensive tests in `common/tests/test_ml_types.cpp`
 
-#### Docker Development Environment - ✅ COMPLETE
-- [X] **Create `Dockerfile.dev`** - CUDA development environment for macOS→Linux workflow
-  - [X] CUDA Toolkit 12.3+ with TensorRT 8.6+ runtime
-  - [X] ONNX Runtime 1.16+ with GPU providers (CPU, CUDA, TensorRT)
-  - [X] Jupyter Lab environment for ML experimentation
-  - [X] Complete volume mounting for source code development
-  - [X] Docker Compose orchestration with GPU support
+#### Development Environment - ✅ MIGRATED TO NIX
+- [X] **Replaced Docker with Nix flakes** - Reproducible cross-platform development
+  - [X] Nix flake configuration with all C++ dependencies
+  - [X] Instant environment setup with `nix develop`
+  - [X] Cross-platform support (macOS/Linux) without virtualization
+  - [X] Faster than Docker with no overhead
+  - [ ] CUDA/TensorRT/ONNX integration (next priority)
 
 ### Phase 2: ML Tooling Infrastructure (1-2 weeks) - HIGH PRIORITY  
 
