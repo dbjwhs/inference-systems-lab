@@ -116,13 +116,18 @@ GitHub Actions can use the same Nix environment:
 The environment includes ML libraries out of the box:
 
 ```bash
-# Test ML libraries
-python3 -c "import numpy; print('NumPy ready!')"
-python3 -c "import onnx; print('ONNX ready!')"
-python3 -c "import cv2; print('OpenCV ready!')"
+# Test all ML libraries at once
+nix develop -c python3 test_ml_dependencies.py
+
+# Or test individual libraries
+nix develop -c python3 -c "import numpy; print('NumPy ready!')"
+nix develop -c python3 -c "import onnx; print('ONNX ready!')"
+nix develop -c python3 -c "import cv2; print('OpenCV ready!')"
+nix develop -c python3 -c "import torch; print(f'PyTorch {torch.__version__} ready!')"
 
 # C++ development with ONNX Runtime and OpenCV
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
+nix develop -c cmake -B build -DCMAKE_BUILD_TYPE=Debug
+nix develop -c cmake --build build -j
 ```
 
 ### GPU Development (Linux)
@@ -136,11 +141,11 @@ cudaPackages.cudnn
 cudaPackages.tensorrt
 ```
 
-### Large Dependencies (Optional)
+### Additional ML Dependencies (Optional)
 
 ```nix
 # Add when needed (large downloads)
-python3Packages.torch-bin  # PyTorch with CUDA
+# Note: PyTorch is already included by default
 python3Packages.tensorflow-bin  # TensorFlow
 ```
 

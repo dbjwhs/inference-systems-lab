@@ -9,7 +9,12 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          config = {
+            allowUnfree = true;  # Allow PyTorch and other ML packages
+          };
+        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -47,7 +52,7 @@
             python3Packages.numpy
             python3Packages.onnx
             python3Packages.opencv4  # Python OpenCV bindings
-            # python3Packages.torch-bin  # Available but large download, enable when needed
+            python3Packages.torch-bin  # PyTorch with CPU support (requires allowUnfree = true)
             
             # Development utilities
             git
@@ -83,6 +88,7 @@
             if command -v python3 >/dev/null; then
               echo "NumPy:        $(python3 -c "import numpy; print(f'v{numpy.__version__}')" 2>/dev/null || echo 'Available')"
               echo "ONNX:         $(python3 -c "import onnx; print(f'v{onnx.__version__}')" 2>/dev/null || echo 'Available')"
+              echo "PyTorch:      $(python3 -c "import torch; print(f'v{torch.__version__}')" 2>/dev/null || echo 'Available')"
             fi
             
             # Platform-specific info
@@ -100,6 +106,7 @@
             echo "  ctest --test-dir build"
             echo ""
             echo "🧠 ML Development:"
+            echo "  python3 -c \"import torch; print(f'PyTorch {torch.__version__} ready!')\""
             echo "  python3 -c \"import numpy; print('NumPy ready!')\""
             echo "  python3 -c \"import onnx; print('ONNX ready!')\""
             echo "  python3 -c \"import cv2; print('OpenCV ready!')\""
