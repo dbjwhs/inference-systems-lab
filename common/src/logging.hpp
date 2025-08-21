@@ -139,7 +139,7 @@ class Logger {
 
   private:
     std::ofstream m_log_file_{};
-    std::mutex m_mutex_{};
+    mutable std::mutex m_file_mutex_{};  // separate mutex only for file I/O
     std::atomic<bool> m_stderr_enabled_{true};
     std::atomic<bool> m_file_output_enabled_{true};
     std::array<std::atomic<bool>, 6> m_enabled_levels_{
@@ -192,7 +192,7 @@ inline void LOG_BASE_PRINT(LogLevel level, const std::string& message) {
     Logger::get_instance().print_log(level, message);
 }
 
-template<typename... Args>
+template <typename... Args>
 inline void LOG_BASE_PRINT(LogLevel level, const std::string& format, Args&&... args) {
     Logger::get_instance().print_log(level, format, std::forward<Args>(args)...);
 }
