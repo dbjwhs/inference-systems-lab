@@ -60,7 +60,7 @@
 #include <string>
 #include <vector>
 
-#include "../common/src/result.hpp"
+#include "../../common/src/result.hpp"
 
 namespace inference_lab::engines {
 

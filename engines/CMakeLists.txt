@@ -1,8 +1,10 @@
 # Inference engines library
 
-# Create engines library (using placeholder for now)
+# Create engines library
 add_library(engines STATIC
     src/placeholder.cpp
+    src/inference_engine.cpp
+    src/forward_chaining.cpp
 )
 
 target_include_directories(engines PUBLIC
@@ -15,9 +17,10 @@ target_link_libraries(engines
     Threads::Threads
 )
 
-# Engines tests (using placeholder for now)
+# Engines tests
 add_executable(engines_tests
     tests/placeholder.cpp
+    tests/test_forward_chaining.cpp
 )
 
 target_link_libraries(engines_tests
@@ -35,6 +38,24 @@ add_executable(engines_benchmarks
 target_link_libraries(engines_benchmarks
     engines
     benchmark::benchmark_main
+)
+
+# Forward chaining demo
+add_executable(socrates_mortality_demo
+    examples/socrates_mortality_demo.cpp
+)
+
+target_link_libraries(socrates_mortality_demo
+    engines
+)
+
+# Simple forward chaining demo
+add_executable(simple_forward_chaining_demo
+    examples/simple_forward_chaining_demo.cpp
+)
+
+target_link_libraries(simple_forward_chaining_demo
+    engines
 )
 
 # Python bindings (Phase 1: Foundation setup)

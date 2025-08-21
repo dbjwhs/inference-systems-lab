@@ -15,6 +15,8 @@
 
 #include "inference_engine.hpp"
 
+#include "forward_chaining.hpp"
+
 #ifdef ENABLE_TENSORRT
     #include "tensorrt/tensorrt_engine.hpp"
 #endif
@@ -85,9 +87,23 @@ auto create_inference_engine(InferenceBackend backend, const ModelConfig& config
 
     // Create backend-specific engine
     switch (backend) {
-        case InferenceBackend::RULE_BASED:
-            // TODO: Implement rule-based engine factory
-            return Err(InferenceError::BACKEND_NOT_AVAILABLE);
+        case InferenceBackend::RULE_BASED: {
+            // Create forward chaining engine for rule-based inference
+            auto result =
+                create_forward_chaining_engine(ConflictResolutionStrategy::PRIORITY_ORDER,
+                                               1000,  // max iterations
+                                               false  // tracing disabled by default for production
+                );
+
+            if (result.is_err()) {
+                return Err(InferenceError::INVALID_BACKEND_CONFIG);
+            }
+
+            // Move the result and cast to base class pointer
+            auto engine_ptr = std::move(result).unwrap();
+            std::unique_ptr<InferenceEngine> engine = std::move(engine_ptr);
+            return Ok(std::move(engine));
+        }
 
         case InferenceBackend::TENSORRT_GPU:
 #ifdef ENABLE_TENSORRT
