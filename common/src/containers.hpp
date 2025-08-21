@@ -313,7 +313,7 @@ auto MemoryPool<ElementType>::allocate(std::size_t count) -> ElementType* {
         return nullptr;
     }
 
-    // Try to find a suitable free block
+    // Try to find a suitable free block (atomically reserves it)
     auto* block = find_free_block(count);
 
     if (!block) {
@@ -325,15 +325,14 @@ auto MemoryPool<ElementType>::allocate(std::size_t count) -> ElementType* {
         }
         release_lock();
 
-        // Try again after expansion
+        // Try again after expansion (atomically reserves it)
         block = find_free_block(count);
         if (!block) {
             return nullptr;  // Still couldn't find suitable block
         }
     }
 
-    // Mark block as in use
-    block->in_use.store(true, std::memory_order_release);
+    // Block is already marked as in use by find_free_block()
 
     // Update statistics
     auto current_allocated = allocated_count_.fetch_add(count, std::memory_order_relaxed) + count;
@@ -446,12 +445,18 @@ auto MemoryPool<ElementType>::expand_pool(std::size_t min_size) -> bool {
 
 template <typename ElementType>
 auto MemoryPool<ElementType>::find_free_block(std::size_t count) -> Block* {
-    // Simple first-fit algorithm
+    // Simple first-fit algorithm with atomic reservation
     // In a production implementation, you might want best-fit or segregated lists
     for (auto& block_ptr : blocks_) {
         auto* block = block_ptr.get();
-        if (!block->in_use.load(std::memory_order_acquire) && block->size >= count) {
-            return block;
+        if (block->size >= count) {
+            // Atomically try to reserve this block
+            bool expected = false;
+            if (block->in_use.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                // Successfully reserved this block
+                return block;
+            }
+            // Block was taken by another thread, continue searching
         }
     }
     return nullptr;

@@ -156,8 +156,8 @@ TEST_F(MemoryPoolTest, PoolStatistics) {
 }
 
 TEST_F(MemoryPoolTest, ThreadSafety) {
-    constexpr int NUM_THREADS = 2;
-    constexpr int ALLOCS_PER_THREAD = 10;
+    constexpr int NUM_THREADS = 4;
+    constexpr int ALLOCS_PER_THREAD = 100;
 
     std::vector<std::thread> threads;
     std::atomic<int> success_count{0};
