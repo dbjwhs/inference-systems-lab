@@ -9,6 +9,7 @@ A comprehensive collection of development automation tools for the Inference Sys
 - [Core Tools](#core-tools)
   - [Code Quality Tools](#code-quality-tools)
   - [Testing and Coverage](#testing-and-coverage)
+  - [Performance Analysis](#performance-analysis)
   - [Development Workflow](#development-workflow)
   - [Project Scaffolding](#project-scaffolding)
 - [Tool Reference](#tool-reference)
@@ -46,6 +47,10 @@ python3 tools/check_eof_newline.py --check          # Check POSIX compliance
 # Run tests with coverage
 python3 tools/run_tests.py                          # Execute all tests
 python3 tools/check_coverage.py --threshold 80.0    # Verify coverage
+
+# Performance analysis and ML testing
+python3 tools/performance_profiler.py               # Analyze performance hotspots
+python3 tools/ml_inference_load_test.py             # Test ML inference scenarios
 
 # Create new module
 python3 tools/new_module.py my_feature              # Scaffold new component
@@ -326,6 +331,76 @@ python3 tools/run_benchmarks.py --output-json results.json
 - `--repetitions N`: Number of runs
 - `--timeout SECONDS`: Benchmark timeout
 
+### Performance Analysis
+
+#### performance_profiler.py
+**Purpose**: Advanced performance analysis and profiling for C++ codebase
+
+**Key Features**:
+- Static code analysis for performance hotspots
+- Result<T,E> monadic operations overhead analysis
+- Logging system synchronization bottleneck detection  
+- Container cache efficiency evaluation
+- Schema evolution migration cost assessment
+- Google Benchmark result interpretation
+- Prioritized optimization recommendations
+- Performance scoring (0-100) and ML integration readiness
+
+**Usage Examples**:
+```bash
+# Full performance analysis
+python3 tools/performance_profiler.py
+
+# Custom output location
+python3 tools/performance_profiler.py --output perf_analysis.json
+
+# Text report only
+python3 tools/performance_profiler.py --format text
+
+# With existing benchmark results
+python3 tools/performance_profiler.py --benchmark-results benchmarks.json
+
+# JSON export for CI/CD
+python3 tools/performance_profiler.py --format json --output ci_perf.json
+```
+
+**Arguments**:
+- `--output FILE`: Output file for analysis results (default: performance_analysis.json)
+- `--benchmark-results FILE`: Path to existing benchmark results JSON
+- `--format FORMAT`: Output format (json/text/both, default: both)
+
+#### ml_inference_load_test.py
+**Purpose**: Comprehensive load testing framework for ML inference scenarios
+
+**Key Features**:
+- Realistic workload simulation for TensorRT/ONNX integration
+- Multiple scenario support: image classification, object detection, NLP transformers
+- Concurrent load testing with configurable concurrency levels
+- Stress testing with automatic saturation detection
+- Mock inference engine for testing without actual ML models
+- Performance metrics: throughput, latency percentiles, GPU utilization
+- Bottleneck analysis and scaling recommendations
+- JSON export with comprehensive performance grading
+
+**Usage Examples**:
+```bash
+# Run all ML inference scenarios
+python3 tools/ml_inference_load_test.py
+
+# Test specific scenario
+python3 tools/ml_inference_load_test.py --scenario image_classification
+
+# Custom output location
+python3 tools/ml_inference_load_test.py --output ml_results.json
+
+# Object detection stress test
+python3 tools/ml_inference_load_test.py --scenario object_detection --output obj_det.json
+```
+
+**Arguments**:
+- `--output FILE`: Output file for test results (default: ml_load_test_results.json)
+- `--scenario SCENARIO`: Specific scenario to test (image_classification/object_detection/nlp_transformers/mixed_workload/all, default: all)
+
 ### Development Workflow
 
 #### install_hooks.py
@@ -543,6 +618,12 @@ The tools are designed for seamless CI/CD integration:
 
 - name: Performance Check
   run: python3 tools/run_benchmarks.py --compare-against ${{ github.base_ref }}
+
+- name: Performance Analysis
+  run: python3 tools/performance_profiler.py --format json --output performance.json
+
+- name: ML Inference Load Test
+  run: python3 tools/ml_inference_load_test.py --scenario mixed_workload --output ml_perf.json
 ```
 
 ### Pre-Commit Hook Integration
