@@ -23,7 +23,7 @@ The project's formatting rules are defined in `.clang-format` at the project roo
 
 ### Template Parameter Naming
 
-Following the modern C++17+ conventions established in DEVELOPMENT.md:
+Following the modern C++17+ conventions established in docs/DEVELOPMENT.md:
 
 ```cpp
 // Preferred: Descriptive names with concepts
@@ -303,4 +303,4 @@ fi
 - [clang-format Documentation](https://clang.llvm.org/docs/ClangFormat.html)
 - [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
 - [C++17 Modern Features](https://en.cppreference.com/w/cpp/17)
-- [Project DEVELOPMENT.md](../DEVELOPMENT.md) - Additional coding standards
+- [Project DEVELOPMENT.md](DEVELOPMENT.md) - Additional coding standards

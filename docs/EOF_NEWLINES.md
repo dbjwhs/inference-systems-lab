@@ -455,5 +455,5 @@ find . -name "*.cpp" | xargs -P 4 -I {} python3 tools/check_eof_newline.py --che
 - [GNU Coding Standards](https://www.gnu.org/prep/standards/standards.html#Formatting)
 - [ESLint eol-last Rule](https://eslint.org/docs/rules/eol-last)
 - [Git Documentation - gitattributes](https://git-scm.com/docs/gitattributes)
-- [Project DEVELOPMENT.md](../DEVELOPMENT.md) - Coding standards and guidelines
+- [Project DEVELOPMENT.md](DEVELOPMENT.md) - Coding standards and guidelines
 - [Project PRE_COMMIT_HOOKS.md](PRE_COMMIT_HOOKS.md) - Pre-commit hook documentation

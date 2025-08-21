@@ -482,6 +482,6 @@ export CLANG_TIDY_PATH=/custom/path/clang-tidy
 - [Git Hooks Documentation](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks)
 - [clang-format Documentation](https://clang.llvm.org/docs/ClangFormat.html)
 - [clang-tidy Documentation](https://clang.llvm.org/extra/clang-tidy/)
-- [Project DEVELOPMENT.md](../DEVELOPMENT.md) - Coding standards and guidelines
+- [Project DEVELOPMENT.md](DEVELOPMENT.md) - Coding standards and guidelines
 - [Project FORMATTING.md](FORMATTING.md) - Code formatting standards
 - [Project STATIC_ANALYSIS.md](STATIC_ANALYSIS.md) - Static analysis configuration

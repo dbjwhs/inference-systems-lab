@@ -448,7 +448,7 @@ When tackling any item:
 - Always create tests first or alongside implementation
 - Use C++17 features appropriately
 - Include benchmarks for performance-critical code
-- Follow patterns in CONTRIBUTING.md and DEVELOPMENT.md
+- Follow patterns in docs/CONTRIBUTING.md and docs/DEVELOPMENT.md
 - Update this TODO.md by checking off completed items
 
 ## Completion Tracking
@@ -718,7 +718,7 @@ When tackling any item:
   - **Comprehensive testing**: Generates GoogleTest unit tests and Google Benchmark performance tests
   - **Documentation**: Auto-generates README.md and technical architecture documentation
   - **CLI interface**: Command-line tool with validation, help system, and configurable options
-  - **Project conventions**: Follows DEVELOPMENT.md standards with RAII patterns, proper namespacing, and logging integration
+  - **Project conventions**: Follows docs/DEVELOPMENT.md standards with RAII patterns, proper namespacing, and logging integration
   - **Immediate buildability**: Generated modules compile and test successfully without modification
   - **Usage**: `python3 tools/new_module.py <module_name> [--author] [--description]`
   - Enables rapid prototyping and consistent module architecture across the entire project
@@ -759,7 +759,7 @@ When tackling any item:
   - Added meaningful test assertions replacing simple warning suppression
   - All 8 test suites (53 total tests) pass with 100% success rate
 
-- **✅ Modern template parameter naming implementation** - Strategic modernization per DEVELOPMENT.md standards:
+- **✅ Modern template parameter naming implementation** - Strategic modernization per docs/DEVELOPMENT.md standards:
   - Updated public-facing API templates with descriptive names (ValueType, ErrorType, FormatArgs, ArgumentTypes)
   - Modernized forward declarations in result.hpp for main classes (Result, Ok, Err)
   - Applied modern naming to logging.hpp template functions (print_log, format_message helpers)

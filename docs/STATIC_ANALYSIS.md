@@ -442,4 +442,4 @@ python tools/run_benchmarks.py --compare-against baseline
 - [CERT C++ Coding Standard](https://wiki.sei.cmu.edu/confluence/pages/viewpage.action?pageId=88046682)
 - [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
 - [LLVM Coding Standards](https://llvm.org/docs/CodingStandards.html)
-- [Project DEVELOPMENT.md](../DEVELOPMENT.md) - Additional coding standards
+- [Project DEVELOPMENT.md](DEVELOPMENT.md) - Additional coding standards

@@ -119,7 +119,7 @@ INPUT                  = @CMAKE_SOURCE_DIR@/common/src \
                          @CMAKE_SOURCE_DIR@/common/examples \
                          @CMAKE_SOURCE_DIR@/engines/examples \
                          @CMAKE_SOURCE_DIR@/README.md \
-                         @CMAKE_SOURCE_DIR@/TECHNICAL_DIVE.md \
+                         @CMAKE_SOURCE_DIR@/docs/TECHNICAL_DIVE.md \
                          @CMAKE_SOURCE_DIR@/docs
 INPUT_ENCODING         = UTF-8
 INPUT_FILE_ENCODING    = 

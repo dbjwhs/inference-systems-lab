@@ -299,8 +299,8 @@ Complete automation suite for enterprise-grade development:
 **Status**: In Progress - Documentation updates and dependency planning
 - [x] README.md updated with TensorRT/ONNX vision and roadmap
 - [ ] CLAUDE.md integration context and development workflow  
-- [ ] WORK_TODO.md detailed implementation phases
-- [ ] DEVELOPMENT.md ML-specific development workflow
+- [ ] docs/WORK_TODO.md detailed implementation phases
+- [ ] docs/DEVELOPMENT.md ML-specific development workflow
 - [ ] Dependencies documentation (TensorRT 8.5+, ONNX Runtime 1.15+)
 
 ### Phase 1: TensorRT Foundation (Next Priority - 2-3 months)

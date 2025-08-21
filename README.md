@@ -269,7 +269,7 @@ python3 tools/new_module.py my_module --author "Your Name" --description "Module
 ## 🗺️ **Development Roadmap**
 
 ### **Phase 0: ML Integration Documentation (CURRENT - In Progress)**
-- [x] **Documentation Updates**: README, CLAUDE.md, WORK_TODO.md integration plans
+- [x] **Documentation Updates**: README, CLAUDE.md, docs/WORK_TODO.md integration plans
 - [ ] **Dependency Planning**: TensorRT/ONNX setup and build system integration
 - [ ] **Architecture Design**: Unified inference interface and error handling patterns
 - [ ] **Workflow Documentation**: Development processes for ML model integration
@@ -301,9 +301,9 @@ python3 tools/new_module.py my_module --author "Your Name" --description "Module
 ## 📚 **Documentation & Resources**
 
 ### **Key Documentation**
-- [`DEVELOPMENT.md`](DEVELOPMENT.md) - Development environment setup and coding standards
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contribution guidelines and testing requirements
-- [`WORK_TODO.md`](WORK_TODO.md) - Detailed project status and task tracking
+- [`DEVELOPMENT.md`](docs/DEVELOPMENT.md) - Development environment setup and coding standards
+- [`CONTRIBUTING.md`](docs/CONTRIBUTING.md) - Contribution guidelines and testing requirements
+- [`WORK_TODO.md`](docs/WORK_TODO.md) - Detailed project status and task tracking
 - [`docs/FORMATTING.md`](docs/FORMATTING.md) - Code formatting standards and automation
 - [`docs/STATIC_ANALYSIS.md`](docs/STATIC_ANALYSIS.md) - Static analysis configuration and workflow
 - [`docs/PRE_COMMIT_HOOKS.md`](docs/PRE_COMMIT_HOOKS.md) - Pre-commit hook system documentation
@@ -340,7 +340,7 @@ xdg-open docs/index.html  # Linux - uses committed docs
 - **[SchemaEvolutionManager](docs/html/classinference__lab_1_1common_1_1_schema_evolution_manager.html)** - Version-aware serialization
 
 ### **📋 Technical Deep Dive**
-- **[TECHNICAL_DIVE.md](TECHNICAL_DIVE.md)** - Comprehensive system architecture analysis with cross-module interactions
+- **[TECHNICAL_DIVE.md](docs/TECHNICAL_DIVE.md)** - Comprehensive system architecture analysis with cross-module interactions
 
 ### **Performance Goals**
 - **Development Velocity**: Sub-second feedback via pre-commit hooks and incremental analysis
@@ -356,7 +356,7 @@ This project emphasizes **learning through implementation** with enterprise-grad
 3. **Performance Awareness**: Include benchmarks for performance-critical components
 4. **Modern C++**: Leverage C++17+ features and established best practices
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for detailed guidelines and workflow.
+See [`CONTRIBUTING.md`](docs/CONTRIBUTING.md) for detailed guidelines and workflow.
 
 ## 🏗️ **Build System**
 
