@@ -117,7 +117,7 @@ The environment includes ML libraries out of the box:
 
 ```bash
 # Test all ML libraries at once
-nix develop -c python3 test_ml_dependencies.py
+nix develop -c python3 tools/test_ml_dependencies.py
 
 # Or test individual libraries
 nix develop -c python3 -c "import numpy; print('NumPy ready!')"

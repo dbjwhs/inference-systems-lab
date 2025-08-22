@@ -293,6 +293,15 @@ python3 tools/check_documentation.py --check --json-output coverage.json
 - `--json-output FILE`: Export results as JSON
 - `--quiet`: Reduce output verbosity
 
+### Doxygen Documentation System
+- **Build Target**: `make docs` - Generate complete API documentation
+- **Configuration**: `docs/Doxyfile.in` - Comprehensive Doxygen setup with CMake integration
+- **Output**: `build/docs/html/` - Generated HTML documentation with navigation
+- **Coverage**: All modules (common, engines, integration, distributed, performance, experiments)
+- **Features**: Class diagrams, call graphs, source browsing, comprehensive cross-references
+- **Recent Updates**: Integration module included with ML framework documentation
+- **Access**: Open `build/docs/html/index.html` in web browser for complete API reference
+
 #### run_benchmarks.py
 **Purpose**: Performance regression detection with baseline management
 

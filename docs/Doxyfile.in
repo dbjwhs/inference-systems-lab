@@ -4,7 +4,7 @@
 # Project information
 PROJECT_NAME           = "Inference Systems Laboratory"
 PROJECT_NUMBER         = @PROJECT_VERSION@
-PROJECT_BRIEF          = "Modern C++17+ research platform for high-performance inference systems"
+PROJECT_BRIEF          = "Modern C++17+ research platform for high-performance inference systems with comprehensive ML integration framework, performance analysis, and enterprise-grade testing infrastructure"
 PROJECT_LOGO           = 
 
 # Output configuration
@@ -114,12 +114,19 @@ WARN_LOGFILE           =
 # Configuration options related to the input files
 INPUT                  = @CMAKE_SOURCE_DIR@/common/src \
                          @CMAKE_SOURCE_DIR@/engines/src \
+                         @CMAKE_SOURCE_DIR@/integration/src \
+                         @CMAKE_SOURCE_DIR@/distributed/src \
+                         @CMAKE_SOURCE_DIR@/performance/src \
+                         @CMAKE_SOURCE_DIR@/experiments/src \
                          @CMAKE_SOURCE_DIR@/common/tests \
                          @CMAKE_SOURCE_DIR@/engines/tests \
+                         @CMAKE_SOURCE_DIR@/integration/tests \
                          @CMAKE_SOURCE_DIR@/common/examples \
                          @CMAKE_SOURCE_DIR@/engines/examples \
+                         @CMAKE_SOURCE_DIR@/integration/examples \
                          @CMAKE_SOURCE_DIR@/README.md \
                          @CMAKE_SOURCE_DIR@/docs/TECHNICAL_DIVE.md \
+                         @CMAKE_SOURCE_DIR@/docs/WORK_TODO.md \
                          @CMAKE_SOURCE_DIR@/docs
 INPUT_ENCODING         = UTF-8
 INPUT_FILE_ENCODING    = 
