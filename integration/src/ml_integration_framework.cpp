@@ -25,6 +25,10 @@
 
 namespace inference_lab::integration {
 
+using common::Err;
+using common::LogLevel;
+using common::Ok;
+
 //=============================================================================
 // Utility Functions Implementation
 //=============================================================================
@@ -79,388 +83,325 @@ std::string to_string(ValidationStrategy strategy) {
 }
 
 //=============================================================================
-// IntegrationTestResult Implementation
+// IntegrationTestResults Implementation
 //=============================================================================
 
-std::string IntegrationTestResult::generate_report() const {
+auto IntegrationTestResults::generate_report() const -> std::string {
     std::stringstream report;
 
     report << "=== ML Integration Test Report ===\n";
-    report << "Scenario: " << scenario_name << "\n";
-    report << "Test Mode: " << to_string(mode) << "\n";
-    report << "Overall Success: " << (overall_success ? "PASS" : "FAIL") << "\n";
-    report << "Total Duration: " << total_test_duration.count() << " ms\n";
-    report << "Memory Allocated: " << total_memory_allocated << " bytes\n";
-    report << "Memory Freed: " << total_memory_freed << " bytes\n\n";
+    report << "Scenario: " << scenario.name << "\n";
+    report << "Test Mode: " << to_string(scenario.mode) << "\n";
+    report << "Overall Success: " << (passed ? "PASS" : "FAIL") << "\n";
+    report << "Total Duration: " << total_execution_time.count() << " ms\n";
 
-    if (cross_backend_similarity.has_value()) {
-        report << "Cross-Backend Similarity: " << *cross_backend_similarity << "\n\n";
+    if (!failure_reason.empty()) {
+        report << "Failure Reason: " << failure_reason << "\n";
     }
 
-    report << "Backend Results:\n";
-    for (const auto& result : backend_results) {
-        report << "  Backend: " << to_string(result.backend) << "\n";
-        report << "    Success: " << (result.success ? "PASS" : "FAIL") << "\n";
-        report << "    Iterations: " << result.successful_iterations << " successful, "
-               << result.failed_iterations << " failed\n";
-        report << "    Avg Latency: " << result.performance.avg_latency.count() << " ms\n";
-        report << "    Throughput: " << result.performance.throughput_fps << " FPS\n";
-        report << "    Peak Memory: " << result.performance.peak_memory_usage_mb << " MB\n";
-
-        if (!result.errors.empty()) {
-            report << "    Errors: " << result.errors.size() << " total\n";
-        }
+    report << "\nPerformance Metrics:\n";
+    for (const auto& [backend, perf_metrics] : metrics) {
+        report << "  Backend: " << to_string(backend) << "\n";
+        report << "    Min Latency: " << perf_metrics.min_latency.count() << " ns\n";
+        report << "    Mean Latency: " << perf_metrics.mean_latency.count() << " ns\n";
+        report << "    Max Latency: " << perf_metrics.max_latency.count() << " ns\n";
+        report << "    Throughput: " << perf_metrics.throughput_inferences_per_sec
+               << " inferences/sec\n";
+        report << "    Peak Memory: " << perf_metrics.peak_memory_usage_bytes << " bytes\n";
         report << "\n";
     }
 
-    if (!warnings.empty()) {
-        report << "Warnings:\n";
-        for (const auto& warning : warnings) {
-            report << "  - " << warning << "\n";
+    if (!error_messages.empty()) {
+        report << "Error Messages:\n";
+        for (const auto& error : error_messages) {
+            report << "  - " << error << "\n";
         }
     }
 
     return report.str();
 }
 
-//=============================================================================
-// ProductionBackendFactory Implementation
-//=============================================================================
-
-auto ProductionBackendFactory::create_engine(InferenceBackend backend, const ModelConfig& config)
-    -> Result<std::unique_ptr<InferenceEngine>, InferenceError> {
-    // This would normally call the real factory function
-    // For now, return an error since we're focusing on the testing framework
-    return Err(InferenceError::BACKEND_NOT_AVAILABLE);
+auto IntegrationTestResults::meets_performance_requirements() const -> bool {
+    // Simple implementation - check if test passed
+    return passed;
 }
 
-auto ProductionBackendFactory::is_backend_available(InferenceBackend backend) const -> bool {
-    // In a real implementation, this would check for hardware availability
-    switch (backend) {
-        case InferenceBackend::RULE_BASED:
-            return true;  // Always available
-        case InferenceBackend::TENSORRT_GPU:
-            return false;  // Would check for CUDA/TensorRT
-        case InferenceBackend::ONNX_RUNTIME:
-            return false;  // Would check for ONNX Runtime installation
+auto IntegrationTestResults::get_performance_comparison() const -> std::string {
+    std::stringstream comparison;
+    comparison << "Performance Comparison Across Backends:\n";
+
+    for (const auto& [backend, perf_metrics] : metrics) {
+        comparison << to_string(backend) << ": " << perf_metrics.mean_latency.count() << " ns avg, "
+                   << perf_metrics.throughput_inferences_per_sec << " inferences/sec\n";
+    }
+
+    return comparison.str();
+}
+
+//=============================================================================
+// PerformanceMetrics Implementation
+//=============================================================================
+
+auto PerformanceMetrics::to_string() const -> std::string {
+    std::stringstream ss;
+    ss << "Performance Metrics:\n";
+    ss << "  Min Latency: " << min_latency.count() << " ns\n";
+    ss << "  Mean Latency: " << mean_latency.count() << " ns\n";
+    ss << "  Max Latency: " << max_latency.count() << " ns\n";
+    ss << "  P95 Latency: " << p95_latency.count() << " ns\n";
+    ss << "  P99 Latency: " << p99_latency.count() << " ns\n";
+    ss << "  Throughput: " << throughput_inferences_per_sec << " inferences/sec\n";
+    ss << "  Peak Memory: " << peak_memory_usage_bytes << " bytes\n";
+    ss << "  Error Count: " << error_count;
+    return ss.str();
+}
+
+auto StatisticalAnalysis::is_statistically_valid(double significance_level) const -> bool {
+    return p_value < significance_level && passes_normality_test;
+}
+
+std::string to_string(IntegrationTestError error) {
+    switch (error) {
+        case IntegrationTestError::BACKEND_CREATION_FAILED:
+            return "Backend creation failed";
+        case IntegrationTestError::BACKEND_NOT_AVAILABLE:
+            return "Backend not available";
+        case IntegrationTestError::TEST_SCENARIO_INVALID:
+            return "Test scenario invalid";
+        case IntegrationTestError::VALIDATION_FAILED:
+            return "Validation failed";
+        case IntegrationTestError::PERFORMANCE_REGRESSION:
+            return "Performance regression detected";
+        case IntegrationTestError::MEMORY_LEAK_DETECTED:
+            return "Memory leak detected";
+        case IntegrationTestError::TIMEOUT_EXCEEDED:
+            return "Timeout exceeded";
+        case IntegrationTestError::STATISTICAL_ANALYSIS_FAILED:
+            return "Statistical analysis failed";
+        case IntegrationTestError::BACKEND_INCONSISTENCY:
+            return "Backend inconsistency";
+        case IntegrationTestError::RESOURCE_EXHAUSTION:
+            return "Resource exhaustion";
+        case IntegrationTestError::UNKNOWN_ERROR:
         default:
-            return false;
+            return "Unknown error";
     }
 }
 
-auto ProductionBackendFactory::get_backend_info(InferenceBackend backend) const -> std::string {
-    return "Production backend: " + to_string(backend);
+auto TestScenario::validate() const -> common::Result<std::monostate, IntegrationTestError> {
+    if (name.empty()) {
+        return Err(IntegrationTestError::TEST_SCENARIO_INVALID);
+    }
+
+    if (backends.empty()) {
+        return Err(IntegrationTestError::TEST_SCENARIO_INVALID);
+    }
+
+    if (iterations == 0) {
+        return Err(IntegrationTestError::TEST_SCENARIO_INVALID);
+    }
+
+    return Ok(std::monostate{});
 }
 
 //=============================================================================
-// TestBackendFactory Implementation
+// TestScenarioBuilder Implementation
 //=============================================================================
 
-void TestBackendFactory::inject_mock_engine(
-    InferenceBackend backend, std::function<std::unique_ptr<InferenceEngine>()> factory) {
-    mock_factories_[backend] = std::move(factory);
+TestScenarioBuilder::TestScenarioBuilder() {
+    // Initialize with defaults
+    scenario_.validation_strategy = ValidationStrategy::STATISTICAL_COMPARISON;
+    scenario_.mode = TestMode::SINGLE_BACKEND;
 }
 
-void TestBackendFactory::remove_mock_injection(InferenceBackend backend) {
-    mock_factories_.erase(backend);
+auto TestScenarioBuilder::with_name(const std::string& name) -> TestScenarioBuilder& {
+    scenario_.name = name;
+    return *this;
 }
 
-void TestBackendFactory::clear_mock_injections() {
-    mock_factories_.clear();
+auto TestScenarioBuilder::with_backends(const std::vector<engines::InferenceBackend>& backends)
+    -> TestScenarioBuilder& {
+    scenario_.backends = backends;
+    return *this;
 }
 
-auto TestBackendFactory::create_engine(InferenceBackend backend, const ModelConfig& config)
-    -> Result<std::unique_ptr<InferenceEngine>, InferenceError> {
-    // Check for mock injection first
-    auto mock_it = mock_factories_.find(backend);
-    if (mock_it != mock_factories_.end()) {
-        auto engine = mock_it->second();
-        if (engine) {
-            return Ok(std::move(engine));
-        } else {
-            return Err(InferenceError::BACKEND_NOT_AVAILABLE);
-        }
-    }
-
-    // Fall back to production factory
-    if (!production_factory_) {
-        production_factory_ = std::make_unique<ProductionBackendFactory>();
-    }
-
-    return production_factory_->create_engine(backend, config);
+auto TestScenarioBuilder::with_model_config(const engines::ModelConfig& config)
+    -> TestScenarioBuilder& {
+    scenario_.model_config = config;
+    return *this;
 }
 
-auto TestBackendFactory::is_backend_available(InferenceBackend backend) const -> bool {
-    // If we have a mock injection, the backend is available
-    if (mock_factories_.find(backend) != mock_factories_.end()) {
-        return true;
-    }
-
-    // Otherwise check production factory
-    if (!production_factory_) {
-        const_cast<TestBackendFactory*>(this)->production_factory_ =
-            std::make_unique<ProductionBackendFactory>();
-    }
-
-    return production_factory_->is_backend_available(backend);
+auto TestScenarioBuilder::with_validation_strategy(ValidationStrategy strategy)
+    -> TestScenarioBuilder& {
+    scenario_.validation_strategy = strategy;
+    return *this;
 }
 
-auto TestBackendFactory::get_backend_info(InferenceBackend backend) const -> std::string {
-    if (mock_factories_.find(backend) != mock_factories_.end()) {
-        return "Mock backend: " + to_string(backend);
-    }
+auto TestScenarioBuilder::with_mode(TestMode mode) -> TestScenarioBuilder& {
+    scenario_.mode = mode;
+    return *this;
+}
 
-    if (!production_factory_) {
-        const_cast<TestBackendFactory*>(this)->production_factory_ =
-            std::make_unique<ProductionBackendFactory>();
-    }
+auto TestScenarioBuilder::with_iterations(std::uint32_t iterations) -> TestScenarioBuilder& {
+    scenario_.iterations = iterations;
+    return *this;
+}
 
-    return production_factory_->get_backend_info(backend);
+auto TestScenarioBuilder::with_timeout(std::chrono::milliseconds timeout) -> TestScenarioBuilder& {
+    scenario_.timeout = timeout;
+    return *this;
+}
+
+auto TestScenarioBuilder::with_max_latency(std::chrono::milliseconds latency)
+    -> TestScenarioBuilder& {
+    scenario_.max_latency = latency;
+    return *this;
+}
+
+auto TestScenarioBuilder::with_numerical_tolerance(double tolerance) -> TestScenarioBuilder& {
+    scenario_.numerical_tolerance = tolerance;
+    return *this;
+}
+
+auto TestScenarioBuilder::with_memory_tracking(bool enable) -> TestScenarioBuilder& {
+    scenario_.enable_memory_tracking = enable;
+    return *this;
+}
+
+auto TestScenarioBuilder::with_performance_profiling(bool enable) -> TestScenarioBuilder& {
+    scenario_.enable_performance_profiling = enable;
+    return *this;
+}
+
+auto TestScenarioBuilder::with_error_injection(bool enable) -> TestScenarioBuilder& {
+    scenario_.inject_errors = enable;
+    return *this;
+}
+
+auto TestScenarioBuilder::with_concurrency_level(std::uint32_t level) -> TestScenarioBuilder& {
+    scenario_.concurrency_level = level;
+    return *this;
+}
+
+auto TestScenarioBuilder::build() -> common::Result<TestScenario, IntegrationTestError> {
+    auto validation_result = scenario_.validate();
+    if (validation_result.is_err()) {
+        return Err(validation_result.unwrap_err());
+    }
+    return Ok(scenario_);
 }
 
 //=============================================================================
 // MLIntegrationFramework Implementation
 //=============================================================================
 
-MLIntegrationFramework::MLIntegrationFramework()
-    : backend_factory_(std::make_unique<ProductionBackendFactory>()), verbose_logging_(false) {
-    LOG_INFO_PRINT("ML Integration Framework initialized with production factory");
-}
-
 MLIntegrationFramework::MLIntegrationFramework(std::unique_ptr<BackendFactory> factory)
-    : backend_factory_(std::move(factory)), verbose_logging_(false) {
-    LOG_INFO_PRINT("ML Integration Framework initialized with custom factory");
+    : backend_factory_(std::move(factory)) {
+    LOG_INFO_PRINT("ML Integration Framework initialized");
 }
 
 auto MLIntegrationFramework::run_integration_test(const TestScenario& scenario)
-    -> Result<IntegrationTestResult, std::string> {
-    if (verbose_logging_) {
-        LOG_INFO_PRINT("Starting integration test: {}", scenario.name);
-    }
+    -> common::Result<IntegrationTestResults, IntegrationTestError> {
+    LOG_INFO_PRINT("Starting integration test: {}", scenario.name);
 
     // Validate scenario
     auto validation_result = scenario.validate();
     if (validation_result.is_err()) {
-        return Err(std::string("Scenario validation failed: ") + validation_result.unwrap_err());
+        return Err(validation_result.unwrap_err());
     }
 
-    auto start_time = std::chrono::steady_clock::now();
-    IntegrationTestResult result;
-    result.scenario_name = scenario.name;
-    result.mode = scenario.mode;
-
-    try {
-        switch (scenario.mode) {
-            case TestMode::SINGLE_BACKEND:
-                if (scenario.backends.size() != 1) {
-                    return Err(std::string("Single backend mode requires exactly one backend"));
-                }
-                return run_single_backend_test(scenario, scenario.backends[0])
-                    .map([&](BackendTestResult backend_result) {
-                        result.backend_results.push_back(std::move(backend_result));
-                        result.overall_success = result.backend_results[0].success;
-                        auto end_time = std::chrono::steady_clock::now();
-                        result.total_test_duration =
-                            std::chrono::duration_cast<std::chrono::milliseconds>(end_time -
-                                                                                  start_time);
-                        return result;
-                    });
-
-            case TestMode::MULTI_BACKEND:
-                return run_multi_backend_test(scenario);
-
-            default:
-                return Err(std::string("Test mode not yet implemented: ") +
-                           to_string(scenario.mode));
-        }
-    } catch (const std::exception& e) {
-        return Err(std::string("Exception during test execution: ") + e.what());
-    }
-}
-
-auto MLIntegrationFramework::run_test_suite(const std::vector<TestScenario>& scenarios)
-    -> Result<std::vector<IntegrationTestResult>, std::string> {
-    std::vector<IntegrationTestResult> results;
-    results.reserve(scenarios.size());
-
-    for (const auto& scenario : scenarios) {
-        auto result = run_integration_test(scenario);
-        if (result.is_err()) {
-            return Err(std::string("Test suite failed at scenario '") + scenario.name +
-                       "': " + result.unwrap_err());
-        }
-        results.push_back(result.unwrap());
-    }
+    IntegrationTestResults results;
+    results.scenario = scenario;
+    results.passed = false;  // Default to failed
+    results.failure_reason = "Not implemented";
 
     return Ok(std::move(results));
 }
 
-auto MLIntegrationFramework::test_single_backend(InferenceBackend backend,
-                                                 const ModelConfig& config,
-                                                 const std::vector<InferenceRequest>& inputs,
-                                                 const PerformanceThresholds& thresholds)
-    -> Result<BackendTestResult, std::string> {
-    if (verbose_logging_) {
-        LOG_INFO_PRINT("Testing single backend: {}", to_string(backend));
-    }
-
-    BackendTestResult result;
-    result.backend = backend;
-    auto start_time = std::chrono::steady_clock::now();
-
-    // Create engine
-    auto engine_result = backend_factory_->create_engine(backend, config);
-    if (engine_result.is_err()) {
-        result.success = false;
-        result.errors.push_back(
-            TestError{.error_code = "ENGINE_CREATION_FAILED",
-                      .error_message = "Failed to create engine for backend: " + to_string(backend),
-                      .backend_name = to_string(backend)});
-        return Ok(std::move(result));
-    }
-
-    auto engine = engine_result.unwrap();
-
-    // Run inference for each input
-    for (const auto& input : inputs) {
-        auto inference_start = std::chrono::steady_clock::now();
-        auto inference_result = engine->run_inference(input);
-        auto inference_end = std::chrono::steady_clock::now();
-
-        auto latency =
-            std::chrono::duration_cast<std::chrono::milliseconds>(inference_end - inference_start);
-
-        if (inference_result.is_ok()) {
-            result.outputs.push_back(inference_result.unwrap());
-            result.successful_iterations++;
-
-            // Update performance metrics
-            result.performance.total_test_time += latency;
-            if (result.performance.min_latency == std::chrono::milliseconds(0) ||
-                latency < result.performance.min_latency) {
-                result.performance.min_latency = latency;
-            }
-            if (latency > result.performance.max_latency) {
-                result.performance.max_latency = latency;
-            }
-        } else {
-            result.failed_iterations++;
-            result.errors.push_back(TestError{.error_code = "INFERENCE_FAILED",
-                                              .error_message = "Inference failed",
-                                              .backend_name = to_string(backend)});
-        }
-    }
-
-    // Calculate final metrics
-    if (result.successful_iterations > 0) {
-        result.performance.avg_latency =
-            result.performance.total_test_time / result.successful_iterations;
-        auto total_time_seconds = result.performance.total_test_time.count() / 1000.0f;
-        if (total_time_seconds > 0) {
-            result.performance.throughput_fps = result.successful_iterations / total_time_seconds;
-        }
-    }
-
-    result.success = (result.failed_iterations == 0) &&
-                     result.performance.meets_thresholds(thresholds);
-
-    auto end_time = std::chrono::steady_clock::now();
-    result.total_test_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    if (verbose_logging_) {
-        LOG_INFO_PRINT("Backend test completed: {} iterations successful, {} failed",
-                       result.successful_iterations,
-                       result.failed_iterations);
-    }
-
-    return Ok(std::move(result));
+auto MLIntegrationFramework::run_performance_benchmark(const TestScenario& scenario)
+    -> common::Result<IntegrationTestResults, IntegrationTestError> {
+    return run_integration_test(scenario);
 }
 
-void MLIntegrationFramework::inject_mock_backend(
-    InferenceBackend backend, std::function<std::unique_ptr<InferenceEngine>()> factory) {
-    auto test_factory = dynamic_cast<TestBackendFactory*>(backend_factory_.get());
-    if (test_factory) {
-        test_factory->inject_mock_engine(backend, std::move(factory));
-        if (verbose_logging_) {
-            LOG_INFO_PRINT("Mock backend injected: {}", to_string(backend));
-        }
-    } else {
-        LOG_WARN_PRINT("Cannot inject mock - not using TestBackendFactory");
-    }
+auto MLIntegrationFramework::run_memory_safety_test(const TestScenario& scenario)
+    -> common::Result<IntegrationTestResults, IntegrationTestError> {
+    return run_integration_test(scenario);
 }
 
-void MLIntegrationFramework::set_backend_factory(std::unique_ptr<BackendFactory> factory) {
-    backend_factory_ = std::move(factory);
-    if (verbose_logging_) {
-        LOG_INFO_PRINT("Backend factory updated");
-    }
+auto MLIntegrationFramework::run_concurrency_test(const TestScenario& scenario)
+    -> common::Result<IntegrationTestResults, IntegrationTestError> {
+    return run_integration_test(scenario);
 }
 
-void MLIntegrationFramework::set_verbose_logging(bool enable) {
-    verbose_logging_ = enable;
-    if (enable) {
-        LOG_INFO_PRINT("Verbose logging enabled");
-    }
+auto MLIntegrationFramework::run_error_injection_test(const TestScenario& scenario)
+    -> common::Result<IntegrationTestResults, IntegrationTestError> {
+    return run_integration_test(scenario);
 }
 
-void MLIntegrationFramework::set_default_performance_thresholds(
-    const PerformanceThresholds& thresholds) {
-    default_thresholds_ = thresholds;
-    if (verbose_logging_) {
-        LOG_INFO_PRINT("Default performance thresholds updated");
-    }
+auto MLIntegrationFramework::get_available_backends() const
+    -> std::vector<engines::InferenceBackend> {
+    return {engines::InferenceBackend::RULE_BASED};  // Basic implementation
 }
 
-// Placeholder implementations for other methods
-auto MLIntegrationFramework::run_single_backend_test(const TestScenario& scenario,
-                                                     InferenceBackend backend)
-    -> Result<BackendTestResult, std::string> {
-    return test_single_backend(
-        backend, scenario.model_config, scenario.test_inputs, scenario.performance);
+auto MLIntegrationFramework::get_framework_info() const -> std::string {
+    return "ML Integration Testing Framework v1.0";
 }
 
-auto MLIntegrationFramework::run_multi_backend_test(const TestScenario& scenario)
-    -> Result<IntegrationTestResult, std::string> {
-    IntegrationTestResult result;
-    result.scenario_name = scenario.name;
-    result.mode = scenario.mode;
+auto MLIntegrationFramework::test_single_backend(
+    engines::InferenceBackend backend,
+    const engines::ModelConfig& config,
+    const std::vector<engines::InferenceRequest>& inputs)
+    -> common::Result<IntegrationTestResults, IntegrationTestError> {
+    // Create a test scenario from the parameters
+    TestScenario scenario;
+    scenario.name = "Single backend test";
+    scenario.backends = {backend};
+    scenario.model_config = config;
+    scenario.mode = TestMode::SINGLE_BACKEND;
+    scenario.iterations = static_cast<std::uint32_t>(inputs.size());
 
-    // Run each backend individually
-    for (auto backend : scenario.backends) {
-        auto backend_result = run_single_backend_test(scenario, backend);
-        if (backend_result.is_ok()) {
-            result.backend_results.push_back(backend_result.unwrap());
-        } else {
-            return Err(backend_result.unwrap_err());
-        }
-    }
+    return run_integration_test(scenario);
+}
 
-    // Determine overall success
-    result.overall_success = std::all_of(result.backend_results.begin(),
-                                         result.backend_results.end(),
-                                         [](const BackendTestResult& r) { return r.success; });
+auto MLIntegrationFramework::compare_backends(
+    const std::vector<engines::InferenceBackend>& backends,
+    const engines::ModelConfig& config,
+    const std::vector<engines::InferenceRequest>& inputs,
+    ValidationStrategy strategy) -> common::Result<IntegrationTestResults, IntegrationTestError> {
+    // Create a test scenario for multi-backend comparison
+    TestScenario scenario;
+    scenario.name = "Multi-backend comparison";
+    scenario.backends = backends;
+    scenario.model_config = config;
+    scenario.mode = TestMode::MULTI_BACKEND;
+    scenario.validation_strategy = strategy;
+    scenario.iterations = static_cast<std::uint32_t>(inputs.size());
 
-    return Ok(std::move(result));
+    return run_integration_test(scenario);
 }
 
 //=============================================================================
 // Factory Functions Implementation
 //=============================================================================
 
-auto create_default_test_scenario(const std::string& name,
-                                  InferenceBackend backend,
-                                  const ModelConfig& config) -> TestScenario {
-    TestScenario scenario;
-    scenario.name = name;
-    scenario.mode = TestMode::SINGLE_BACKEND;
-    scenario.backends = {backend};
-    scenario.model_config = config;
-    scenario.validation = ValidationStrategy::STATISTICAL_COMPARISON;
-    scenario.num_iterations = 1;
-    scenario.tolerance = 1e-5f;
+auto create_hardware_integration_framework()
+    -> common::Result<std::unique_ptr<MLIntegrationFramework>, IntegrationTestError> {
+    // For now, return an error since hardware backends aren't implemented
+    return Err(IntegrationTestError::BACKEND_NOT_AVAILABLE);
+}
 
-    return scenario;
+auto create_mock_integration_framework()
+    -> common::Result<std::unique_ptr<MLIntegrationFramework>, IntegrationTestError> {
+    // For now, return an error since mock factory isn't implemented
+    return Err(IntegrationTestError::BACKEND_NOT_AVAILABLE);
+}
+
+auto create_hybrid_integration_framework(bool use_real_tensorrt, bool use_real_onnx)
+    -> common::Result<std::unique_ptr<MLIntegrationFramework>, IntegrationTestError> {
+    // For now, return an error since hybrid backends aren't implemented
+    (void)use_real_tensorrt;
+    (void)use_real_onnx;
+    return Err(IntegrationTestError::BACKEND_NOT_AVAILABLE);
 }
 
 }  // namespace inference_lab::integration

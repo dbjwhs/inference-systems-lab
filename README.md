@@ -119,6 +119,70 @@ inference-systems-lab/
     └── [placeholder structure prepared]
 ```
 
+## 🏷️ **Namespace Organization**
+
+The project follows a hierarchical namespace structure to provide clear separation of concerns and prevent naming conflicts:
+
+### **Primary Namespaces**
+
+```cpp
+inference_lab                          // Root namespace for all project code
+├── common                            // Shared utilities and foundational types
+│   ├── ml                           // Machine learning specific types
+│   │   └── tests                    // ML type testing utilities
+│   ├── evolution                    // Schema evolution and versioning
+│   ├── types                        // Core type definitions and traits
+│   ├── benchmarks                   // Benchmarking utilities
+│   └── tests                        // Common testing utilities
+├── engines                          // Inference engine implementations
+│   └── tensorrt                     // TensorRT GPU acceleration (future)
+├── integration                      // Integration testing framework
+│   ├── mocks                       // Mock implementations for testing
+│   └── utils                        // Test utilities and fixtures
+├── distributed                      // Distributed computing support (future)
+└── performance                      // Performance optimization tools (future)
+```
+
+### **Utility Namespaces**
+
+```cpp
+builders                              // Builder pattern implementations
+detail                               // Internal implementation details
+simd_ops                             // SIMD optimized operations
+tensor_factory                       // Tensor creation utilities
+tensor_utils                         // Tensor manipulation utilities
+utils                                // General purpose utilities
+```
+
+### **External Integration Namespaces**
+
+```cpp
+nvinfer1                             // NVIDIA TensorRT API namespace
+py = pybind11                        // Python bindings (alias)
+std                                  // Standard library extensions
+```
+
+### **Key Namespace Conflicts Resolved**
+
+During development, several namespace conflicts were identified and resolved:
+
+1. **`InferenceBackend` enum collision**:
+   - `inference_lab::engines::InferenceBackend` (engine types)
+   - `inference_lab::common::ml::InferenceBackend` (ML-specific backends)
+   - **Resolution**: Type alias `using EngineBackend = inference_lab::engines::InferenceBackend`
+
+2. **`TestScenarioBuilder` class collision**:
+   - `inference_lab::integration::TestScenarioBuilder` (main framework)
+   - `inference_lab::integration::utils::TestScenarioBuilder` (utility functions)
+   - **Resolution**: Explicit aliases for each use case
+
+### **Namespace Usage Guidelines**
+
+- **Fully qualify** types in headers to prevent ambiguity
+- **Use `using` declarations** in implementation files for frequently used types
+- **Avoid `using namespace`** directives in headers
+- **Prefer type aliases** over `using namespace` for conflict resolution
+
 ## 📚 **Getting Started with the Codebase**
 
 ### **Current Learning Path (What You Can Explore Now)**

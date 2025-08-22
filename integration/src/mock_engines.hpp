@@ -313,8 +313,8 @@ class MockTensorRTEngine : public MockEngineBase {
     /**
      * @brief Execute inference with TensorRT-specific behavior
      */
-    auto run_inference(const InferenceRequest& request)
-        -> Result<InferenceResponse, InferenceError> override;
+    auto run_inference(const engines::InferenceRequest& request)
+        -> Result<engines::InferenceResponse, engines::InferenceError> override;
 
     /**
      * @brief Get TensorRT-specific backend information
@@ -360,7 +360,7 @@ class MockTensorRTEngine : public MockEngineBase {
     auto simulate_gpu_memory_check(std::uint64_t required_mb) -> bool;
     auto simulate_model_optimization() -> Result<bool, InferenceError>;
     auto simulate_cuda_operations() -> Result<bool, InferenceError>;
-    void simulate_precision_specific_behavior(const InferenceRequest& request);
+    void simulate_precision_specific_behavior(const engines::InferenceRequest& request);
 };
 
 //=============================================================================
@@ -396,8 +396,8 @@ class MockONNXRuntimeEngine : public MockEngineBase {
     /**
      * @brief Execute inference with ONNX Runtime-specific behavior
      */
-    auto run_inference(const InferenceRequest& request)
-        -> Result<InferenceResponse, InferenceError> override;
+    auto run_inference(const engines::InferenceRequest& request)
+        -> Result<engines::InferenceResponse, engines::InferenceError> override;
 
     /**
      * @brief Get ONNX Runtime-specific backend information
@@ -441,7 +441,7 @@ class MockONNXRuntimeEngine : public MockEngineBase {
     // Provider-specific simulation
     auto simulate_provider_initialization() -> Result<bool, InferenceError>;
     auto simulate_model_loading() -> Result<bool, InferenceError>;
-    auto simulate_dynamic_shape_handling(const InferenceRequest& request)
+    auto simulate_dynamic_shape_handling(const engines::InferenceRequest& request)
         -> Result<bool, InferenceError>;
     void apply_provider_specific_optimizations();
     auto get_provider_name(ExecutionProvider provider) const -> std::string;
@@ -468,8 +468,8 @@ class MockRuleBasedEngine : public MockEngineBase {
     /**
      * @brief Execute inference with rule-based behavior
      */
-    auto run_inference(const InferenceRequest& request)
-        -> Result<InferenceResponse, InferenceError> override;
+    auto run_inference(const engines::InferenceRequest& request)
+        -> Result<engines::InferenceResponse, engines::InferenceError> override;
 
     /**
      * @brief Get rule-based backend information
@@ -556,7 +556,7 @@ auto create_realistic_mock(engines::InferenceBackend backend,
  * @brief Verify mock engine behavior consistency
  */
 auto verify_mock_consistency(InferenceEngine* engine,
-                             const InferenceRequest& request,
+                             const engines::InferenceRequest& request,
                              std::uint32_t iterations = 10) -> Result<bool, std::string>;
 
 /**
@@ -571,7 +571,7 @@ auto test_mock_error_injection(MockEngineBase* mock_engine,
  * @brief Benchmark mock performance characteristics
  */
 auto benchmark_mock_performance(InferenceEngine* engine,
-                                const InferenceRequest& request,
+                                const engines::InferenceRequest& request,
                                 std::uint32_t iterations = 100)
     -> Result<std::unordered_map<std::string, float>, std::string>;
 

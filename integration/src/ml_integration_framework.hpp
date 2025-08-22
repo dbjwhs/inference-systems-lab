@@ -97,6 +97,7 @@ namespace inference_lab::integration {
  */
 enum class IntegrationTestError : std::uint8_t {
     BACKEND_CREATION_FAILED,      ///< Failed to create inference backend
+    BACKEND_NOT_AVAILABLE,        ///< Requested backend not available
     TEST_SCENARIO_INVALID,        ///< Invalid test scenario configuration
     VALIDATION_FAILED,            ///< Output validation failed
     PERFORMANCE_REGRESSION,       ///< Performance below expected thresholds
@@ -195,7 +196,7 @@ struct TestScenario {
     /**
      * @brief Validate scenario configuration
      */
-    auto validate() const -> common::Result<void, IntegrationTestError>;
+    auto validate() const -> common::Result<std::monostate, IntegrationTestError>;
 };
 
 /**
@@ -329,6 +330,23 @@ class MLIntegrationFramework {
      * @brief Get framework information
      */
     auto get_framework_info() const -> std::string;
+
+    /**
+     * @brief Test single backend functionality (for test compatibility)
+     */
+    auto test_single_backend(engines::InferenceBackend backend,
+                             const engines::ModelConfig& config,
+                             const std::vector<engines::InferenceRequest>& inputs)
+        -> common::Result<IntegrationTestResults, IntegrationTestError>;
+
+    /**
+     * @brief Compare multiple backends (for test compatibility)
+     */
+    auto compare_backends(const std::vector<engines::InferenceBackend>& backends,
+                          const engines::ModelConfig& config,
+                          const std::vector<engines::InferenceRequest>& inputs,
+                          ValidationStrategy strategy)
+        -> common::Result<IntegrationTestResults, IntegrationTestError>;
 
   private:
     std::unique_ptr<BackendFactory> backend_factory_;

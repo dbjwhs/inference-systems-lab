@@ -25,6 +25,10 @@
 
 namespace inference_lab::integration::mocks {
 
+using common::Err;
+using common::Ok;
+using engines::InferenceError;
+
 //=============================================================================
 // Utility Functions Implementation
 //=============================================================================
@@ -265,8 +269,8 @@ MockTensorRTEngine::MockTensorRTEngine(MockEngineConfig config) : MockEngineBase
     }
 }
 
-auto MockTensorRTEngine::run_inference(const InferenceRequest& request)
-    -> Result<InferenceResponse, InferenceError> {
+auto MockTensorRTEngine::run_inference(const engines::InferenceRequest& request)
+    -> Result<engines::InferenceResponse, engines::InferenceError> {
     auto start_time = std::chrono::steady_clock::now();
     inference_count_.fetch_add(1);
 
@@ -279,7 +283,7 @@ auto MockTensorRTEngine::run_inference(const InferenceRequest& request)
 
     // Simulate GPU memory check
     if (config_.simulate_gpu_memory) {
-        auto required_memory = request.inputs.size() * 100;  // Simplified calculation
+        auto required_memory = request.input_tensors.size() * 100;  // Simplified calculation
         if (!simulate_gpu_memory_check(required_memory)) {
             error_count_.fetch_add(1);
             return Err(InferenceError::GPU_MEMORY_EXHAUSTED);
@@ -290,26 +294,19 @@ auto MockTensorRTEngine::run_inference(const InferenceRequest& request)
     simulate_inference_latency();
 
     // Generate response
-    InferenceResponse response;
+    engines::InferenceResponse response;
 
-    // Create mock output specs
-    std::vector<TensorSpec> output_specs = {
-        TensorSpec{.name = "output",
-                   .shape = {request.batch_size, 1000},  // Classification output
-                   .dtype = DataType::FLOAT32,
-                   .is_dynamic = false}};
-
-    response.outputs = generate_output_tensors(output_specs);
+    // Generate mock output tensors
+    response.output_tensors.resize(1);
+    response.output_tensors[0].resize(1000, 0.5f);  // Mock classification output
+    response.output_names = {"output"};
 
     auto end_time = std::chrono::steady_clock::now();
-    response.inference_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    response.overall_confidence = 0.9f;
-    response.request_id = request.request_id;
+    response.inference_time_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
     // Update statistics
-    total_latency_ms_.fetch_add(response.inference_time.count());
+    total_latency_ms_.fetch_add(static_cast<uint64_t>(response.inference_time_ms));
 
     return Ok(std::move(response));
 }
@@ -346,8 +343,8 @@ auto MockTensorRTEngine::simulate_gpu_memory_check(std::uint64_t required_mb) ->
 MockONNXRuntimeEngine::MockONNXRuntimeEngine(MockEngineConfig config, ExecutionProvider provider)
     : MockEngineBase(config), execution_provider_(provider) {}
 
-auto MockONNXRuntimeEngine::run_inference(const InferenceRequest& request)
-    -> Result<InferenceResponse, InferenceError> {
+auto MockONNXRuntimeEngine::run_inference(const engines::InferenceRequest& request)
+    -> Result<engines::InferenceResponse, engines::InferenceError> {
     auto start_time = std::chrono::steady_clock::now();
     inference_count_.fetch_add(1);
 
@@ -362,32 +359,26 @@ auto MockONNXRuntimeEngine::run_inference(const InferenceRequest& request)
     auto provider_result = simulate_provider_initialization();
     if (provider_result.is_err()) {
         error_count_.fetch_add(1);
-        return provider_result;
+        return Err(provider_result.unwrap_err());
     }
 
     // Simulate inference latency (varies by provider)
     simulate_inference_latency();
 
     // Generate response
-    InferenceResponse response;
+    engines::InferenceResponse response;
 
-    // Create mock output specs
-    std::vector<TensorSpec> output_specs = {TensorSpec{.name = "output",
-                                                       .shape = {request.batch_size, 1000},
-                                                       .dtype = DataType::FLOAT32,
-                                                       .is_dynamic = false}};
-
-    response.outputs = generate_output_tensors(output_specs);
+    // Generate mock output tensors
+    response.output_tensors.resize(1);
+    response.output_tensors[0].resize(1000, 0.85f);  // Mock classification output
+    response.output_names = {"output"};
 
     auto end_time = std::chrono::steady_clock::now();
-    response.inference_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    response.overall_confidence = 0.85f;
-    response.request_id = request.request_id;
+    response.inference_time_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
     // Update statistics
-    total_latency_ms_.fetch_add(response.inference_time.count());
+    total_latency_ms_.fetch_add(static_cast<uint64_t>(response.inference_time_ms));
 
     return Ok(std::move(response));
 }
@@ -425,8 +416,8 @@ auto MockONNXRuntimeEngine::simulate_provider_initialization() -> Result<bool, I
 
 MockRuleBasedEngine::MockRuleBasedEngine(MockEngineConfig config) : MockEngineBase(config) {}
 
-auto MockRuleBasedEngine::run_inference(const InferenceRequest& request)
-    -> Result<InferenceResponse, InferenceError> {
+auto MockRuleBasedEngine::run_inference(const engines::InferenceRequest& request)
+    -> Result<engines::InferenceResponse, engines::InferenceError> {
     auto start_time = std::chrono::steady_clock::now();
     inference_count_.fetch_add(1);
 
@@ -438,33 +429,25 @@ auto MockRuleBasedEngine::run_inference(const InferenceRequest& request)
     }
 
     // Simulate rule-based processing
-    auto facts_matched = simulate_fact_matching();
     auto rules_fired = simulate_rule_firing();
 
     // Very fast processing for rule-based systems
     simulate_inference_latency();
 
     // Generate symbolic-style response
-    InferenceResponse response;
+    engines::InferenceResponse response;
 
-    // Mock symbolic output
-    std::vector<TensorSpec> output_specs = {TensorSpec{.name = "derived_facts",
-                                                       .shape = {rules_fired, 1},  // Number of
-                                                                                   // derived facts
-                                                       .dtype = DataType::INT32,
-                                                       .is_dynamic = true}};
-
-    response.outputs = generate_output_tensors(output_specs);
+    // Generate mock rule-based output
+    response.output_tensors.resize(1);
+    response.output_tensors[0].resize(rules_fired, 1.0f);  // Mock derived facts
+    response.output_names = {"derived_facts"};
 
     auto end_time = std::chrono::steady_clock::now();
-    response.inference_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    response.overall_confidence = 1.0f;  // Rule-based systems are deterministic
-    response.request_id = request.request_id;
+    response.inference_time_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
     // Update statistics
-    total_latency_ms_.fetch_add(response.inference_time.count());
+    total_latency_ms_.fetch_add(static_cast<uint64_t>(response.inference_time_ms));
 
     return Ok(std::move(response));
 }
@@ -544,7 +527,7 @@ auto create_realistic_mock(engines::InferenceBackend backend,
     config.simulate_hardware = true;
 
     // Adjust configuration based on model complexity
-    if (model_config.model_name.find("large") != std::string::npos) {
+    if (model_config.model_path.find("large") != std::string::npos) {
         config.performance.base_latency_ms *= 2.0f;
         config.performance.base_memory_usage_mb *= 2;
     }
@@ -578,14 +561,14 @@ auto generate_mock_config_for_scenario(const std::string& scenario_name) -> Mock
 // Test Utility Functions Implementation
 //=============================================================================
 
-auto verify_mock_consistency(InferenceEngine* engine,
-                             const InferenceRequest& request,
+auto verify_mock_consistency(engines::InferenceEngine* engine,
+                             const engines::InferenceRequest& request,
                              std::uint32_t iterations) -> Result<bool, std::string> {
     if (!engine || !engine->is_ready()) {
         return Err(std::string("Engine not ready for testing"));
     }
 
-    std::vector<InferenceResponse> responses;
+    std::vector<engines::InferenceResponse> responses;
     responses.reserve(iterations);
 
     // Run multiple inferences to check consistency
@@ -600,12 +583,18 @@ auto verify_mock_consistency(InferenceEngine* engine,
     // Check basic consistency - all responses should have same structure
     const auto& first_response = responses[0];
     for (std::size_t i = 1; i < responses.size(); ++i) {
-        if (responses[i].outputs.size() != first_response.outputs.size()) {
-            return Err(std::string("Inconsistent output count on iteration ") + std::to_string(i));
+        if (responses[i].output_tensors.size() != first_response.output_tensors.size()) {
+            return Err(std::string("Inconsistent output tensor count on iteration ") +
+                       std::to_string(i));
         }
 
-        for (std::size_t j = 0; j < responses[i].outputs.size(); ++j) {
-            if (responses[i].outputs[j].name != first_response.outputs[j].name) {
+        if (responses[i].output_names.size() != first_response.output_names.size()) {
+            return Err(std::string("Inconsistent output name count on iteration ") +
+                       std::to_string(i));
+        }
+
+        for (std::size_t j = 0; j < responses[i].output_names.size(); ++j) {
+            if (responses[i].output_names[j] != first_response.output_names[j]) {
                 return Err(std::string("Inconsistent output name on iteration ") +
                            std::to_string(i));
             }
@@ -627,12 +616,10 @@ auto test_mock_error_injection(MockEngineBase* mock_engine,
     mock_engine->inject_error_condition(error_type, expected_error_rate);
 
     // Create a simple test request
-    InferenceRequest test_request;
-    test_request.request_id = "error_injection_test";
+    engines::InferenceRequest test_request;
     test_request.batch_size = 1;
-    test_request.inputs = {
-        TensorInput{.name = "input",
-                    .tensor = tensor_factory::random_uniform<float>({1, 3, 224, 224}, 0.0f, 1.0f)}};
+    test_request.input_tensors = {{1.0f, 2.0f, 3.0f}};  // Simple test input
+    test_request.input_names = {"input"};
 
     std::uint32_t error_count = 0;
 
@@ -652,8 +639,8 @@ auto test_mock_error_injection(MockEngineBase* mock_engine,
     return Ok(actual_error_rate);
 }
 
-auto benchmark_mock_performance(InferenceEngine* engine,
-                                const InferenceRequest& request,
+auto benchmark_mock_performance(engines::InferenceEngine* engine,
+                                const engines::InferenceRequest& request,
                                 std::uint32_t iterations)
     -> Result<std::unordered_map<std::string, float>, std::string> {
     if (!engine || !engine->is_ready()) {

@@ -81,7 +81,7 @@
  *     .build();
  *
  * auto results = perf_analyzer.analyze_backend_performance(
- *     {InferenceBackend::TENSORRT_GPU, InferenceBackend::ONNX_RUNTIME},
+ *     {EngineInferenceBackend::TENSORRT_GPU, EngineInferenceBackend::ONNX_RUNTIME},
  *     test_data);
  * @endcode
  */
@@ -111,9 +111,38 @@
 
 namespace inference_lab::integration::utils {
 
-using namespace common;
-using namespace common::ml;
-using namespace engines;
+// Resolve namespace conflicts by being specific about which types to use
+using common::Err;
+using common::Ok;
+using common::Result;
+
+// For ML integration testing, prefer the engines namespace types for the interface
+using EngineInferenceRequest = engines::InferenceRequest;
+using EngineInferenceResponse = engines::InferenceResponse;
+using EngineModelConfig = engines::ModelConfig;
+using EngineInferenceBackend = engines::InferenceBackend;
+
+// For complex ML operations, use the common::ml types
+using MLFloatTensor = common::ml::FloatTensor;
+using MLModelConfig = common::ml::ModelConfig;
+using Shape = common::ml::Shape;
+using Precision = common::ml::Precision;
+using TensorOutput = common::ml::TensorOutput;
+using TensorSpec = common::ml::TensorSpec;
+
+// Define missing types for integration testing
+struct PerformanceThresholds {
+    float max_latency_ms = 100.0f;
+    float min_throughput = 10.0f;
+    float max_memory_mb = 1000.0f;
+    float max_error_rate = 0.01f;
+};
+
+// Simplified test metrics type
+using TestPerformanceMetrics = PerformanceMetrics;
+
+// Simplified result type alias
+using IntegrationTestResult = IntegrationTestResults;
 
 //=============================================================================
 // Statistical Utilities and Analysis
@@ -212,54 +241,58 @@ class TestDataGenerator {
      * @brief Generate tensor with specified statistical properties
      */
     auto generate_tensor(const Shape& shape, const StatisticalProperties& properties = {})
-        -> FloatTensor;
+        -> MLFloatTensor;
 
     /**
      * @brief Generate classification test data
      */
     auto generate_classification_data(const Shape& input_shape,
                                       std::uint32_t num_classes,
-                                      std::uint32_t num_samples) -> std::vector<InferenceRequest>;
+                                      std::uint32_t num_samples)
+        -> std::vector<EngineInferenceRequest>;
 
     /**
      * @brief Generate object detection test data
      */
     auto generate_object_detection_data(const Shape& input_shape,
                                         std::uint32_t max_objects,
-                                        std::uint32_t num_samples) -> std::vector<InferenceRequest>;
+                                        std::uint32_t num_samples)
+        -> std::vector<EngineInferenceRequest>;
 
     /**
      * @brief Generate time series test data
      */
     auto generate_time_series_data(std::uint32_t sequence_length,
                                    std::uint32_t num_features,
-                                   std::uint32_t num_samples) -> std::vector<InferenceRequest>;
+                                   std::uint32_t num_samples)
+        -> std::vector<EngineInferenceRequest>;
 
     /**
      * @brief Generate NLP test data (token sequences)
      */
     auto generate_nlp_data(std::uint32_t sequence_length,
                            std::uint32_t vocab_size,
-                           std::uint32_t num_samples) -> std::vector<InferenceRequest>;
+                           std::uint32_t num_samples) -> std::vector<EngineInferenceRequest>;
 
     /**
      * @brief Generate realistic image data with natural statistics
      */
     auto generate_realistic_image_data(const Shape& image_shape, std::uint32_t num_samples)
-        -> std::vector<InferenceRequest>;
+        -> std::vector<EngineInferenceRequest>;
 
     /**
      * @brief Generate adversarial examples for robustness testing
      */
-    auto generate_adversarial_examples(const InferenceRequest& base_input,
+    auto generate_adversarial_examples(const EngineInferenceRequest& base_input,
                                        float epsilon = 0.1f,
                                        std::uint32_t num_examples = 10)
-        -> std::vector<InferenceRequest>;
+        -> std::vector<EngineInferenceRequest>;
 
     /**
      * @brief Generate edge case inputs for stress testing
      */
-    auto generate_edge_cases(const ModelConfig& config) -> std::vector<InferenceRequest>;
+    auto generate_edge_cases(const EngineModelConfig& config)
+        -> std::vector<EngineInferenceRequest>;
 
   private:
     std::mt19937 rng_;
@@ -268,7 +301,7 @@ class TestDataGenerator {
 
     auto generate_realistic_image_patch(std::uint32_t height, std::uint32_t width)
         -> std::vector<float>;
-    auto add_adversarial_noise(const FloatTensor& input, float epsilon) -> FloatTensor;
+    auto add_adversarial_noise(const MLFloatTensor& input, float epsilon) -> MLFloatTensor;
 };
 
 //=============================================================================
@@ -285,13 +318,13 @@ class TestFixture {
     /**
      * @brief Get model configuration for this fixture
      */
-    virtual auto get_model_config() const -> ModelConfig = 0;
+    virtual auto get_model_config() const -> EngineModelConfig = 0;
 
     /**
      * @brief Generate test data for this fixture
      */
     virtual auto generate_test_data(std::uint32_t num_samples = 10)
-        -> std::vector<InferenceRequest> = 0;
+        -> std::vector<EngineInferenceRequest> = 0;
 
     /**
      * @brief Get expected performance characteristics
@@ -301,7 +334,7 @@ class TestFixture {
     /**
      * @brief Validate output correctness
      */
-    virtual auto validate_output(const InferenceResponse& response) const
+    virtual auto validate_output(const EngineInferenceResponse& response) const
         -> Result<bool, std::string> = 0;
 
   protected:
@@ -318,17 +351,17 @@ class ClassificationTestFixture : public TestFixture {
         Shape input_shape = {1, 3, 224, 224};
         std::uint32_t num_classes = 1000;
         Precision precision = Precision::FP32;
-        InferenceBackend preferred_backend = InferenceBackend::TENSORRT_GPU;
+        EngineInferenceBackend preferred_backend = EngineInferenceBackend::TENSORRT_GPU;
         StatisticalProperties data_properties;
     };
 
     explicit ClassificationTestFixture(Config config);
 
-    auto get_model_config() const -> ModelConfig override;
+    auto get_model_config() const -> EngineModelConfig override;
     auto generate_test_data(std::uint32_t num_samples = 10)
-        -> std::vector<InferenceRequest> override;
+        -> std::vector<EngineInferenceRequest> override;
     auto get_performance_expectations() const -> PerformanceThresholds override;
-    auto validate_output(const InferenceResponse& response) const
+    auto validate_output(const EngineInferenceResponse& response) const
         -> Result<bool, std::string> override;
 
     /**
@@ -365,11 +398,11 @@ class ObjectDetectionTestFixture : public TestFixture {
 
     explicit ObjectDetectionTestFixture(Config config);
 
-    auto get_model_config() const -> ModelConfig override;
+    auto get_model_config() const -> EngineModelConfig override;
     auto generate_test_data(std::uint32_t num_samples = 10)
-        -> std::vector<InferenceRequest> override;
+        -> std::vector<EngineInferenceRequest> override;
     auto get_performance_expectations() const -> PerformanceThresholds override;
-    auto validate_output(const InferenceResponse& response) const
+    auto validate_output(const EngineInferenceResponse& response) const
         -> Result<bool, std::string> override;
 
     static auto create() -> ObjectDetectionTestFixture;
@@ -394,11 +427,11 @@ class NLPTestFixture : public TestFixture {
 
     explicit NLPTestFixture(Config config);
 
-    auto get_model_config() const -> ModelConfig override;
+    auto get_model_config() const -> EngineModelConfig override;
     auto generate_test_data(std::uint32_t num_samples = 10)
-        -> std::vector<InferenceRequest> override;
+        -> std::vector<EngineInferenceRequest> override;
     auto get_performance_expectations() const -> PerformanceThresholds override;
-    auto validate_output(const InferenceResponse& response) const
+    auto validate_output(const EngineInferenceResponse& response) const
         -> Result<bool, std::string> override;
 
     static auto create() -> NLPTestFixture;
@@ -426,22 +459,24 @@ class PerformanceAnalyzer {
         float outlier_threshold = 2.0f;        ///< Standard deviations for outlier
     };
 
-    explicit PerformanceAnalyzer(Config config = {});
+    explicit PerformanceAnalyzer(Config config);
+    PerformanceAnalyzer() : PerformanceAnalyzer(Config{}) {}
 
     /**
      * @brief Benchmark single backend performance
      */
-    auto benchmark_backend(InferenceEngine* engine, const std::vector<InferenceRequest>& inputs)
+    auto benchmark_backend(engines::InferenceEngine* engine,
+                           const std::vector<EngineInferenceRequest>& inputs)
         -> Result<TestPerformanceMetrics, std::string>;
 
     /**
      * @brief Compare performance between backends
      */
-    auto compare_backend_performance(const std::vector<InferenceBackend>& backends,
-                                     const ModelConfig& model_config,
-                                     const std::vector<InferenceRequest>& inputs,
+    auto compare_backend_performance(const std::vector<EngineInferenceBackend>& backends,
+                                     const EngineModelConfig& model_config,
+                                     const std::vector<EngineInferenceRequest>& inputs,
                                      BackendFactory* factory)
-        -> Result<std::unordered_map<InferenceBackend, TestPerformanceMetrics>, std::string>;
+        -> Result<std::unordered_map<EngineInferenceBackend, TestPerformanceMetrics>, std::string>;
 
     /**
      * @brief Analyze latency distribution
@@ -460,7 +495,8 @@ class PerformanceAnalyzer {
      * @brief Generate performance report
      */
     auto generate_performance_report(
-        const std::unordered_map<InferenceBackend, TestPerformanceMetrics>& results) -> std::string;
+        const std::unordered_map<EngineInferenceBackend, TestPerformanceMetrics>& results)
+        -> std::string;
 
   private:
     Config config_;
@@ -509,8 +545,8 @@ class MemoryTracker {
     /**
      * @brief Test memory stress scenario
      */
-    auto test_memory_stress(InferenceEngine* engine,
-                            const InferenceRequest& request,
+    auto test_memory_stress(engines::InferenceEngine* engine,
+                            const EngineInferenceRequest& request,
                             std::uint32_t stress_iterations = 1000) -> Result<bool, std::string>;
 
     /**
@@ -537,42 +573,42 @@ class OutputValidator {
     /**
      * @brief Validate classification output
      */
-    static auto validate_classification_output(const InferenceResponse& response,
+    static auto validate_classification_output(const EngineInferenceResponse& response,
                                                std::uint32_t expected_classes)
         -> Result<bool, std::string>;
 
     /**
      * @brief Validate object detection output
      */
-    static auto validate_object_detection_output(const InferenceResponse& response,
+    static auto validate_object_detection_output(const EngineInferenceResponse& response,
                                                  std::uint32_t max_detections)
         -> Result<bool, std::string>;
 
     /**
      * @brief Validate tensor shapes and types
      */
-    static auto validate_tensor_specs(const InferenceResponse& response,
+    static auto validate_tensor_specs(const EngineInferenceResponse& response,
                                       const std::vector<TensorSpec>& expected_specs)
         -> Result<bool, std::string>;
 
     /**
      * @brief Validate numerical stability
      */
-    static auto validate_numerical_stability(const InferenceResponse& response)
+    static auto validate_numerical_stability(const EngineInferenceResponse& response)
         -> Result<bool, std::string>;
 
     /**
      * @brief Compare outputs for consistency
      */
-    static auto compare_outputs(const InferenceResponse& response1,
-                                const InferenceResponse& response2,
+    static auto compare_outputs(const EngineInferenceResponse& response1,
+                                const EngineInferenceResponse& response2,
                                 float tolerance = 1e-5f)
         -> Result<float, std::string>;  // Returns similarity score
 
     /**
      * @brief Validate confidence scores
      */
-    static auto validate_confidence_scores(const InferenceResponse& response)
+    static auto validate_confidence_scores(const EngineInferenceResponse& response)
         -> Result<bool, std::string>;
 
   private:
@@ -602,15 +638,15 @@ class TestScenarioBuilder {
     /**
      * @brief Configure backends to test
      */
-    auto with_backends(const std::vector<InferenceBackend>& backends) -> TestScenarioBuilder&;
-    auto with_single_backend(InferenceBackend backend) -> TestScenarioBuilder&;
+    auto with_backends(const std::vector<EngineInferenceBackend>& backends) -> TestScenarioBuilder&;
+    auto with_single_backend(EngineInferenceBackend backend) -> TestScenarioBuilder&;
 
     /**
      * @brief Configure model and data
      */
-    auto with_model_config(const ModelConfig& config) -> TestScenarioBuilder&;
+    auto with_model_config(const EngineModelConfig& config) -> TestScenarioBuilder&;
     auto with_test_fixture(std::shared_ptr<TestFixture> fixture) -> TestScenarioBuilder&;
-    auto with_test_data(const std::vector<InferenceRequest>& data) -> TestScenarioBuilder&;
+    auto with_test_data(const std::vector<EngineInferenceRequest>& data) -> TestScenarioBuilder&;
 
     /**
      * @brief Configure performance requirements
@@ -642,17 +678,17 @@ class TestScenarioBuilder {
      * @brief Quick builders for common scenarios
      */
     static auto create_performance_test(const std::string& name,
-                                        const std::vector<InferenceBackend>& backends,
+                                        const std::vector<EngineInferenceBackend>& backends,
                                         std::shared_ptr<TestFixture> fixture)
         -> TestScenarioBuilder;
 
     static auto create_correctness_test(const std::string& name,
-                                        InferenceBackend backend,
+                                        EngineInferenceBackend backend,
                                         std::shared_ptr<TestFixture> fixture)
         -> TestScenarioBuilder;
 
     static auto create_stress_test(const std::string& name,
-                                   InferenceBackend backend,
+                                   EngineInferenceBackend backend,
                                    std::shared_ptr<TestFixture> fixture) -> TestScenarioBuilder;
 
   private:
