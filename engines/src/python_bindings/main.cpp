@@ -25,7 +25,7 @@ void bind_logging_system(py::module& m);
  * Creates the 'inference_lab' Python module with all C++ bindings.
  * This module provides Python access to the high-performance C++ inference engine.
  */
-static pybin_d11_module(inference_lab /*unused*/, m /*unused*/) {
+PYBIND11_MODULE(inference_lab, m) {
     m.doc() = "Inference Systems Laboratory - High-Performance ML Inference Engine";
 
     // Module metadata

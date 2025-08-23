@@ -6,13 +6,15 @@
  * supporting both rule-based and ML-based inference systems.
  */
 
+#include <chrono>
+
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-// Note: These headers will be implemented in Phase 3
-// #include <engines/src/inference_engine.hpp>
-// #include <engines/src/forward_chaining/forward_chaining_engine.hpp>
+// Include actual inference engine headers
+#include "../forward_chaining.hpp"
+#include "../inference_engine.hpp"
 
 namespace py = pybind11;
 
@@ -115,6 +117,7 @@ class AsyncInferenceWrapper {
  * Creates Python classes for inference engines with async support.
  */
 void bind_inference_engine(py::module& m) {
+    using namespace inference_lab::engines;
     // Create a submodule for inference types
     py::module inference_module =
         m.def_submodule("inference", "Inference engine types and operations");
@@ -197,4 +200,55 @@ void bind_inference_engine(py::module& m) {
             return duration.count() / static_cast<double>(iterations);
         },
         "Benchmark inference performance (microseconds per inference)");
+
+    // Bind actual C++ inference engine types
+
+    // InferenceError enum
+    py::enum_<InferenceError>(inference_module, "InferenceError")
+        .value("MODEL_LOAD_FAILED", InferenceError::MODEL_LOAD_FAILED)
+        .value("UNSUPPORTED_MODEL_FORMAT", InferenceError::UNSUPPORTED_MODEL_FORMAT)
+        .value("MODEL_VERSION_MISMATCH", InferenceError::MODEL_VERSION_MISMATCH)
+        .value("INFERENCE_FAILED", InferenceError::INFERENCE_FAILED)
+        .value("INVALID_INPUT", InferenceError::INVALID_INPUT)
+        .value("TIMEOUT", InferenceError::TIMEOUT)
+        .value("OUT_OF_MEMORY", InferenceError::OUT_OF_MEMORY)
+        .value("GPU_NOT_AVAILABLE", InferenceError::GPU_NOT_AVAILABLE)
+        .value("BACKEND_NOT_AVAILABLE", InferenceError::BACKEND_NOT_AVAILABLE)
+        .value("CONFIGURATION_ERROR", InferenceError::CONFIGURATION_ERROR)
+        .value("SERIALIZATION_ERROR", InferenceError::SERIALIZATION_ERROR)
+        .value("NETWORK_ERROR", InferenceError::NETWORK_ERROR)
+        .value("UNKNOWN_ERROR", InferenceError::UNKNOWN_ERROR);
+
+    // InferenceBackend enum
+    py::enum_<InferenceBackend>(inference_module, "InferenceBackend")
+        .value("RULE_BASED", InferenceBackend::RULE_BASED)
+        .value("TENSORRT_GPU", InferenceBackend::TENSORRT_GPU)
+        .value("ONNX_RUNTIME", InferenceBackend::ONNX_RUNTIME)
+        .value("MOCK", InferenceBackend::MOCK)
+        .value("HYBRID_NEURAL_SYMBOLIC", InferenceBackend::HYBRID_NEURAL_SYMBOLIC);
+
+    // ModelConfig struct
+    py::class_<ModelConfig>(inference_module, "ModelConfig")
+        .def(py::init<>())
+        .def_readwrite("model_path", &ModelConfig::model_path)
+        .def_readwrite("max_batch_size", &ModelConfig::max_batch_size)
+        .def_readwrite("enable_optimization", &ModelConfig::enable_optimization)
+        .def_readwrite("enable_profiling", &ModelConfig::enable_profiling)
+        .def_readwrite("gpu_device_id", &ModelConfig::gpu_device_id)
+        .def_readwrite("max_workspace_size", &ModelConfig::max_workspace_size);
+
+    // InferenceRequest struct
+    py::class_<InferenceRequest>(inference_module, "InferenceRequest")
+        .def(py::init<>())
+        .def_readwrite("input_tensors", &InferenceRequest::input_tensors)
+        .def_readwrite("input_names", &InferenceRequest::input_names)
+        .def_readwrite("batch_size", &InferenceRequest::batch_size);
+
+    // InferenceResponse struct
+    py::class_<InferenceResponse>(inference_module, "InferenceResponse")
+        .def(py::init<>())
+        .def_readwrite("output_tensors", &InferenceResponse::output_tensors)
+        .def_readwrite("output_names", &InferenceResponse::output_names)
+        .def_readwrite("inference_time_ms", &InferenceResponse::inference_time_ms)
+        .def_readwrite("memory_used_bytes", &InferenceResponse::memory_used_bytes);
 }
