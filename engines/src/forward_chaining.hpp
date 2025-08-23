@@ -83,7 +83,6 @@
 #include <vector>
 
 #include "../../common/src/inference_types.hpp"
-#include "../../common/src/logging.hpp"
 #include "../../common/src/result.hpp"
 #include "inference_engine.hpp"
 
@@ -127,12 +126,12 @@ using VariableBindings = std::unordered_map<std::string, common::Value>;
  * new facts were derived. Useful for explanation generation and debugging.
  */
 struct RuleFiring {
-    std::uint64_t rule_id;                        ///< ID of the rule that fired
-    std::string rule_name;                        ///< Human-readable rule name
-    std::vector<std::uint64_t> triggering_facts;  ///< Facts that matched conditions
-    std::vector<common::Fact> derived_facts;      ///< New facts derived from rule
-    VariableBindings bindings;                    ///< Variable bindings used in firing
-    std::chrono::milliseconds firing_time_ms;     ///< Time when rule fired
+    std::uint64_t rule_id{};                        ///< ID of the rule that fired
+    std::string rule_name{};                        ///< Human-readable rule name
+    std::vector<std::uint64_t> triggering_facts{};  ///< Facts that matched conditions
+    std::vector<common::Fact> derived_facts{};      ///< New facts derived from rule
+    VariableBindings bindings{};                    ///< Variable bindings used in firing
+    std::chrono::milliseconds firing_time_ms{};     ///< Time when rule fired
 };
 
 /**

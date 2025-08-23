@@ -6,7 +6,6 @@
  * Rust-style error handling in Python with zero-overhead abstractions.
  */
 
-#include <common/src/result.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -24,7 +23,7 @@ namespace py = pybind11;
 template <typename T, typename E>
 class PyResult {
   private:
-    Result<T, E> result_;
+    Result<T, E> result_{};
 
   public:
     explicit PyResult(Result<T, E> result) : result_(std::move(result)) {}
@@ -104,7 +103,7 @@ class PyResult {
  * Creates Python classes for common Result<T, E> instantiations used
  * throughout the inference system.
  */
-void bind_result_types(py::module& m) {
+static void bind_result_types(py::module& m) {
     // Create a submodule for result types
     py::module result_module = m.def_submodule("result", "Result<T, E> error handling types");
 

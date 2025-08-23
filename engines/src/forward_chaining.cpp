@@ -16,6 +16,8 @@
 #include <random>
 #include <sstream>
 
+#include "../../common/src/logging.hpp"
+
 using namespace inference_lab::common;  // For LogLevel and other common types
 
 namespace inference_lab::engines {

@@ -510,6 +510,7 @@ TEST(TypeSystemIntegration, FullMLWorkflow) {
 
     // 2. Create model with compile-time shape verification
     auto model = make_sequential(DenseLayer<4, 8>(), ReLULayer<HiddenShape>(), DenseLayer<8, 2>());
+    static_cast<void>(sizeof(OutputShape));  // Silence unused type alias warning
 
     // 3. Create input data
     auto input = TypedTensor<float, InputShape>::zeros();

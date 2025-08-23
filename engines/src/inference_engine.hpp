@@ -158,7 +158,7 @@ std::string to_string(InferenceError error);
  * while maintaining compatibility with the unified factory interface.
  */
 struct ModelConfig {
-    std::string model_path;           ///< Path to model file (.onnx, .trt, etc.)
+    std::string model_path{};         ///< Path to model file (.onnx, .trt, etc.)
     std::uint32_t max_batch_size{1};  ///< Maximum batch size for inference
     bool enable_optimization{true};   ///< Enable backend-specific optimizations
     bool enable_profiling{false};     ///< Enable performance profiling
@@ -179,7 +179,7 @@ struct ModelConfig {
 struct InferenceRequest {
     // For ML models: tensor data
     std::vector<std::vector<float>> input_tensors;  ///< Input tensor data (simplified)
-    std::vector<std::string> input_names;           ///< Named inputs for model
+    std::vector<std::string> input_names{};         ///< Named inputs for model
 
     // For rule-based systems: symbolic data (future extension)
     // std::vector<Fact> facts;
@@ -197,7 +197,7 @@ struct InferenceRequest {
 struct InferenceResponse {
     // ML model outputs
     std::vector<std::vector<float>> output_tensors;  ///< Output tensor data
-    std::vector<std::string> output_names;           ///< Named outputs from model
+    std::vector<std::string> output_names{};         ///< Named outputs from model
 
     // Rule-based outputs (future extension)
     // std::vector<Fact> derived_facts;
