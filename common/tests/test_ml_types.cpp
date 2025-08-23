@@ -116,7 +116,7 @@ TEST_F(MLTensorTest, BatchExtraction) {
     // Fill with test data
     for (std::size_t i = 0; i < 4; ++i) {
         for (std::size_t j = 0; j < 3; ++j) {
-            batch_tensor(i, j) = static_cast<float>(i * 3 + j);
+            batch_tensor(i, j) = static_cast<float>((i * 3) + j);
         }
     }
 
@@ -129,9 +129,9 @@ TEST_F(MLTensorTest, BatchExtraction) {
     EXPECT_EQ(single_batch.shape()[1], 3);
 
     // Verify data
-    EXPECT_FLOAT_EQ(single_batch(0, 0), 3.0f);
-    EXPECT_FLOAT_EQ(single_batch(0, 1), 4.0f);
-    EXPECT_FLOAT_EQ(single_batch(0, 2), 5.0f);
+    EXPECT_FLOAT_EQ(single_batch(0, 0), 3.0F);
+    EXPECT_FLOAT_EQ(single_batch(0, 1), 4.0F);
+    EXPECT_FLOAT_EQ(single_batch(0, 2), 5.0F);
 
     // Extract multiple batches
     result = batch_tensor.extract_batch(0, 2);
@@ -167,27 +167,27 @@ TEST(TensorFactoryTest, ZerosAndOnes) {
 
     // Verify zeros
     for (std::size_t i = 0; i < zeros.size(); ++i) {
-        EXPECT_FLOAT_EQ(zeros.data()[i], 0.0f);
+        EXPECT_FLOAT_EQ(zeros.data()[i], 0.0F);
     }
 
     // Verify ones
     for (std::size_t i = 0; i < ones.size(); ++i) {
-        EXPECT_FLOAT_EQ(ones.data()[i], 1.0f);
+        EXPECT_FLOAT_EQ(ones.data()[i], 1.0F);
     }
 }
 
 TEST(TensorFactoryTest, RandomUniform) {
-    auto random_tensor = tensor_factory::random_uniform<float>({100}, -1.0f, 1.0f);
+    auto random_tensor = tensor_factory::random_uniform<float>({100}, -1.0F, 1.0F);
 
     // Check all values are in range
     for (std::size_t i = 0; i < random_tensor.size(); ++i) {
-        EXPECT_GE(random_tensor.data()[i], -1.0f);
-        EXPECT_LE(random_tensor.data()[i], 1.0f);
+        EXPECT_GE(random_tensor.data()[i], -1.0F);
+        EXPECT_LE(random_tensor.data()[i], 1.0F);
     }
 
     // Basic randomness check - should have some variation
     auto stats = calculate_stats(random_tensor);
-    EXPECT_GT(stats.max_val - stats.min_val, 0.5f);  // Should have some spread
+    EXPECT_GT(stats.max_val - stats.min_val, 0.5F);  // Should have some spread
 }
 
 TEST(TensorFactoryTest, FromData) {
@@ -222,15 +222,15 @@ TEST(TensorSpecTest, Validation) {
     EXPECT_TRUE(valid_spec.is_valid());
 
     // Invalid specs
-    TensorSpec empty_name = valid_spec;
+    TensorSpec const empty_name = valid_spec;
     empty_name.name = "";
     EXPECT_FALSE(empty_name.is_valid());
 
-    TensorSpec empty_shape = valid_spec;
+    TensorSpec const empty_shape = valid_spec;
     empty_shape.shape = {};
     EXPECT_FALSE(empty_shape.is_valid());
 
-    TensorSpec zero_dim = valid_spec;
+    TensorSpec const zero_dim = valid_spec;
     zero_dim.shape = {1, 0, 224, 224};
     EXPECT_FALSE(zero_dim.is_valid());
 }
@@ -270,19 +270,19 @@ TEST(ModelConfigTest, Validation) {
     EXPECT_TRUE(result.unwrap());
 
     // Test invalid configurations
-    ModelConfig empty_name = valid_config;
+    ModelConfig const empty_name = valid_config;
     empty_name.name = "";
     EXPECT_TRUE(empty_name.validate().is_err());
 
-    ModelConfig empty_path = valid_config;
+    ModelConfig const empty_path = valid_config;
     empty_path.model_path = "";
     EXPECT_TRUE(empty_path.validate().is_err());
 
-    ModelConfig no_inputs = valid_config;
+    ModelConfig const no_inputs = valid_config;
     no_inputs.input_specs.clear();
     EXPECT_TRUE(no_inputs.validate().is_err());
 
-    ModelConfig zero_batch = valid_config;
+    ModelConfig const zero_batch = valid_config;
     zero_batch.max_batch_size = 0;
     EXPECT_TRUE(zero_batch.validate().is_err());
 }
@@ -321,9 +321,9 @@ TEST(InferenceRequestTest, Validation) {
 
     // Create valid request
     FloatTensor input_tensor({1, 3});
-    input_tensor.fill(1.0f);
+    input_tensor.fill(1.0F);
 
-    TensorInput tensor_input;
+    TensorInput const tensor_input;
     tensor_input.name = "input";
     tensor_input.tensor = std::move(input_tensor);
 
@@ -335,15 +335,15 @@ TEST(InferenceRequestTest, Validation) {
     EXPECT_TRUE(result.unwrap());
 
     // Test invalid requests
-    InferenceRequest no_inputs;
+    InferenceRequest const no_inputs;
     no_inputs.batch_size = 1;
     EXPECT_TRUE(no_inputs.validate(config).is_err());
 
-    InferenceRequest zero_batch;
+    InferenceRequest const zero_batch;
     zero_batch.batch_size = 0;
     EXPECT_TRUE(zero_batch.validate(config).is_err());
 
-    InferenceRequest large_batch;
+    InferenceRequest const large_batch;
     large_batch.batch_size = 10;  // Exceeds max_batch_size
     EXPECT_TRUE(large_batch.validate(config).is_err());
 }
@@ -354,12 +354,12 @@ TEST(InferenceRequestTest, Validation) {
 
 TEST(InferenceResponseTest, OutputRetrieval) {
     FloatTensor output_tensor({1, 3});
-    output_tensor.fill(0.5f);
+    output_tensor.fill(0.5F);
 
     TensorOutput tensor_output;
     tensor_output.name = "logits";
     tensor_output.tensor = std::move(output_tensor);
-    tensor_output.confidence = 0.95f;
+    tensor_output.confidence = 0.95F;
 
     InferenceResponse response{.inference_time = std::chrono::milliseconds(50),
                                .overall_confidence = 0.95f};
@@ -371,7 +371,7 @@ TEST(InferenceResponseTest, OutputRetrieval) {
 
     const auto& output = output_opt.value().get();
     EXPECT_EQ(output.name, "logits");
-    EXPECT_FLOAT_EQ(output.confidence, 0.95f);
+    EXPECT_FLOAT_EQ(output.confidence, 0.95F);
 
     // Test missing output
     auto missing_opt = response.get_output("missing");
@@ -382,11 +382,11 @@ TEST(InferenceResponseTest, MemoryCalculation) {
     FloatTensor output1({10});
     FloatTensor output2({20});
 
-    TensorOutput tensor_output1;
+    TensorOutput const tensor_output1;
     tensor_output1.name = "output1";
     tensor_output1.tensor = std::move(output1);
 
-    TensorOutput tensor_output2;
+    TensorOutput const tensor_output2;
     tensor_output2.name = "output2";
     tensor_output2.tensor = std::move(output2);
 
@@ -403,19 +403,19 @@ TEST(InferenceResponseTest, MemoryCalculation) {
 //=============================================================================
 
 TEST(ClassificationResultTest, TopKPredictions) {
-    ClassificationResult result{.probabilities = {0.1f, 0.7f, 0.05f, 0.15f},
+    ClassificationResult result{.probabilities = {0.1F, 0.7F, 0.05F, 0.15F},
                                 .labels = {"cat", "dog", "bird", "fish"},
                                 .predicted_class = 1,
-                                .max_probability = 0.7f};
+                                .max_probability = 0.7F};
 
     auto top_2 = result.top_k(2);
     ASSERT_EQ(top_2.size(), 2);
 
     // Should be sorted by probability (descending)
     EXPECT_EQ(top_2[0].first, 1);  // dog
-    EXPECT_FLOAT_EQ(top_2[0].second, 0.7f);
+    EXPECT_FLOAT_EQ(top_2[0].second, 0.7F);
     EXPECT_EQ(top_2[1].first, 3);  // fish
-    EXPECT_FLOAT_EQ(top_2[1].second, 0.15f);
+    EXPECT_FLOAT_EQ(top_2[1].second, 0.15F);
 
     // Test k larger than available classes
     auto top_10 = result.top_k(10);
@@ -427,18 +427,18 @@ TEST(ClassificationResultTest, TopKPredictions) {
 //=============================================================================
 
 TEST(UncertaintyEstimateTest, ReliabilityCheck) {
-    UncertaintyEstimate low_uncertainty{.epistemic_uncertainty = 0.02f,
-                                        .aleatoric_uncertainty = 0.03f,
-                                        .total_uncertainty = 0.05f,
-                                        .confidence_interval_95 = 0.1f};
+    UncertaintyEstimate const low_uncertainty{.epistemic_uncertainty = 0.02F,
+                                              .aleatoric_uncertainty = 0.03F,
+                                              .total_uncertainty = 0.05F,
+                                              .confidence_interval_95 = 0.1F};
 
-    UncertaintyEstimate high_uncertainty{.epistemic_uncertainty = 0.15f,
-                                         .aleatoric_uncertainty = 0.2f,
-                                         .total_uncertainty = 0.35f,
-                                         .confidence_interval_95 = 0.7f};
+    UncertaintyEstimate const high_uncertainty{.epistemic_uncertainty = 0.15F,
+                                               .aleatoric_uncertainty = 0.2F,
+                                               .total_uncertainty = 0.35F,
+                                               .confidence_interval_95 = 0.7F};
 
-    EXPECT_TRUE(low_uncertainty.is_reliable(0.1f));    // Below threshold
-    EXPECT_FALSE(high_uncertainty.is_reliable(0.1f));  // Above threshold
+    EXPECT_TRUE(low_uncertainty.is_reliable(0.1F));    // Below threshold
+    EXPECT_FALSE(high_uncertainty.is_reliable(0.1F));  // Above threshold
 }
 
 //=============================================================================
@@ -451,7 +451,7 @@ TEST(BatchResultTest, ThroughputCalculation) {
 
     // Create 5 empty outputs
     for (int i = 0; i < 5; ++i) {
-        TensorOutput output;
+        TensorOutput const output;
         output.name = "output_" + std::to_string(i);
         output.tensor = FloatTensor({1});
         outputs.push_back(std::move(output));
@@ -463,13 +463,13 @@ TEST(BatchResultTest, ThroughputCalculation) {
                        .batch_efficiency = 0.8f};
 
     auto throughput = result.get_throughput();
-    EXPECT_FLOAT_EQ(throughput, 50.0f);  // 5 samples / 0.1 seconds = 50 samples/sec
+    EXPECT_FLOAT_EQ(throughput, 50.0F);  // 5 samples / 0.1 seconds = 50 samples/sec
 
     // Test zero time case
     BatchResult zero_time_result{.total_time = std::chrono::milliseconds(0),
                                  .avg_per_sample_time = std::chrono::milliseconds(20),
                                  .batch_efficiency = 0.8f};
-    EXPECT_FLOAT_EQ(zero_time_result.get_throughput(), 0.0f);
+    EXPECT_FLOAT_EQ(zero_time_result.get_throughput(), 0.0F);
 }
 
 //=============================================================================
@@ -478,7 +478,7 @@ TEST(BatchResultTest, ThroughputCalculation) {
 
 TEST(UtilityTest, TensorConversion) {
     FloatTensor float_tensor({2, 2});
-    float_tensor.fill(3.14f);
+    float_tensor.fill(3.14F);
 
     auto int_tensor = convert_tensor<float, int>(float_tensor);
 
@@ -492,26 +492,26 @@ TEST(UtilityTest, TensorConversion) {
 
 TEST(UtilityTest, TensorStatistics) {
     FloatTensor tensor({5});
-    tensor.data()[0] = 1.0f;
-    tensor.data()[1] = 2.0f;
-    tensor.data()[2] = 3.0f;
-    tensor.data()[3] = 4.0f;
-    tensor.data()[4] = 5.0f;
+    tensor.data()[0] = 1.0F;
+    tensor.data()[1] = 2.0F;
+    tensor.data()[2] = 3.0F;
+    tensor.data()[3] = 4.0F;
+    tensor.data()[4] = 5.0F;
 
     auto stats = calculate_stats(tensor);
 
-    EXPECT_FLOAT_EQ(stats.mean, 3.0f);
-    EXPECT_FLOAT_EQ(stats.min_val, 1.0f);
-    EXPECT_FLOAT_EQ(stats.max_val, 5.0f);
+    EXPECT_FLOAT_EQ(stats.mean, 3.0F);
+    EXPECT_FLOAT_EQ(stats.min_val, 1.0F);
+    EXPECT_FLOAT_EQ(stats.max_val, 5.0F);
     EXPECT_EQ(stats.non_zero_count, 5);
-    EXPECT_GT(stats.std_dev, 0.0f);  // Should have some variance
+    EXPECT_GT(stats.std_dev, 0.0F);  // Should have some variance
 
     // Test zero-size tensor (single element with value 0)
     FloatTensor zero_tensor({1});
     zero_tensor.zero();
     auto zero_stats = calculate_stats(zero_tensor);
-    EXPECT_FLOAT_EQ(zero_stats.mean, 0.0f);
-    EXPECT_FLOAT_EQ(zero_stats.std_dev, 0.0f);
+    EXPECT_FLOAT_EQ(zero_stats.mean, 0.0F);
+    EXPECT_FLOAT_EQ(zero_stats.std_dev, 0.0F);
     EXPECT_EQ(zero_stats.non_zero_count, 0);
 }
 
