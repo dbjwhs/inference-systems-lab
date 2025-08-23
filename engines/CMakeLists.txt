@@ -50,7 +50,8 @@ target_link_libraries(simple_forward_chaining_demo
     engines
 )
 
-# Python bindings (Phase 1: Foundation setup)
-# Temporarily disabled - enable in Phase 2 when testing
-# add_subdirectory(src/python_bindings)
+# Python bindings
+if(BUILD_PYTHON_BINDINGS)
+    add_subdirectory(src/python_bindings)
+endif()
 

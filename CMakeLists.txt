@@ -44,6 +44,9 @@ include(Documentation)
 configure_documentation()
 configure_formatting()
 
+include(Pybind11)
+# Python bindings configured if BUILD_PYTHON_BINDINGS=ON
+
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR})
 

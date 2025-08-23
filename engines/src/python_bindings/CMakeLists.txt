@@ -1,7 +1,7 @@
 # Python Bindings for Inference Systems Laboratory
 # Builds the inference_lab Python module using pybind11
 
-find_package(pybind11 REQUIRED)
+# pybind11 is already configured by cmake/Pybind11.cmake
 
 # Define the Python module
 pybind11_add_module(inference_lab
@@ -15,6 +15,7 @@ pybind11_add_module(inference_lab
 # Link against project libraries
 target_link_libraries(inference_lab PRIVATE
     common
+    engines  # Added engines library for InferenceEngine access
     ${CAPNP_LIBRARIES}
 )
 
