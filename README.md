@@ -50,7 +50,7 @@ A modern C++17+ research and development platform focused on building robust, hi
 ### 📋 **Planned Development**
 - **ONNX Runtime Integration**: Cross-platform model execution with dynamic backend switching
 - **TensorRT GPU Integration**: Hardware-accelerated inference with CUDA optimization
-- **Distributed Systems**: Consensus algorithms and distributed state machines  
+- **Distributed Systems**: Consensus algorithms and distributed state machines
 - **Performance Engineering**: Advanced SIMD optimizations and custom allocators
 - **System Integration**: End-to-end distributed inference scenarios
 
@@ -173,26 +173,6 @@ py = pybind11                        // Python bindings (alias)
 std                                  // Standard library extensions
 ```
 
-### **Key Namespace Conflicts Resolved**
-
-During development, several namespace conflicts were identified and resolved:
-
-1. **`InferenceBackend` enum collision**:
-   - `inference_lab::engines::InferenceBackend` (engine types)
-   - `inference_lab::common::ml::InferenceBackend` (ML-specific backends)
-   - **Resolution**: Type alias `using EngineBackend = inference_lab::engines::InferenceBackend`
-
-2. **`TestScenarioBuilder` class collision**:
-   - `inference_lab::integration::TestScenarioBuilder` (main framework)
-   - `inference_lab::integration::utils::TestScenarioBuilder` (utility functions)
-   - **Resolution**: Explicit aliases for each use case
-
-### **Namespace Usage Guidelines**
-
-- **Fully qualify** types in headers to prevent ambiguity
-- **Use `using` declarations** in implementation files for frequently used types
-- **Avoid `using namespace`** directives in headers
-- **Prefer type aliases** over `using namespace` for conflict resolution
 
 ## 📚 **Getting Started with the Codebase**
 
@@ -221,7 +201,7 @@ The laboratory is expanding to include modern machine learning inference capabil
 - **Streaming Interface**: Integration with existing `Result<T,E>` error handling patterns
 - **Benchmarking**: Performance comparisons between CPU and GPU inference paths
 
-#### **🌐 ONNX Runtime Integration** 
+#### **🌐 ONNX Runtime Integration**
 - **Cross-Platform Models**: Universal model format supporting TensorFlow, PyTorch, scikit-learn
 - **Multi-Backend Execution**: CPU, GPU, and specialized accelerator support
 - **Model Versioning**: Schema evolution patterns for ML model lifecycle management
@@ -230,8 +210,8 @@ The laboratory is expanding to include modern machine learning inference capabil
 #### **🔗 Unified Inference Architecture**
 
 ```
-                           Unified Inference Interface
-                         ┌─────────────────────────────┐
+                        Unified Inference Interface
+                        ┌──────────────────────────────┐
 ┌─────────────────┐     │ InferenceEngine (Abstract)   │     ┌──────────────────┐
 │   User Code     │────▶│                              │────▶│ InferenceResponse│
 │                 │     │ • run_inference()            │     │ • output_tensors │
@@ -261,14 +241,14 @@ The laboratory is expanding to include modern machine learning inference capabil
 
 ```cpp
 // API design integrating with existing Result<T,E> patterns
-enum class InferenceBackend : std::uint8_t { 
-    RULE_BASED, 
-    TENSORRT_GPU, 
+enum class InferenceBackend : std::uint8_t {
+    RULE_BASED,
+    TENSORRT_GPU,
     ONNX_RUNTIME,
-    HYBRID_NEURAL_SYMBOLIC 
+    HYBRID_NEURAL_SYMBOLIC
 };
 
-auto create_inference_engine(InferenceBackend backend, const ModelConfig& config) 
+auto create_inference_engine(InferenceBackend backend, const ModelConfig& config)
     -> Result<std::unique_ptr<InferenceEngine>, InferenceError>;
 ```
 
@@ -283,7 +263,7 @@ auto create_inference_engine(InferenceBackend backend, const ModelConfig& config
 
 ### **Prerequisites**
 - **Compiler**: GCC 10+, Clang 12+, or MSVC 2019+ with C++17 support
-- **Build System**: CMake 3.20+ 
+- **Build System**: CMake 3.20+
 - **Dependencies**: Git, Python 3.8+ (for tooling)
 - **Development Tools**: clang-format, clang-tidy (automatically detected)
 
@@ -314,7 +294,7 @@ python3 tools/check_static_analysis.py --check
 ```bash
 # Quality assurance (automated via pre-commit hooks)
 python3 tools/check_format.py --fix --backup          # Fix formatting issues with backup
-python3 tools/check_static_analysis.py --fix --backup # Fix static analysis issues with backup  
+python3 tools/check_static_analysis.py --fix --backup # Fix static analysis issues with backup
 python3 tools/check_eof_newline.py --fix --backup     # Fix EOF newlines with backup
 
 # Performance and quality tracking
@@ -355,7 +335,7 @@ python3 tools/validate_model.py validate model.onnx --level standard --output re
 - [x] **Error Handling**: Extended `Result<T,E>` for ML-specific error types
 - [x] **Development Environment**: Docker, Nix flakes with ML dependencies
 
-### **Phase 2: Core Data Structures (COMPLETED ✅)**  
+### **Phase 2: Core Data Structures (COMPLETED ✅)**
 - [x] **Advanced ML Containers**: SIMD-optimized BatchContainer, RealtimeCircularBuffer, FeatureCache
 - [x] **Type System**: TypedTensor, strong type safety, neural network layers, automatic differentiation
 - [x] **Performance**: Zero-cost abstractions with 1.02x overhead ratio
@@ -405,7 +385,7 @@ python3 tools/validate_model.py validate model.onnx --level standard --output re
 **Comprehensive API documentation is automatically generated using Doxygen:**
 
 - **📘 [Full API Reference](docs/index.html)** - Complete class and function documentation
-- **🔍 [Class Hierarchy](docs/html/hierarchy.html)** - Inheritance and relationship diagrams  
+- **🔍 [Class Hierarchy](docs/html/hierarchy.html)** - Inheritance and relationship diagrams
 - **📁 [File Documentation](docs/html/files.html)** - Source file organization and dependencies
 - **🔧 [Examples](docs/html/examples.html)** - Usage examples and tutorials
 
@@ -443,7 +423,7 @@ xdg-open docs/index.html  # Linux - uses committed docs
 This project emphasizes **learning through implementation** with enterprise-grade standards:
 
 1. **Quality First**: All code must pass formatting, static analysis, and comprehensive tests
-2. **Documentation**: Every public API requires documentation and usage examples  
+2. **Documentation**: Every public API requires documentation and usage examples
 3. **Performance Awareness**: Include benchmarks for performance-critical components
 4. **Modern C++**: Leverage C++17+ features and established best practices
 
@@ -453,7 +433,7 @@ See [`CONTRIBUTING.md`](docs/CONTRIBUTING.md) for detailed guidelines and workfl
 
 **Modern CMake** with comprehensive tooling integration:
 - **Modular Architecture**: Independent domain builds with shared utilities
-- **Quality Gates**: Integrated formatting, static analysis, and testing automation  
+- **Quality Gates**: Integrated formatting, static analysis, and testing automation
 - **Cross-Platform**: Windows, Linux, macOS with consistent developer experience
 - **Dependency Management**: FetchContent for external libraries (GoogleTest, Cap'n Proto)
 - **Development Tools**: Sanitizers, coverage analysis, benchmark integration
