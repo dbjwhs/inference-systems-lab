@@ -17,9 +17,12 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <unordered_map>
+#include <vector>
 
 namespace inference_lab::common {
 
@@ -31,6 +34,74 @@ enum class LogLevel : std::uint8_t {  // NOLINT(performance-enum-size) - false p
     WARNING = 3,
     ERROR = 4,
     CRITICAL = 5
+};
+
+//=============================================================================
+// ML-Specific Logging Extensions
+//=============================================================================
+
+/**
+ * @brief ML inference operation types for structured logging
+ */
+enum class MLOperation : std::uint8_t {
+    MODEL_LOAD = 0,
+    MODEL_UNLOAD = 1,
+    INFERENCE_START = 2,
+    INFERENCE_COMPLETE = 3,
+    BATCH_PROCESS = 4,
+    MODEL_VALIDATE = 5,
+    PERFORMANCE_BENCHMARK = 6,
+    ERROR_OCCURRED = 7
+};
+
+/**
+ * @brief ML model lifecycle stages for tracking
+ */
+enum class ModelStage : std::uint8_t {
+    DEVELOPMENT = 0,
+    STAGING = 1,
+    PRODUCTION = 2,
+    ARCHIVED = 3,
+    DEPRECATED = 4
+};
+
+/**
+ * @brief Inference metrics structure for structured logging
+ */
+struct InferenceMetrics {
+    double latency_ms = 0.0;         ///< End-to-end inference latency
+    double preprocessing_ms = 0.0;   ///< Input preprocessing time
+    double inference_ms = 0.0;       ///< Core model inference time
+    double postprocessing_ms = 0.0;  ///< Output postprocessing time
+    std::size_t memory_mb = 0;       ///< Memory usage in MB
+    std::size_t batch_size = 1;      ///< Batch size processed
+    double throughput = 0.0;         ///< Samples per second
+    double confidence = 0.0;         ///< Average prediction confidence
+    std::string device = "CPU";      ///< Execution device (CPU/GPU/etc.)
+};
+
+/**
+ * @brief Model context for tracking model versions and metadata
+ */
+struct ModelContext {
+    std::string name;                                 ///< Model name/identifier
+    std::string version = "1.0.0";                    ///< Semantic version
+    std::string framework = "ONNX";                   ///< ML framework (ONNX, TensorRT, etc.)
+    ModelStage stage = ModelStage::DEVELOPMENT;       ///< Deployment stage
+    std::string path;                                 ///< Model file path
+    std::size_t size_mb = 0;                          ///< Model size in MB
+    std::string checksum;                             ///< Model file checksum
+    std::chrono::system_clock::time_point loaded_at;  ///< Load timestamp
+};
+
+/**
+ * @brief ML error context for enhanced error logging
+ */
+struct MLErrorContext {
+    std::string error_code;                                 ///< Structured error code
+    std::string component;                                  ///< Component where error occurred
+    std::string operation;                                  ///< Operation that failed
+    std::unordered_map<std::string, std::string> metadata;  ///< Additional context
 };
 
 class Logger {
@@ -137,6 +208,87 @@ class Logger {
     // check if file output is enabled
     auto is_file_output_enabled() const -> bool;
 
+    // flush the log file immediately
+    void flush();
+
+    //=============================================================================
+    // ML-Specific Logging Methods
+    //=============================================================================
+
+    // Register a model for context tracking
+    void register_model(const ModelContext& context);
+
+    // Unregister a model from context tracking
+    void unregister_model(const std::string& model_name);
+
+    // Get model context by name
+    auto get_model_context(const std::string& model_name) const -> std::optional<ModelContext>;
+
+    // Update model stage (dev -> staging -> production)
+    void update_model_stage(const std::string& model_name, ModelStage stage);
+
+    // Log ML operation with model context
+    template <typename... FormatArgs>
+    void log_ml_operation(MLOperation operation,
+                          const std::string& model_name,
+                          const std::string& format = "",
+                          const FormatArgs&... args) {
+        if (!m_ml_logging_enabled_.load() || !is_level_enabled(LogLevel::INFO)) {
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(m_ml_context_mutex_);
+        auto context_iter = m_model_contexts_.find(model_name);
+
+        std::ostringstream oss;
+        oss << "[ML:" << ml_operation_to_string(operation) << "]";
+
+        if (context_iter != m_model_contexts_.end()) {
+            const auto& context = context_iter->second;
+            oss << " model=" << context.name << " version=" << context.version
+                << " stage=" << model_stage_to_string(context.stage)
+                << " framework=" << context.framework;
+        } else {
+            oss << " model=" << model_name << " (unregistered)";
+        }
+
+        if (!format.empty()) {
+            oss << " " << format_message(format, args...);
+        }
+
+        print_log(LogLevel::INFO, oss.str());
+    }
+
+    // Log inference metrics
+    void log_inference_metrics(const std::string& model_name, const InferenceMetrics& metrics);
+
+    // Log ML error with enhanced context
+    void log_ml_error(const std::string& model_name,
+                      const MLErrorContext& error_context,
+                      const std::string& message = "");
+
+    // Add metrics to buffer for batch processing
+    void buffer_metrics(const InferenceMetrics& metrics);
+
+    // Flush buffered metrics (e.g., for periodic reporting)
+    void flush_metrics_buffer();
+
+    // Get current metrics buffer size
+    auto get_metrics_buffer_size() const -> std::size_t;
+
+    // Set maximum metrics buffer size
+    void set_max_metrics_buffer_size(std::size_t size);
+
+    // Enable/disable ML-specific logging
+    void set_ml_logging_enabled(bool enabled);
+
+    // Check if ML logging is enabled
+    auto is_ml_logging_enabled() const -> bool;
+
+    // Get aggregate metrics for a time period
+    auto get_aggregate_metrics(const std::string& model_name, std::chrono::minutes duration) const
+        -> std::optional<InferenceMetrics>;
+
   private:
     std::ofstream m_log_file_{};
     mutable std::mutex m_file_mutex_{};  // separate mutex only for file I/O
@@ -144,6 +296,13 @@ class Logger {
     std::atomic<bool> m_file_output_enabled_{true};
     std::array<std::atomic<bool>, 6> m_enabled_levels_{
         {true, true, true, true, true, true}};  // one for each log level
+
+    // ML-specific logging state
+    mutable std::mutex m_ml_context_mutex_{};  // mutex for ML context operations
+    std::unordered_map<std::string, ModelContext> m_model_contexts_{};  // registered models
+    std::vector<InferenceMetrics> m_metrics_buffer_{};          // metrics for batch processing
+    std::atomic<bool> m_ml_logging_enabled_{true};              // enable/disable ML logging
+    std::atomic<std::size_t> m_max_metrics_buffer_size_{1000};  // max buffered metrics
 
     // utility function for expression tree visualization
     static auto get_indentation(int depth) -> std::string;
@@ -153,6 +312,13 @@ class Logger {
 
     // get current utc timestamp
     static auto get_utc_timestamp() -> std::string;
+
+    // ML-specific helper methods
+    static auto ml_operation_to_string(MLOperation operation) -> std::string;
+    static auto model_stage_to_string(ModelStage stage) -> std::string;
+    auto format_inference_metrics(const InferenceMetrics& metrics) -> std::string;
+    auto calculate_aggregate_metrics(const std::vector<InferenceMetrics>& metrics_list) const
+        -> InferenceMetrics;
 
     // C++17 compatible format message helper
     template <typename... FormatArgs>
@@ -203,5 +369,43 @@ inline void LOG_BASE_PRINT(LogLevel level, const std::string& format, Args&&... 
 #define LOG_DEBUG_PRINT(...) LOG_BASE_PRINT(LogLevel::DEBUG, __VA_ARGS__)
 #define LOG_ERROR_PRINT(...) LOG_BASE_PRINT(LogLevel::ERROR, __VA_ARGS__)
 #define LOG_CRITICAL_PRINT(...) LOG_BASE_PRINT(LogLevel::CRITICAL, __VA_ARGS__)
+
+//=============================================================================
+// ML-Specific Logging Macros
+//=============================================================================
+
+// Log ML operations with model context
+#define LOG_ML_OPERATION(operation, model_name, ...) \
+    Logger::get_instance().log_ml_operation(operation, model_name, __VA_ARGS__)
+
+// Log inference metrics
+#define LOG_ML_METRICS(model_name, metrics) \
+    Logger::get_instance().log_inference_metrics(model_name, metrics)
+
+// Log ML errors
+#define LOG_ML_ERROR(model_name, error_context, message) \
+    Logger::get_instance().log_ml_error(model_name, error_context, message)
+
+// Convenience macros for common ML operations
+#define LOG_MODEL_LOAD(model_name, ...) \
+    LOG_ML_OPERATION(MLOperation::MODEL_LOAD, model_name, __VA_ARGS__)
+
+#define LOG_MODEL_UNLOAD(model_name, ...) \
+    LOG_ML_OPERATION(MLOperation::MODEL_UNLOAD, model_name, __VA_ARGS__)
+
+#define LOG_INFERENCE_START(model_name, ...) \
+    LOG_ML_OPERATION(MLOperation::INFERENCE_START, model_name, __VA_ARGS__)
+
+#define LOG_INFERENCE_COMPLETE(model_name, ...) \
+    LOG_ML_OPERATION(MLOperation::INFERENCE_COMPLETE, model_name, __VA_ARGS__)
+
+#define LOG_BATCH_PROCESS(model_name, ...) \
+    LOG_ML_OPERATION(MLOperation::BATCH_PROCESS, model_name, __VA_ARGS__)
+
+#define LOG_MODEL_VALIDATE(model_name, ...) \
+    LOG_ML_OPERATION(MLOperation::MODEL_VALIDATE, model_name, __VA_ARGS__)
+
+#define LOG_PERFORMANCE_BENCHMARK(model_name, ...) \
+    LOG_ML_OPERATION(MLOperation::PERFORMANCE_BENCHMARK, model_name, __VA_ARGS__)
 
 }  // namespace inference_lab::common

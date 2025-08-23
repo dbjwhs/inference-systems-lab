@@ -163,6 +163,20 @@ apply_strict_warnings(type_system_tests)
 # Add type system tests to CTest
 add_test(NAME TypeSystemTests COMMAND type_system_tests)
 
+# ML logging tests (Phase 4)
+add_executable(ml_logging_tests
+    tests/test_ml_logging.cpp
+)
+
+target_link_libraries(ml_logging_tests
+    common
+    ${GTEST_MAIN_TARGET}
+)
+apply_strict_warnings(ml_logging_tests)
+
+# Add ML logging tests to CTest
+add_test(NAME MLLoggingTests COMMAND ml_logging_tests)
+
 # ML types tests - temporarily disabled due to C++20 designated initializer issues
 # TODO: Fix field order and aggregate type compatibility issues in test_ml_types.cpp
 # add_executable(ml_types_tests
