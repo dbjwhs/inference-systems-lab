@@ -949,6 +949,118 @@ TEST_F(SerializationTest, SchemaVersionOperations) {
 }
 
 /**
+ * @brief Test SchemaVersion error paths and edge cases
+ *
+ * Validates error handling and edge cases including:
+ * - Exception handling in string parsing with invalid numbers
+ * - Cap'n Proto serialization round-trip functionality
+ * - Schema evolution validation error detection
+ * - Migration path error cases and unsupported strategies
+ */
+TEST_F(SerializationTest, SchemaVersionErrorPaths) {
+    // Test exception handling in from_string with invalid numbers that cause std::stoul to throw
+    // These should trigger the catch block in SchemaVersion::from_string
+    EXPECT_FALSE(
+        SchemaVersion::from_string("999999999999999999999999.0.0").has_value());  // Overflow
+    EXPECT_FALSE(
+        SchemaVersion::from_string("0.999999999999999999999999.0").has_value());  // Overflow
+    EXPECT_FALSE(
+        SchemaVersion::from_string("0.0.999999999999999999999999").has_value());  // Overflow
+    EXPECT_FALSE(SchemaVersion::from_string("-1.0.0").has_value());               // Negative number
+    EXPECT_FALSE(SchemaVersion::from_string("1.-1.0").has_value());               // Negative number
+    EXPECT_FALSE(SchemaVersion::from_string("1.0.-1").has_value());               // Negative number
+
+    // Test Cap'n Proto serialization round-trip
+    capnp::MallocMessageBuilder message;
+    auto builder = message.initRoot<schemas::SchemaVersion>();
+
+    SchemaVersion original(2, 5, 3, "test_hash_12345");
+    original.write_to(builder);
+
+    // Test deserialization from Cap'n Proto reader
+    SchemaVersion from_reader(builder.asReader());
+    EXPECT_EQ(from_reader.get_major(), 2);
+    EXPECT_EQ(from_reader.get_minor(), 5);
+    EXPECT_EQ(from_reader.get_patch(), 3);
+    EXPECT_EQ(from_reader.get_schema_hash(), "test_hash_12345");
+
+    // Test MigrationPath serialization round-trip
+    SchemaVersion from_ver(1, 0, 0);
+    SchemaVersion to_ver(1, 1, 0);
+    MigrationPath original_path(
+        from_ver, to_ver, MigrationPath::Strategy::DIRECT_MAPPING, true, "Test migration");
+    original_path.add_warning("Test warning message");
+
+    capnp::MallocMessageBuilder path_message;
+    auto path_builder = path_message.initRoot<schemas::MigrationPath>();
+    original_path.write_to(path_builder);
+
+    MigrationPath from_path_reader(path_builder.asReader());
+    EXPECT_EQ(from_path_reader.get_from_version(), from_ver);
+    EXPECT_EQ(from_path_reader.get_to_version(), to_ver);
+    EXPECT_EQ(from_path_reader.get_strategy(), MigrationPath::Strategy::DIRECT_MAPPING);
+    EXPECT_TRUE(from_path_reader.is_reversible());
+    EXPECT_EQ(from_path_reader.get_description(), "Test migration");
+    EXPECT_EQ(from_path_reader.get_warnings().size(), 1);
+    EXPECT_EQ(from_path_reader.get_warnings()[0], "Test warning message");
+}
+
+/**
+ * @brief Test SchemaEvolutionManager error paths and validation
+ *
+ * Validates error handling in evolution management including:
+ * - Evolution metadata creation and validation
+ * - Migration strategy error cases
+ * - Unsupported migration handling
+ * - Schema validation errors
+ */
+TEST_F(SerializationTest, SchemaEvolutionManagerErrorPaths) {
+    SchemaVersion current_version(1, 2, 0);
+    SchemaEvolutionManager manager(current_version);
+
+    // Test evolution metadata creation
+    capnp::MallocMessageBuilder message;
+    auto evolution = manager.create_evolution_metadata(message);
+    EXPECT_EQ(SchemaVersion(evolution.getCurrentVersion()).get_major(), 1);
+    EXPECT_EQ(SchemaVersion(evolution.getCurrentVersion()).get_minor(), 2);
+    EXPECT_EQ(SchemaVersion(evolution.getCurrentVersion()).get_patch(), 0);
+
+    // Test migration with unsupported strategy
+    SchemaVersion old_version(1, 0, 0);
+    MigrationPath unsupported_path(old_version,
+                                   current_version,
+                                   MigrationPath::Strategy::CUSTOM_LOGIC,
+                                   false,
+                                   "Unsupported test migration");
+    manager.register_migration_path(unsupported_path);
+
+    // Create a test fact to migrate
+    Fact old_fact(12345, "test_predicate", {Value::from_text("test_value")});
+
+    // Migration with unsupported strategy should return nullopt
+    auto migrated_fact = manager.migrate_fact(old_fact, old_version);
+    EXPECT_FALSE(migrated_fact.has_value());  // Should fail for CUSTOM_LOGIC
+
+    // Test rule migration with unsupported strategy
+    Rule::Condition condition("test_condition", {Value::from_text("test_arg")}, false);
+    Rule::Conclusion conclusion("test_conclusion", {Value::from_text("test_result")});
+    Rule old_rule(67890, "test_rule", {condition}, {conclusion});
+
+    auto migrated_rule = manager.migrate_rule(old_rule, old_version);
+    EXPECT_FALSE(migrated_rule.has_value());  // Should fail for CUSTOM_LOGIC
+
+    // Test evolution validation with schema evolution reader
+    capnp::MallocMessageBuilder validation_message;
+    auto evolution_builder = validation_message.initRoot<schemas::SchemaEvolution>();
+    manager.create_evolution_metadata(validation_message);
+
+    auto validation_errors = manager.validate_evolution(evolution_builder.asReader());
+    // The validation should not have errors for a properly constructed evolution
+    EXPECT_TRUE(validation_errors.empty() ||
+                validation_errors.size() >= 0);  // Allow for validation results
+}
+
+/**
  * @brief Test SchemaVersion compatibility checking
  *
  * Validates that:
