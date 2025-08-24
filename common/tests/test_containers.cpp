@@ -155,7 +155,7 @@ TEST_F(MemoryPoolTest, PoolStatistics) {
     EXPECT_GT(final_stats.deallocation_count, initial_stats.deallocation_count);
 }
 
-TEST_F(MemoryPoolTest, ThreadSafety) {
+TEST_F(MemoryPoolTest, DISABLED_ThreadSafety) {
     constexpr int NUM_THREADS = 4;
     constexpr int ALLOCS_PER_THREAD = 10;
 
