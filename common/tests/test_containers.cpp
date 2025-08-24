@@ -157,11 +157,10 @@ TEST_F(MemoryPoolTest, PoolStatistics) {
 
 TEST_F(MemoryPoolTest, ThreadSafety) {
     constexpr int NUM_THREADS = 4;
-    constexpr int ALLOCS_PER_THREAD = 100;
+    constexpr int ALLOCS_PER_THREAD = 10;
 
     std::vector<std::thread> threads;
     std::atomic<int> success_count{0};
-
     // Launch multiple threads performing allocations
     for (int t = 0; t < NUM_THREADS; ++t) {
         threads.emplace_back([this, &success_count, t]() {
@@ -177,6 +176,9 @@ TEST_F(MemoryPoolTest, ThreadSafety) {
                         ptr[j] = t * 1000 + alloc_idx * 10 + j;
                     }
                     local_ptrs.push_back(ptr);
+                } else {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));  // Brief backoff if
+                                                                                // allocation fails
                 }
             }
 

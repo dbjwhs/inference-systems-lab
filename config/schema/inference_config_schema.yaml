@@ -1,0 +1,382 @@
+# Inference Systems Laboratory - Unified Configuration Schema
+# Version: 1.0.0
+# 
+# This YAML schema defines the complete configuration structure for the 
+# Inference Systems Laboratory, providing consistent configuration management
+# across Python and C++ implementations.
+
+# Schema metadata
+schema_version: "1.0.0"
+schema_description: "Unified configuration schema for Inference Systems Laboratory"
+
+# Application Configuration
+application:
+  name: "inference-systems-lab"
+  version: "0.1.0"
+  environment: "development"  # development, staging, production
+  debug_mode: true
+  
+  # Application-wide settings
+  settings:
+    max_threads: 8
+    memory_limit_mb: 2048
+    enable_profiling: false
+    enable_metrics_collection: true
+    config_validation_strict: true
+
+# Logging Configuration
+logging:
+  # Log level: CRITICAL, ERROR, WARNING, INFO, DEBUG
+  level: "INFO"
+  
+  # Output configuration
+  outputs:
+    console:
+      enabled: true
+      format: "{timestamp} [{level}] [{thread}] {message}"
+      color_enabled: true
+    
+    file:
+      enabled: true
+      path: "logs/inference_lab.log"
+      format: "{timestamp} [{level}] [{thread}] {message}"
+      max_size_mb: 100
+      backup_count: 5
+      rotation: "size"  # size, time, daily
+    
+    structured:
+      enabled: false
+      path: "logs/inference_lab.json"
+      format: "json"
+  
+  # Per-module log levels
+  modules:
+    "inference_lab.engines": "DEBUG"
+    "inference_lab.common.result": "WARNING" 
+    "inference_lab.registry": "INFO"
+    "inference_lab.bindings": "ERROR"
+
+# Model Registry Configuration
+registry:
+  # Database configuration
+  database:
+    type: "sqlite"  # sqlite, postgresql, mysql
+    path: "data/model_registry.db"
+    
+    # Connection settings
+    connection:
+      timeout_seconds: 30
+      pool_size: 5
+      max_overflow: 10
+      echo_sql: false
+    
+    # Backup and maintenance
+    backup:
+      enabled: true
+      interval_hours: 24
+      retention_days: 30
+      path: "backups/registry"
+  
+  # Model lifecycle settings
+  lifecycle:
+    auto_promote: false
+    staging_validation_required: true
+    production_approval_required: true
+    deprecated_retention_days: 90
+    archived_cleanup_enabled: true
+  
+  # Performance metrics
+  metrics:
+    collection_enabled: true
+    retention_days: 30
+    aggregation_interval_minutes: 5
+    auto_cleanup_enabled: true
+
+# Inference Engine Configuration
+engines:
+  # Default engine settings
+  default_backend: "RULE_BASED"  # RULE_BASED, TENSORRT_GPU, ONNX_RUNTIME, HYBRID_NEURAL_SYMBOLIC
+  default_precision: "FP32"      # FP32, FP16, INT8
+  
+  # Rule-based engine
+  rule_based:
+    enabled: true
+    max_rules: 10000
+    max_facts: 100000
+    inference_strategy: "forward_chaining"  # forward_chaining, backward_chaining
+    conflict_resolution: "priority"         # priority, recency, specificity
+    
+    # Performance settings
+    cache_enabled: true
+    cache_size: 1000
+    parallel_execution: true
+    max_inference_depth: 100
+  
+  # ONNX Runtime engine
+  onnx_runtime:
+    enabled: true
+    
+    # Execution providers (in order of preference)
+    providers:
+      - "CPUExecutionProvider"
+      - "CUDAExecutionProvider"
+    
+    # Session options
+    session_options:
+      intra_op_num_threads: 0  # 0 = use all available
+      inter_op_num_threads: 0
+      execution_mode: "sequential"  # sequential, parallel
+      graph_optimization_level: "all"  # none, basic, extended, all
+    
+    # Memory settings
+    memory:
+      arena_extend_strategy: "kSameAsRequested"
+      enable_cpu_mem_arena: true
+      enable_memory_pattern: true
+  
+  # TensorRT engine  
+  tensorrt:
+    enabled: false  # Requires CUDA and TensorRT installation
+    
+    # Build settings
+    build:
+      max_workspace_size_mb: 1024
+      fp16_mode: false
+      int8_mode: false
+      strict_type_constraints: false
+    
+    # Runtime settings
+    runtime:
+      dla_core: -1  # -1 = disabled
+      max_batch_size: 1
+      enable_profiling: false
+
+# Data Processing Configuration
+data:
+  # Input/output paths
+  paths:
+    models: "models/"
+    data: "data/" 
+    temp: "tmp/"
+    cache: "cache/"
+    exports: "exports/"
+  
+  # File format settings
+  formats:
+    model_formats: ["onnx", "pt", "trt"]
+    data_formats: ["json", "csv", "parquet"]
+    export_formats: ["json", "csv"]
+  
+  # Processing settings
+  processing:
+    batch_size: 32
+    max_file_size_mb: 1024
+    compression_enabled: true
+    validation_enabled: true
+    parallel_loading: true
+    num_workers: 4
+
+# Security Configuration
+security:
+  # Authentication
+  auth:
+    enabled: false
+    type: "api_key"  # api_key, oauth2, jwt
+    
+    api_key:
+      header_name: "X-API-Key"
+      required_for_writes: true
+      required_for_reads: false
+    
+    jwt:
+      secret_key: "${JWT_SECRET}"
+      algorithm: "HS256"
+      expiration_hours: 24
+  
+  # Access control
+  access:
+    rate_limiting:
+      enabled: false
+      requests_per_minute: 1000
+      burst_size: 100
+    
+    cors:
+      enabled: false
+      allowed_origins: ["*"]
+      allowed_methods: ["GET", "POST", "PUT", "DELETE"]
+      allowed_headers: ["*"]
+
+# Monitoring and Observability  
+monitoring:
+  # Metrics collection
+  metrics:
+    enabled: true
+    collection_interval_seconds: 30
+    
+    # Metrics to collect
+    collect:
+      system_metrics: true      # CPU, memory, disk
+      application_metrics: true # Custom app metrics
+      inference_metrics: true   # Inference performance
+      error_metrics: true       # Error rates and types
+    
+    # Export configuration
+    export:
+      enabled: false
+      format: "prometheus"  # prometheus, statsd, json
+      endpoint: "http://localhost:9090"
+      push_interval_seconds: 60
+  
+  # Health checks
+  health:
+    enabled: true
+    checks:
+      database_connectivity: true
+      model_loading: true
+      memory_usage: true
+      disk_space: true
+    
+    thresholds:
+      memory_usage_percent: 90
+      disk_usage_percent: 85
+      response_time_ms: 5000
+
+# Testing Configuration
+testing:
+  # Test data configuration
+  data:
+    test_data_path: "tests/data/"
+    generate_test_data: true
+    test_model_path: "tests/models/"
+  
+  # Test execution settings
+  execution:
+    parallel_tests: true
+    test_timeout_seconds: 300
+    retry_failed_tests: true
+    max_retries: 3
+  
+  # Coverage settings
+  coverage:
+    enabled: true
+    minimum_coverage_percent: 80
+    report_format: "html"
+    exclude_patterns:
+      - "*/tests/*"
+      - "*/benchmarks/*"
+
+# Development Configuration
+development:
+  # Hot reloading
+  hot_reload:
+    enabled: true
+    watch_patterns:
+      - "*.py"
+      - "*.cpp"
+      - "*.hpp"
+      - "*.yaml"
+  
+  # Development tools
+  tools:
+    profiling_enabled: true
+    memory_debugging: true
+    static_analysis: true
+    format_on_save: true
+  
+  # Mock settings for development
+  mocks:
+    external_services: true
+    slow_operations: true
+    hardware_dependencies: true
+
+# Deployment Configuration
+deployment:
+  # Container settings
+  container:
+    image_name: "inference-systems-lab"
+    image_tag: "latest"
+    base_image: "ubuntu:22.04"
+    
+    # Resource limits
+    resources:
+      cpu_limit: "2"
+      memory_limit: "4Gi" 
+      gpu_enabled: false
+  
+  # Scaling settings
+  scaling:
+    min_replicas: 1
+    max_replicas: 10
+    target_cpu_percent: 70
+    scale_down_delay_seconds: 300
+
+# Feature Flags
+features:
+  # Experimental features
+  experimental:
+    neural_symbolic_hybrid: false
+    distributed_inference: false
+    model_compression: false
+    advanced_caching: false
+  
+  # Beta features
+  beta:
+    web_interface: true
+    api_versioning: true
+    batch_inference: true
+    model_analytics: true
+  
+  # Legacy features (for backward compatibility)
+  legacy:
+    old_config_format: false
+    deprecated_apis: false
+
+# Environment-specific overrides
+# These sections allow environment-specific configurations
+environments:
+  development:
+    application:
+      debug_mode: true
+    logging:
+      level: "DEBUG"
+    registry:
+      database:
+        echo_sql: true
+    monitoring:
+      metrics:
+        collection_interval_seconds: 10
+  
+  staging:
+    application:
+      debug_mode: false
+    logging:
+      level: "INFO"
+    security:
+      auth:
+        enabled: true
+    features:
+      beta:
+        web_interface: true
+  
+  production:
+    application:
+      debug_mode: false
+      enable_profiling: false
+    logging:
+      level: "WARNING"
+      outputs:
+        console:
+          enabled: false
+    security:
+      auth:
+        enabled: true
+        required_for_reads: true
+    monitoring:
+      metrics:
+        export:
+          enabled: true
+    features:
+      experimental:
+        neural_symbolic_hybrid: false
+      beta:
+        web_interface: false

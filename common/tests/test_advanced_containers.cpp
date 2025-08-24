@@ -286,6 +286,12 @@ TEST_F(FeatureCacheTest, SubscriptOperator) {
     (*cache_)["new_feature"] = 3.14f;
     EXPECT_EQ(cache_->size(), 1);
 
+    // Debug: check with find first
+    const float* found_value = cache_->find("new_feature");
+    ASSERT_NE(found_value, nullptr);
+    EXPECT_FLOAT_EQ(*found_value, 3.14f);
+
+    // Now test subscript operator
     float& value = (*cache_)["new_feature"];
     EXPECT_FLOAT_EQ(value, 3.14f);
 

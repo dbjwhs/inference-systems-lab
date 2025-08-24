@@ -434,17 +434,27 @@ auto MemoryPool<ElementType>::expand_pool(std::size_t min_size) -> bool {
         return false;
     }
 
-    // Create block for this chunk
+    // Create multiple blocks from this chunk to support concurrent allocations
     auto* chunk_data = reinterpret_cast<ElementType*>(new_chunk.get());
-    auto block_size = aligned_chunk_size / sizeof(ElementType);
-    auto new_block = std::make_unique<Block>(chunk_data, block_size);
+    auto total_elements = aligned_chunk_size / sizeof(ElementType);
 
-    // Add to our collections
+    // Create blocks that are at least min_size, but not too small for efficiency
+    auto block_size = std::max(min_size, std::size_t{64});  // Minimum 64 elements per block
+    auto num_blocks = total_elements / block_size;
+
+    // Add to our collections first
     chunks_.push_back(std::move(new_chunk));
-    blocks_.push_back(std::move(new_block));
 
-    // Update capacity
-    capacity_elements_ += block_size;
+    // Create individual blocks from this chunk
+    for (std::size_t i = 0; i < num_blocks; ++i) {
+        auto* block_data = chunk_data + (i * block_size);
+        auto actual_size = (i == num_blocks - 1) ? (total_elements - i * block_size)
+                                                 : block_size;  // Last block gets remainder
+
+        auto new_block = std::make_unique<Block>(block_data, actual_size);
+        blocks_.push_back(std::move(new_block));
+        capacity_elements_ += actual_size;
+    }
 
     return true;
 }
@@ -2285,6 +2295,12 @@ class FeatureCache {
      * @return Reference to value
      */
     auto operator[](const Key& key) -> Value& {
+        // First check if key already exists
+        if (auto* existing = const_cast<Value*>(find(key))) {
+            return *existing;
+        }
+
+        // Key doesn't exist, insert with default value
         auto result = insert(key, Value{});
         return entries_[result.second].value;
     }

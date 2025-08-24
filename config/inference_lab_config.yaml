@@ -1,0 +1,262 @@
+# Inference Systems Laboratory - Sample Configuration
+# This is a sample configuration file demonstrating the unified schema
+
+schema_version: "1.0.0"
+schema_description: "Sample configuration for Inference Systems Laboratory"
+
+# Application Configuration
+application:
+  name: "inference-systems-lab"
+  version: "0.1.0"
+  environment: "development"
+  debug_mode: true
+  
+  settings:
+    max_threads: 4
+    memory_limit_mb: 1024
+    enable_profiling: true
+    enable_metrics_collection: true
+    config_validation_strict: true
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  
+  outputs:
+    console:
+      enabled: true
+      format: "{timestamp} [{level}] [{thread}] {message}"
+      color_enabled: true
+    
+    file:
+      enabled: true
+      path: "logs/inference_lab.log"
+      format: "{timestamp} [{level}] [{thread}] {message}"
+      max_size_mb: 50
+      backup_count: 3
+      rotation: "size"
+    
+    structured:
+      enabled: false
+      path: "logs/inference_lab.json"
+      format: "json"
+  
+  modules:
+    "inference_lab.engines": "DEBUG"
+    "inference_lab.registry": "INFO"
+    "inference_lab.bindings": "WARNING"
+
+# Model Registry Configuration
+registry:
+  database:
+    type: "sqlite"
+    path: "data/model_registry.db"
+    
+    connection:
+      timeout_seconds: 30
+      pool_size: 5
+      max_overflow: 10
+      echo_sql: false
+    
+    backup:
+      enabled: true
+      interval_hours: 24
+      retention_days: 30
+      path: "backups/registry"
+  
+  lifecycle:
+    auto_promote: false
+    staging_validation_required: true
+    production_approval_required: true
+    deprecated_retention_days: 90
+    archived_cleanup_enabled: true
+  
+  metrics:
+    collection_enabled: true
+    retention_days: 30
+    aggregation_interval_minutes: 5
+    auto_cleanup_enabled: true
+
+# Inference Engine Configuration
+engines:
+  default_backend: "RULE_BASED"
+  default_precision: "FP32"
+  
+  rule_based:
+    enabled: true
+    max_rules: 1000
+    max_facts: 10000
+    inference_strategy: "forward_chaining"
+    conflict_resolution: "priority"
+    
+    cache_enabled: true
+    cache_size: 500
+    parallel_execution: true
+    max_inference_depth: 50
+  
+  onnx_runtime:
+    enabled: true
+    
+    providers:
+      - "CPUExecutionProvider"
+    
+    session_options:
+      intra_op_num_threads: 0
+      inter_op_num_threads: 0
+      execution_mode: "sequential"
+      graph_optimization_level: "all"
+    
+    memory:
+      arena_extend_strategy: "kSameAsRequested"
+      enable_cpu_mem_arena: true
+      enable_memory_pattern: true
+  
+  tensorrt:
+    enabled: false
+    
+    build:
+      max_workspace_size_mb: 512
+      fp16_mode: false
+      int8_mode: false
+      strict_type_constraints: false
+    
+    runtime:
+      dla_core: -1
+      max_batch_size: 1
+      enable_profiling: false
+
+# Data Processing Configuration
+data:
+  paths:
+    models: "models/"
+    data: "data/"
+    temp: "tmp/"
+    cache: "cache/"
+    exports: "exports/"
+  
+  formats:
+    model_formats: ["onnx", "pt"]
+    data_formats: ["json", "csv"]
+    export_formats: ["json", "csv"]
+  
+  processing:
+    batch_size: 16
+    max_file_size_mb: 512
+    compression_enabled: true
+    validation_enabled: true
+    parallel_loading: false
+    num_workers: 2
+
+# Security Configuration (disabled for development)
+security:
+  auth:
+    enabled: false
+    type: "api_key"
+    
+    api_key:
+      header_name: "X-API-Key"
+      required_for_writes: false
+      required_for_reads: false
+  
+  access:
+    rate_limiting:
+      enabled: false
+      requests_per_minute: 1000
+      burst_size: 100
+    
+    cors:
+      enabled: false
+      allowed_origins: ["*"]
+      allowed_methods: ["GET", "POST", "PUT", "DELETE"]
+      allowed_headers: ["*"]
+
+# Monitoring and Observability
+monitoring:
+  metrics:
+    enabled: true
+    collection_interval_seconds: 60
+    
+    collect:
+      system_metrics: true
+      application_metrics: true
+      inference_metrics: true
+      error_metrics: true
+    
+    export:
+      enabled: false
+      format: "prometheus"
+      endpoint: "http://localhost:9090"
+      push_interval_seconds: 60
+  
+  health:
+    enabled: true
+    checks:
+      database_connectivity: true
+      model_loading: true
+      memory_usage: true
+      disk_space: true
+    
+    thresholds:
+      memory_usage_percent: 85
+      disk_usage_percent: 80
+      response_time_ms: 3000
+
+# Testing Configuration
+testing:
+  data:
+    test_data_path: "tests/data/"
+    generate_test_data: true
+    test_model_path: "tests/models/"
+  
+  execution:
+    parallel_tests: true
+    test_timeout_seconds: 180
+    retry_failed_tests: true
+    max_retries: 2
+  
+  coverage:
+    enabled: true
+    minimum_coverage_percent: 75
+    report_format: "html"
+    exclude_patterns:
+      - "*/tests/*"
+      - "*/benchmarks/*"
+
+# Development Configuration
+development:
+  hot_reload:
+    enabled: true
+    watch_patterns:
+      - "*.py"
+      - "*.cpp"
+      - "*.hpp"
+      - "*.yaml"
+  
+  tools:
+    profiling_enabled: true
+    memory_debugging: true
+    static_analysis: true
+    format_on_save: true
+  
+  mocks:
+    external_services: true
+    slow_operations: false
+    hardware_dependencies: false
+
+# Feature Flags
+features:
+  experimental:
+    neural_symbolic_hybrid: false
+    distributed_inference: false
+    model_compression: false
+    advanced_caching: true
+  
+  beta:
+    web_interface: true
+    api_versioning: true
+    batch_inference: true
+    model_analytics: false
+  
+  legacy:
+    old_config_format: false
+    deprecated_apis: false

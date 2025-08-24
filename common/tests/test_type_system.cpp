@@ -487,9 +487,17 @@ TEST(PerformanceTest, ZeroCostAbstractions) {
     auto tensor_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(tensor_time).count();
     auto array_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(array_time).count();
 
-    // TypedTensor should have similar performance to raw array
+    // TypedTensor should have reasonable performance compared to raw array
+    // In Debug builds, some overhead is expected due to bounds checking, etc.
     double overhead_ratio = static_cast<double>(tensor_ns) / array_ns;
+
+#ifdef NDEBUG
+    // Release build: expect true zero-cost abstractions (within 10% overhead)
     EXPECT_LT(overhead_ratio, 1.1);  // Less than 10% overhead
+#else
+    // Debug build: expect reasonable overhead due to bounds checking, debug symbols, etc.
+    EXPECT_LT(overhead_ratio, 5.0);  // Less than 5x overhead is acceptable for debug builds
+#endif
 
     std::cout << "TypedTensor time: " << tensor_ns << " ns\n";
     std::cout << "Raw array time: " << array_ns << " ns\n";
