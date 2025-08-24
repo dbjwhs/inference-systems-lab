@@ -49,6 +49,15 @@ void bind_model_registry(py::module& m) {
         .value("OTHER", ModelType::OTHER)
         .export_values();
 
+    // Bind InferenceBackend enum (from ml_types.hpp)
+    py::enum_<InferenceBackend>(m, "InferenceBackend")
+        .value("CPU_NATIVE", InferenceBackend::CPU_NATIVE)
+        .value("TENSORRT_GPU", InferenceBackend::TENSORRT_GPU)
+        .value("ONNX_RUNTIME", InferenceBackend::ONNX_RUNTIME)
+        .value("RULE_BASED", InferenceBackend::RULE_BASED)
+        .value("HYBRID_NEURAL_SYMBOLIC", InferenceBackend::HYBRID_NEURAL_SYMBOLIC)
+        .export_values();
+
     // Bind RegistryError enum
     py::enum_<RegistryError>(m, "RegistryError")
         .value("DATABASE_CONNECTION_FAILED", RegistryError::DATABASE_CONNECTION_FAILED)
@@ -209,91 +218,13 @@ void bind_model_registry(py::module& m) {
             "model_id"_a,
             "new_status"_a)
 
-        // Performance metrics
-        .def(
-            "record_performance_metrics",
-            [](ModelRegistry& self, const PerformanceMetrics& metrics) -> int {
-                auto result = self.record_performance_metrics(metrics);
-                if (result.is_ok()) {
-                    return result.unwrap();
-                } else {
-                    throw py::value_error("Failed to record metrics: " +
-                                          to_string(result.unwrap_err()));
-                }
-            },
-            "Record performance metrics for a model",
-            "metrics"_a)
-
-        // Validation results
-        .def(
-            "record_validation_result",
-            [](ModelRegistry& self, const ValidationResult& validation) -> int {
-                auto result = self.record_validation_result(validation);
-                if (result.is_ok()) {
-                    return result.unwrap();
-                } else {
-                    throw py::value_error("Failed to record validation: " +
-                                          to_string(result.unwrap_err()));
-                }
-            },
-            "Record validation results for a model",
-            "validation"_a)
-
-        // Utility methods
-        .def(
-            "get_latest_model_version",
-            [](ModelRegistry& self, const std::string& model_name) -> std::string {
-                auto result = self.get_latest_model_version(model_name);
-                if (result.is_ok()) {
-                    return result.unwrap();
-                } else {
-                    throw py::value_error("Failed to get latest version: " +
-                                          to_string(result.unwrap_err()));
-                }
-            },
-            "Get the latest version of a model",
-            "model_name"_a)
-
-        .def(
-            "get_production_models",
-            [](ModelRegistry& self) -> std::vector<ModelInfo> {
-                auto result = self.get_production_models();
-                if (result.is_ok()) {
-                    return result.unwrap();
-                } else {
-                    throw py::value_error("Failed to get production models: " +
-                                          to_string(result.unwrap_err()));
-                }
-            },
-            "Get all production models")
-
-        .def(
-            "get_model_performance_summary",
-            [](ModelRegistry& self, int model_id) -> std::unordered_map<std::string, double> {
-                auto result = self.get_model_performance_summary(model_id);
-                if (result.is_ok()) {
-                    return result.unwrap();
-                } else {
-                    throw py::value_error("Failed to get performance summary: " +
-                                          to_string(result.unwrap_err()));
-                }
-            },
-            "Get performance summary for a model",
-            "model_id"_a)
-
-        .def(
-            "cleanup_old_metrics",
-            [](ModelRegistry& self, int days_to_keep = 30) -> int {
-                auto result = self.cleanup_old_metrics(days_to_keep);
-                if (result.is_ok()) {
-                    return result.unwrap();
-                } else {
-                    throw py::value_error("Failed to cleanup metrics: " +
-                                          to_string(result.unwrap_err()));
-                }
-            },
-            "Clean up old performance metrics",
-            "days_to_keep"_a = 30)
+        // Note: Additional methods not yet implemented:
+        // - record_performance_metrics
+        // - record_validation_result
+        // - get_latest_model_version
+        // - get_production_models
+        // - get_model_performance_summary
+        // - cleanup_old_metrics
 
         // Connection status
         .def("is_connected", &ModelRegistry::is_connected, "Check if database connection is active")
