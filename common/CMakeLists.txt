@@ -238,6 +238,20 @@ apply_strict_warnings(config_simple_tests)
 # Add simple configuration tests to CTest
 add_test(NAME SimpleConfigurationTests COMMAND config_simple_tests)
 
+# Inference builders tests
+add_executable(inference_builders_tests
+    tests/test_inference_builders.cpp
+)
+
+target_link_libraries(inference_builders_tests
+    common
+    ${GTEST_MAIN_TARGET}
+)
+apply_strict_warnings(inference_builders_tests)
+
+# Add inference builders tests to CTest
+add_test(NAME InferenceBuildersTests COMMAND inference_builders_tests)
+
 # Full configuration loader tests (currently disabled)
 # TODO: Enable when full config_loader is fixed
 # if(TARGET yaml-cpp OR YAML_CPP_FOUND OR yaml-cpp_FOUND)
