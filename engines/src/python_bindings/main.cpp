@@ -12,12 +12,13 @@
 
 // Forward declarations for binding functions
 namespace py = pybind11;
+using namespace pybind11::literals;
 
-// Submodule binding functions (to be implemented)
-void bind_result_types(py::module& m);
-void bind_tensor_types(py::module& m);
-void bind_inference_engine(py::module& m);
-void bind_logging_system(py::module& m);
+// Submodule binding functions
+void bind_result_types(py::module& m);      // Implemented in result_bindings.cpp
+void bind_tensor_types(py::module& m);      // Implemented in tensor_bindings.cpp
+void bind_inference_engine(py::module& m);  // Implemented in inference_bindings.cpp
+// void bind_logging_system(py::module& m);  // Temporarily disabled
 
 /**
  * @brief Main pybind11 module definition
@@ -35,7 +36,7 @@ PYBIND11_MODULE(inference_lab, m) {
     // Bind core types and utilities
     bind_result_types(m);
     bind_tensor_types(m);
-    bind_logging_system(m);
+    // bind_logging_system(m);  // Temporarily disabled
 
     // Bind inference engine interfaces
     bind_inference_engine(m);

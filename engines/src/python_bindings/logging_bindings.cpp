@@ -6,12 +6,15 @@
  * enabling unified log handling across the Python-C++ boundary.
  */
 
-#include <common/src/logging.hpp>
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+// Include the actual logging implementation
+#include "../../common/src/logging.hpp"
+
 namespace py = pybind11;
+using namespace inference_lab::common;
 
 /**
  * @brief Python callback handler for C++ log messages

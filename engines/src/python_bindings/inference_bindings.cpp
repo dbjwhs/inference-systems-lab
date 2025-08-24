@@ -156,13 +156,16 @@ void bind_inference_engine(py::module& m) {
              py::arg("callback") = py::none(),
              "Submit inference request with optional callback")
         .def("is_ready", &AsyncInferenceWrapper::is_ready)
-        .def("__repr__", [](const AsyncInferenceWrapper& wrapper) {
-            return "AsyncEngine(ready=" + (wrapper.is_ready() ? "True" : "False") + ")";
+        .def("__repr__", [](const AsyncInferenceWrapper& wrapper) -> std::string {
+            return std::string("AsyncEngine(ready=") + (wrapper.is_ready() ? "True" : "False") +
+                   ")";
         });
 
     // Factory functions
     inference_module.def(
-        "create_engine", &create_inference_engine, "Create inference engine from configuration");
+        "create_engine",
+        [](const PlaceholderConfig& config) { return create_inference_engine(config); },
+        "Create inference engine from configuration");
 
     inference_module.def(
         "create_async_engine",
@@ -175,7 +178,7 @@ void bind_inference_engine(py::module& m) {
     // Utility functions
     inference_module.def(
         "get_available_backends",
-        []() { return std::vector<std::string>{"cpu", "rule_based", "mock"}; },
+        []() { return std::vector<std::string>{"rule_based", "onnx_runtime", "tensorrt_gpu"}; },
         "Get list of available inference backends");
 
     inference_module.def(
@@ -208,23 +211,20 @@ void bind_inference_engine(py::module& m) {
         .value("MODEL_LOAD_FAILED", InferenceError::MODEL_LOAD_FAILED)
         .value("UNSUPPORTED_MODEL_FORMAT", InferenceError::UNSUPPORTED_MODEL_FORMAT)
         .value("MODEL_VERSION_MISMATCH", InferenceError::MODEL_VERSION_MISMATCH)
-        .value("INFERENCE_FAILED", InferenceError::INFERENCE_FAILED)
-        .value("INVALID_INPUT", InferenceError::INVALID_INPUT)
-        .value("TIMEOUT", InferenceError::TIMEOUT)
-        .value("OUT_OF_MEMORY", InferenceError::OUT_OF_MEMORY)
-        .value("GPU_NOT_AVAILABLE", InferenceError::GPU_NOT_AVAILABLE)
         .value("BACKEND_NOT_AVAILABLE", InferenceError::BACKEND_NOT_AVAILABLE)
-        .value("CONFIGURATION_ERROR", InferenceError::CONFIGURATION_ERROR)
-        .value("SERIALIZATION_ERROR", InferenceError::SERIALIZATION_ERROR)
-        .value("NETWORK_ERROR", InferenceError::NETWORK_ERROR)
-        .value("UNKNOWN_ERROR", InferenceError::UNKNOWN_ERROR);
+        .value("GPU_MEMORY_EXHAUSTED", InferenceError::GPU_MEMORY_EXHAUSTED)
+        .value("INFERENCE_EXECUTION_FAILED", InferenceError::INFERENCE_EXECUTION_FAILED)
+        .value("INVALID_INPUT_SHAPE", InferenceError::INVALID_INPUT_SHAPE)
+        .value("INVALID_INPUT_TYPE", InferenceError::INVALID_INPUT_TYPE)
+        .value("OUTPUT_PROCESSING_FAILED", InferenceError::OUTPUT_PROCESSING_FAILED)
+        .value("INVALID_BACKEND_CONFIG", InferenceError::INVALID_BACKEND_CONFIG)
+        .value("OPTIMIZATION_FAILED", InferenceError::OPTIMIZATION_FAILED);
 
     // InferenceBackend enum
     py::enum_<InferenceBackend>(inference_module, "InferenceBackend")
         .value("RULE_BASED", InferenceBackend::RULE_BASED)
         .value("TENSORRT_GPU", InferenceBackend::TENSORRT_GPU)
         .value("ONNX_RUNTIME", InferenceBackend::ONNX_RUNTIME)
-        .value("MOCK", InferenceBackend::MOCK)
         .value("HYBRID_NEURAL_SYMBOLIC", InferenceBackend::HYBRID_NEURAL_SYMBOLIC);
 
     // ModelConfig struct

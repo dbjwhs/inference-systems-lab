@@ -9,7 +9,7 @@ pybind11_add_module(inference_lab
     result_bindings.cpp
     tensor_bindings.cpp
     inference_bindings.cpp
-    logging_bindings.cpp
+    # logging_bindings.cpp  # Temporarily disabled
 )
 
 # Link against project libraries

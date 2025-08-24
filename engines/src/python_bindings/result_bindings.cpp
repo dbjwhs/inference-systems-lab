@@ -130,11 +130,14 @@ void translate_cpp_exception(const std::exception& e) {
     } else if (msg.find("tensor") != std::string::npos || msg.find("numpy") != std::string::npos) {
         throw py::value_error("Tensor operation failed: " + msg);
     } else if (msg.find("model") != std::string::npos) {
-        throw py::runtime_error("Model operation failed: " + msg);
+        PyErr_SetString(PyExc_RuntimeError, ("Model operation failed: " + msg).c_str());
+        throw py::error_already_set();
     } else if (msg.find("inference") != std::string::npos) {
-        throw py::runtime_error("Inference operation failed: " + msg);
+        PyErr_SetString(PyExc_RuntimeError, ("Inference operation failed: " + msg).c_str());
+        throw py::error_already_set();
     } else {
-        throw py::runtime_error(msg);
+        PyErr_SetString(PyExc_RuntimeError, msg.c_str());
+        throw py::error_already_set();
     }
 }
 
@@ -169,12 +172,15 @@ T safe_unwrap(std::function<Result<T, E>()> operation) {
             translate_cpp_exception(temp_exception);
 
             // Fallback (should not reach here due to throw in translate_cpp_exception)
-            throw py::runtime_error(error_msg);
+            PyErr_SetString(PyExc_RuntimeError, error_msg.c_str());
+            throw py::error_already_set();
         }
     } catch (const std::exception& e) {
         translate_cpp_exception(e);
         // Fallback (should not reach here)
-        throw py::runtime_error(std::string("Unexpected error: ") + e.what());
+        std::string error_msg = std::string("Unexpected error: ") + e.what();
+        PyErr_SetString(PyExc_RuntimeError, error_msg.c_str());
+        throw py::error_already_set();
     }
 }
 
@@ -231,7 +237,7 @@ class SafeResult {
  * Creates Python classes for common Result<T, E> instantiations used
  * throughout the inference system.
  */
-static void bind_result_types(py::module& m) {
+void bind_result_types(py::module& m) {
     // Create a submodule for result types
     py::module result_module = m.def_submodule("result", "Result<T, E> error handling types");
 
@@ -293,7 +299,7 @@ static void bind_result_types(py::module& m) {
              &SafeResult<std::string, std::string>::get_error_message,
              "Get error message without throwing")
         .def("__bool__", &SafeResult<std::string, std::string>::is_success)
-        .def("__repr__", [](const SafeResult<std::string, std::string>& self) {
+        .def("__repr__", [](const SafeResult<std::string, std::string>& self) -> std::string {
             if (self.is_success()) {
                 return "SafeResult(success=True)";
             } else {
@@ -309,7 +315,7 @@ static void bind_result_types(py::module& m) {
              &SafeResult<int, std::string>::get_error_message,
              "Get error message without throwing")
         .def("__bool__", &SafeResult<int, std::string>::is_success)
-        .def("__repr__", [](const SafeResult<int, std::string>& self) {
+        .def("__repr__", [](const SafeResult<int, std::string>& self) -> std::string {
             if (self.is_success()) {
                 return "SafeResult(success=True)";
             } else {

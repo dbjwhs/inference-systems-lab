@@ -76,10 +76,10 @@ PlaceholderTensor numpy_to_tensor(py::array input) {
     PlaceholderTensor tensor(shape);
 
     // Handle different data types with proper conversion
-    auto dtype = py::dtype::of(input);
+    auto dtype = input.dtype();
     if (dtype.is(py::dtype::of<float>())) {
         // float32 - direct copy
-        if (buf.c_contiguous) {
+        if (buf.strides[buf.ndim - 1] == sizeof(float)) {
             std::memcpy(tensor.data(), buf.ptr, tensor.size() * sizeof(float));
         } else {
             copy_strided_data<float>(buf, tensor.data());
@@ -151,7 +151,7 @@ void copy_strided_data(const py::buffer_info& buf, float* dst) {
  */
 template <typename SrcType, typename DstType>
 void convert_and_copy(const py::buffer_info& buf, DstType* dst) {
-    if (buf.c_contiguous) {
+    if (buf.strides[buf.ndim - 1] == sizeof(SrcType)) {
         auto src = static_cast<const SrcType*>(buf.ptr);
         for (size_t i = 0; i < buf.size; ++i) {
             dst[i] = static_cast<DstType>(src[i]);
@@ -296,7 +296,9 @@ void bind_tensor_types(py::module& m) {
 
                 return duration.count() / static_cast<double>(iterations);
             } catch (const std::exception& e) {
-                throw py::runtime_error("Benchmark failed: " + std::string(e.what()));
+                std::string error_msg = "Benchmark failed: " + std::string(e.what());
+                PyErr_SetString(PyExc_RuntimeError, error_msg.c_str());
+                throw py::error_already_set();
             }
         },
         "Benchmark NumPy conversion performance (microseconds per conversion)");
