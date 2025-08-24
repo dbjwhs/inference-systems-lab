@@ -9,6 +9,7 @@ pybind11_add_module(inference_lab
     result_bindings.cpp
     tensor_bindings.cpp
     inference_bindings.cpp
+    registry_bindings.cpp
     # logging_bindings.cpp  # Temporarily disabled
 )
 

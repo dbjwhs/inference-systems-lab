@@ -18,6 +18,7 @@ using namespace pybind11::literals;
 void bind_result_types(py::module& m);      // Implemented in result_bindings.cpp
 void bind_tensor_types(py::module& m);      // Implemented in tensor_bindings.cpp
 void bind_inference_engine(py::module& m);  // Implemented in inference_bindings.cpp
+void bind_model_registry(py::module& m);    // Implemented in registry_bindings.cpp
 // void bind_logging_system(py::module& m);  // Temporarily disabled
 
 /**
@@ -40,6 +41,9 @@ PYBIND11_MODULE(inference_lab, m) {
 
     // Bind inference engine interfaces
     bind_inference_engine(m);
+
+    // Bind model registry for lifecycle management
+    bind_model_registry(m);
 
     // Module-level utility functions
     m.def(
