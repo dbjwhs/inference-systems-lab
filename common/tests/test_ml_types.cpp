@@ -222,15 +222,15 @@ TEST(TensorSpecTest, Validation) {
     EXPECT_TRUE(valid_spec.is_valid());
 
     // Invalid specs
-    TensorSpec const empty_name = valid_spec;
+    TensorSpec empty_name = valid_spec;
     empty_name.name = "";
     EXPECT_FALSE(empty_name.is_valid());
 
-    TensorSpec const empty_shape = valid_spec;
+    TensorSpec empty_shape = valid_spec;
     empty_shape.shape = {};
     EXPECT_FALSE(empty_shape.is_valid());
 
-    TensorSpec const zero_dim = valid_spec;
+    TensorSpec zero_dim = valid_spec;
     zero_dim.shape = {1, 0, 224, 224};
     EXPECT_FALSE(zero_dim.is_valid());
 }
@@ -270,19 +270,19 @@ TEST(ModelConfigTest, Validation) {
     EXPECT_TRUE(result.unwrap());
 
     // Test invalid configurations
-    ModelConfig const empty_name = valid_config;
+    ModelConfig empty_name = valid_config;
     empty_name.name = "";
     EXPECT_TRUE(empty_name.validate().is_err());
 
-    ModelConfig const empty_path = valid_config;
+    ModelConfig empty_path = valid_config;
     empty_path.model_path = "";
     EXPECT_TRUE(empty_path.validate().is_err());
 
-    ModelConfig const no_inputs = valid_config;
+    ModelConfig no_inputs = valid_config;
     no_inputs.input_specs.clear();
     EXPECT_TRUE(no_inputs.validate().is_err());
 
-    ModelConfig const zero_batch = valid_config;
+    ModelConfig zero_batch = valid_config;
     zero_batch.max_batch_size = 0;
     EXPECT_TRUE(zero_batch.validate().is_err());
 }
@@ -323,11 +323,12 @@ TEST(InferenceRequestTest, Validation) {
     FloatTensor input_tensor({1, 3});
     input_tensor.fill(1.0F);
 
-    TensorInput const tensor_input;
+    TensorInput tensor_input;
     tensor_input.name = "input";
     tensor_input.tensor = std::move(input_tensor);
 
-    InferenceRequest valid_request{.batch_size = 1};
+    InferenceRequest valid_request;
+    valid_request.batch_size = 1;
     valid_request.inputs.push_back(std::move(tensor_input));
 
     auto result = valid_request.validate(config);
@@ -335,15 +336,15 @@ TEST(InferenceRequestTest, Validation) {
     EXPECT_TRUE(result.unwrap());
 
     // Test invalid requests
-    InferenceRequest const no_inputs;
+    InferenceRequest no_inputs;
     no_inputs.batch_size = 1;
     EXPECT_TRUE(no_inputs.validate(config).is_err());
 
-    InferenceRequest const zero_batch;
+    InferenceRequest zero_batch;
     zero_batch.batch_size = 0;
     EXPECT_TRUE(zero_batch.validate(config).is_err());
 
-    InferenceRequest const large_batch;
+    InferenceRequest large_batch;
     large_batch.batch_size = 10;  // Exceeds max_batch_size
     EXPECT_TRUE(large_batch.validate(config).is_err());
 }
@@ -361,8 +362,9 @@ TEST(InferenceResponseTest, OutputRetrieval) {
     tensor_output.tensor = std::move(output_tensor);
     tensor_output.confidence = 0.95F;
 
-    InferenceResponse response{.inference_time = std::chrono::milliseconds(50),
-                               .overall_confidence = 0.95f};
+    InferenceResponse response;
+    response.inference_time = std::chrono::milliseconds(50);
+    response.overall_confidence = 0.95f;
     response.outputs.push_back(std::move(tensor_output));
 
     // Test successful retrieval
@@ -382,15 +384,16 @@ TEST(InferenceResponseTest, MemoryCalculation) {
     FloatTensor output1({10});
     FloatTensor output2({20});
 
-    TensorOutput const tensor_output1;
+    TensorOutput tensor_output1;
     tensor_output1.name = "output1";
     tensor_output1.tensor = std::move(output1);
 
-    TensorOutput const tensor_output2;
+    TensorOutput tensor_output2;
     tensor_output2.name = "output2";
     tensor_output2.tensor = std::move(output2);
 
-    InferenceResponse response{.inference_time = std::chrono::milliseconds(100)};
+    InferenceResponse response;
+    response.inference_time = std::chrono::milliseconds(100);
     response.outputs.push_back(std::move(tensor_output1));
     response.outputs.push_back(std::move(tensor_output2));
 
@@ -427,15 +430,15 @@ TEST(ClassificationResultTest, TopKPredictions) {
 //=============================================================================
 
 TEST(UncertaintyEstimateTest, ReliabilityCheck) {
-    UncertaintyEstimate const low_uncertainty{.epistemic_uncertainty = 0.02F,
-                                              .aleatoric_uncertainty = 0.03F,
-                                              .total_uncertainty = 0.05F,
-                                              .confidence_interval_95 = 0.1F};
+    UncertaintyEstimate low_uncertainty{.epistemic_uncertainty = 0.02F,
+                                        .aleatoric_uncertainty = 0.03F,
+                                        .total_uncertainty = 0.05F,
+                                        .confidence_interval_95 = 0.1F};
 
-    UncertaintyEstimate const high_uncertainty{.epistemic_uncertainty = 0.15F,
-                                               .aleatoric_uncertainty = 0.2F,
-                                               .total_uncertainty = 0.35F,
-                                               .confidence_interval_95 = 0.7F};
+    UncertaintyEstimate high_uncertainty{.epistemic_uncertainty = 0.15F,
+                                         .aleatoric_uncertainty = 0.2F,
+                                         .total_uncertainty = 0.35F,
+                                         .confidence_interval_95 = 0.7F};
 
     EXPECT_TRUE(low_uncertainty.is_reliable(0.1F));    // Below threshold
     EXPECT_FALSE(high_uncertainty.is_reliable(0.1F));  // Above threshold
@@ -451,7 +454,7 @@ TEST(BatchResultTest, ThroughputCalculation) {
 
     // Create 5 empty outputs
     for (int i = 0; i < 5; ++i) {
-        TensorOutput const output;
+        TensorOutput output;
         output.name = "output_" + std::to_string(i);
         output.tensor = FloatTensor({1});
         outputs.push_back(std::move(output));
