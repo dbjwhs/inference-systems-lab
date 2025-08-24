@@ -2,7 +2,8 @@
 # Configures GoogleTest integration and CTest setup
 
 function(configure_testing)
-    # Enable testing framework
+    # Enable testing framework and CTest integration
+    include(CTest)
     enable_testing()
     
     # Google Test - prefer system-installed version for ABI compatibility

@@ -34,6 +34,9 @@ include(Testing)
 configure_testing()
 configure_coverage()
 
+# Enable testing at the root level to create main CTestTestfile.cmake
+enable_testing()
+
 include(Benchmarking)
 configure_benchmarking()
 
