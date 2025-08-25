@@ -228,6 +228,19 @@ class TestScenarioBuilder {
 };
 
 /**
+ * @brief Results from single backend test execution
+ */
+struct BackendTestResult {
+    engines::InferenceBackend backend;                ///< Backend that was tested
+    TestScenario scenario;                            ///< Test scenario used
+    std::vector<engines::InferenceResponse> outputs;  ///< Inference outputs
+    PerformanceMetrics performance;                   ///< Performance metrics
+    std::vector<std::string> error_messages;          ///< Error messages if any
+    bool passed{false};                               ///< Whether test passed
+    std::string failure_reason;                       ///< Reason for failure (if any)
+};
+
+/**
  * @brief Results from integration test execution
  */
 struct IntegrationTestResults {
@@ -337,15 +350,15 @@ class MLIntegrationFramework {
     auto test_single_backend(engines::InferenceBackend backend,
                              const engines::ModelConfig& config,
                              const std::vector<engines::InferenceRequest>& inputs)
-        -> common::Result<IntegrationTestResults, IntegrationTestError>;
+        -> common::Result<BackendTestResult, IntegrationTestError>;
 
     /**
-     * @brief Compare multiple backends (for test compatibility)
+     * @brief Compare multiple backends for consistency and performance
      */
     auto compare_backends(const std::vector<engines::InferenceBackend>& backends,
                           const engines::ModelConfig& config,
                           const std::vector<engines::InferenceRequest>& inputs,
-                          ValidationStrategy strategy)
+                          ValidationStrategy validation_strategy)
         -> common::Result<IntegrationTestResults, IntegrationTestError>;
 
   private:

@@ -258,23 +258,22 @@ TEST_F(SingleBackendTest, ONNXRuntimeBasicInference) {
 }
 
 TEST_F(SingleBackendTest, RuleBasedInference) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing Rule-Based inference functionality");
 
     auto model_config = classification_fixture_->get_model_config();
     // Note: backend is specified as parameter, not in config
     auto test_inputs = classification_fixture_->generate_test_data(3);
 
-    auto result =
-        framework_->test_single_backend(EngineBackend::RULE_BASED, model_config, test_inputs);
+    auto result = framework_->test_single_backend(
+        inference_lab::engines::InferenceBackend::RULE_BASED, model_config, test_inputs);
 
     ASSERT_TRUE(result.is_ok()) << "Rule-based test failed: "
                                 << static_cast<int>(result.unwrap_err());
 
     auto backend_result = result.unwrap();
     EXPECT_TRUE(backend_result.passed);
-    EXPECT_EQ(backend_result.scenario.backends[0], EngineBackend::RULE_BASED);
+    EXPECT_EQ(backend_result.scenario.backends[0],
+              inference_lab::engines::InferenceBackend::RULE_BASED);
 
     LOG_INFO_PRINT("Rule-Based inference test completed successfully");
 }
@@ -289,15 +288,14 @@ TEST_F(SingleBackendTest, RuleBasedInference) {
 class MultiBackendTest : public MLIntegrationTestBase {};
 
 TEST_F(MultiBackendTest, CrossBackendConsistency) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing cross-backend consistency");
 
     auto model_config = classification_fixture_->get_model_config();
     auto test_inputs = classification_fixture_->generate_test_data(3);
 
-    std::vector<EngineBackend> backends = {EngineBackend::TENSORRT_GPU,
-                                           EngineBackend::ONNX_RUNTIME};
+    std::vector<inference_lab::engines::InferenceBackend> backends = {
+        inference_lab::engines::InferenceBackend::TENSORRT_GPU,
+        inference_lab::engines::InferenceBackend::ONNX_RUNTIME};
 
     auto result = framework_->compare_backends(
         backends, model_config, test_inputs, ValidationStrategy::STATISTICAL_COMPARISON);
@@ -324,33 +322,41 @@ TEST_F(MultiBackendTest, CrossBackendConsistency) {
 }
 
 TEST_F(MultiBackendTest, PerformanceComparison) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing performance comparison between backends");
 
     auto model_config = classification_fixture_->get_model_config();
     auto test_inputs = classification_fixture_->generate_test_data(10);
 
-    std::vector<EngineBackend> backends = {
-        EngineBackend::TENSORRT_GPU, EngineBackend::ONNX_RUNTIME, EngineBackend::RULE_BASED};
+    std::vector<inference_lab::engines::InferenceBackend> backends = {
+        inference_lab::engines::InferenceBackend::TENSORRT_GPU,
+        inference_lab::engines::InferenceBackend::ONNX_RUNTIME,
+        inference_lab::engines::InferenceBackend::RULE_BASED};
 
-    // Use performance analyzer to get detailed metrics
-    auto perf_result = performance_analyzer_->compare_backend_performance(
-        backends, model_config, test_inputs, test_factory_);
+    // Use framework to compare backends
+    auto result = framework_->compare_backends(
+        backends,
+        model_config,
+        test_inputs,
+        inference_lab::integration::ValidationStrategy::STATISTICAL_COMPARISON);
 
-    ASSERT_TRUE(perf_result.is_ok()) << "Performance comparison failed";
+    ASSERT_TRUE(result.is_ok()) << "Performance comparison failed: "
+                                << static_cast<int>(result.unwrap_err());
 
-    auto performance_metrics = perf_result.unwrap();
-    EXPECT_EQ(performance_metrics.size(), backends.size());
+    auto integration_result = result.unwrap();
+    EXPECT_TRUE(integration_result.passed);
+    EXPECT_EQ(integration_result.metrics.size(), backends.size());
 
     // Verify expected performance characteristics
-    auto tensorrt_metrics = performance_metrics.find(EngineBackend::TENSORRT_GPU);
-    auto onnx_metrics = performance_metrics.find(EngineBackend::ONNX_RUNTIME);
-    auto rule_metrics = performance_metrics.find(EngineBackend::RULE_BASED);
+    auto tensorrt_metrics =
+        integration_result.metrics.find(inference_lab::engines::InferenceBackend::TENSORRT_GPU);
+    auto onnx_metrics =
+        integration_result.metrics.find(inference_lab::engines::InferenceBackend::ONNX_RUNTIME);
+    auto rule_metrics =
+        integration_result.metrics.find(inference_lab::engines::InferenceBackend::RULE_BASED);
 
-    ASSERT_NE(tensorrt_metrics, performance_metrics.end());
-    ASSERT_NE(onnx_metrics, performance_metrics.end());
-    ASSERT_NE(rule_metrics, performance_metrics.end());
+    ASSERT_NE(tensorrt_metrics, integration_result.metrics.end());
+    ASSERT_NE(onnx_metrics, integration_result.metrics.end());
+    ASSERT_NE(rule_metrics, integration_result.metrics.end());
 
     // TensorRT should be faster than ONNX for GPU-optimized models
     EXPECT_LT(tensorrt_metrics->second.mean_latency, onnx_metrics->second.mean_latency)
@@ -373,8 +379,6 @@ TEST_F(MultiBackendTest, PerformanceComparison) {
 class ErrorHandlingTest : public MLIntegrationTestBase {};
 
 TEST_F(ErrorHandlingTest, GPUMemoryExhaustion) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing GPU memory exhaustion handling");
 
     // Configure TensorRT mock to simulate memory exhaustion
@@ -417,8 +421,6 @@ TEST_F(ErrorHandlingTest, GPUMemoryExhaustion) {
 }
 
 TEST_F(ErrorHandlingTest, ModelLoadingFailure) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing model loading failure handling");
 
     // Configure ONNX mock to simulate model loading failure
@@ -460,8 +462,6 @@ TEST_F(ErrorHandlingTest, ModelLoadingFailure) {
 class MemoryManagementTest : public MLIntegrationTestBase {};
 
 TEST_F(MemoryManagementTest, MemoryLeakDetection) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing memory leak detection");
 
     auto model_config = classification_fixture_->get_model_config();
@@ -502,8 +502,6 @@ TEST_F(MemoryManagementTest, MemoryLeakDetection) {
 }
 
 TEST_F(MemoryManagementTest, ResourceExhaustionHandling) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing resource exhaustion handling");
 
     auto model_config = classification_fixture_->get_model_config();
@@ -554,8 +552,6 @@ TEST_F(MemoryManagementTest, ResourceExhaustionHandling) {
 class ConcurrentExecutionTest : public MLIntegrationTestBase {};
 
 TEST_F(ConcurrentExecutionTest, MultiThreadedInference) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing multi-threaded inference execution");
 
     auto model_config = classification_fixture_->get_model_config();
@@ -596,8 +592,6 @@ TEST_F(ConcurrentExecutionTest, MultiThreadedInference) {
 class PerformanceTest : public MLIntegrationTestBase {};
 
 TEST_F(PerformanceTest, LatencyRequirements) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing latency requirements compliance");
 
     auto scenario = MainTestScenarioBuilder()
@@ -629,8 +623,6 @@ TEST_F(PerformanceTest, LatencyRequirements) {
 }
 
 TEST_F(PerformanceTest, ThroughputBenchmark) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing throughput benchmarking");
 
     auto scenario = MainTestScenarioBuilder()
@@ -670,8 +662,6 @@ TEST_F(PerformanceTest, ThroughputBenchmark) {
 class EndToEndTest : public MLIntegrationTestBase {};
 
 TEST_F(EndToEndTest, ClassificationPipeline) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing end-to-end classification pipeline");
 
     auto scenarios = std::vector<TestScenario>{
@@ -704,8 +694,6 @@ TEST_F(EndToEndTest, ClassificationPipeline) {
 }
 
 TEST_F(EndToEndTest, ObjectDetectionPipeline) {
-    GTEST_SKIP() << "Integration framework not yet fully implemented - test functionality pending";
-
     LOG_INFO_PRINT("Testing end-to-end object detection pipeline");
 
     auto scenario = MainTestScenarioBuilder()
@@ -751,9 +739,8 @@ TEST_F(IntegrationTestSuite, ComprehensiveIntegrationTest) {
     // Set up framework with mocks
     auto framework_result = create_mock_integration_framework();
     if (!framework_result.is_ok()) {
-        LOG_INFO_PRINT("Mock framework not yet implemented, skipping test");
-        GTEST_SKIP() << "Mock framework not implemented";
-        return;
+        LOG_INFO_PRINT("Mock framework not yet implemented, test may fail");
+        // Continue with test even if mock framework not implemented
     }
     auto& framework = framework_result.unwrap();
 

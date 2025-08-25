@@ -351,16 +351,83 @@ auto MLIntegrationFramework::test_single_backend(
     engines::InferenceBackend backend,
     const engines::ModelConfig& config,
     const std::vector<engines::InferenceRequest>& inputs)
-    -> common::Result<IntegrationTestResults, IntegrationTestError> {
-    // Create a test scenario from the parameters
-    TestScenario scenario;
-    scenario.name = "Single backend test";
-    scenario.backends = {backend};
-    scenario.model_config = config;
-    scenario.mode = TestMode::SINGLE_BACKEND;
-    scenario.iterations = static_cast<std::uint32_t>(inputs.size());
+    -> common::Result<BackendTestResult, IntegrationTestError> {
+    LOG_INFO_PRINT("Testing single backend: {}", to_string(backend));
 
-    return run_integration_test(scenario);
+    BackendTestResult result{};
+    result.backend = backend;
+    result.scenario.backends.push_back(backend);
+    result.scenario.name = "single_backend_test_" + to_string(backend);
+
+    try {
+        // Create inference engine for the backend
+        auto engine_result = engines::create_inference_engine(backend, config);
+        if (engine_result.is_err()) {
+            result.passed = false;
+            result.error_messages.push_back("Failed to create engine: " +
+                                            engines::to_string(engine_result.unwrap_err()));
+            return Ok(result);
+        }
+
+        auto engine = std::move(engine_result).unwrap();
+
+        // Verify engine is ready
+        if (!engine->is_ready()) {
+            result.passed = false;
+            result.error_messages.push_back("Engine not ready after initialization");
+            return Ok(result);
+        }
+
+        // Test each input
+        std::vector<engines::InferenceResponse> responses;
+        auto start_time = std::chrono::high_resolution_clock::now();
+
+        for (const auto& input : inputs) {
+            auto inference_result = engine->run_inference(input);
+            if (inference_result.is_err()) {
+                result.error_messages.push_back("Inference failed: " +
+                                                engines::to_string(inference_result.unwrap_err()));
+                continue;
+            }
+
+            responses.push_back(inference_result.unwrap());
+        }
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto total_duration =
+            std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+        // Calculate performance metrics
+        if (!responses.empty()) {
+            result.passed = true;
+            result.performance.throughput_inferences_per_sec =
+                static_cast<double>(responses.size()) / (total_duration.count() / 1000.0);
+
+            // Calculate average latency
+            double total_latency = 0.0;
+            for (const auto& response : responses) {
+                total_latency += response.inference_time_ms;
+            }
+            result.performance.mean_latency =
+                std::chrono::milliseconds(static_cast<int64_t>(total_latency / responses.size()));
+
+            result.outputs = std::move(responses);
+        } else {
+            result.passed = false;
+            result.error_messages.push_back("No successful inferences completed");
+        }
+
+        LOG_INFO_PRINT("Single backend test completed: passed={}, throughput={:.1f}/sec",
+                       result.passed,
+                       result.performance.throughput_inferences_per_sec);
+
+        return Ok(result);
+
+    } catch (const std::exception& e) {
+        result.passed = false;
+        result.error_messages.push_back(std::string("Exception during testing: ") + e.what());
+        return Ok(result);
+    }
 }
 
 auto MLIntegrationFramework::compare_backends(
