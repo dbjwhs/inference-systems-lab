@@ -222,17 +222,46 @@ using Result = std::expected<T, Error>;  // or custom implementation
 - Performance tests prevent degradation
 - Property-based testing for algorithms
 
+### Comprehensive Testing Strategy
+The project includes a single-command testing orchestrator for systematic validation:
+
+```bash
+# Complete testing before releases (recommended)
+python3 tools/run_comprehensive_tests.py
+
+# Quick development testing
+python3 tools/run_comprehensive_tests.py --quick
+
+# Memory safety focus
+python3 tools/run_comprehensive_tests.py --memory
+```
+
+**Testing Infrastructure:**
+- **Multiple build configurations**: Release, Debug, AddressSanitizer, ThreadSanitizer, UBSan
+- **Clean builds**: Fresh build directories prevent incremental build issues
+- **Memory safety**: AddressSanitizer with leak detection (`detect_leaks=1`)
+- **Comprehensive suites**: Unit, integration, stress, concurrency, benchmarks
+- **Professional reports**: HTML/JSON output in `test-results/` directory
+- **Future-proof design**: Easy to add new sanitizers and test suites
+
 ## Code Review Checklist
 
 Before submitting code, verify:
 
+**Comprehensive Testing (Recommended):**
+- [ ] Comprehensive testing passes (`python3 tools/run_comprehensive_tests.py --quick`)
+- [ ] Memory safety validated (`python3 tools/run_comprehensive_tests.py --memory`)
+
+**Individual Testing (For targeted changes):**
 - [ ] All tests pass (`ctest --output-on-failure`)
-- [ ] No memory leaks (`valgrind --leak-check=full`)
+- [ ] No memory leaks (AddressSanitizer with `detect_leaks=1`)
 - [ ] No undefined behavior (run with sanitizers)
 - [ ] Performance benchmarks included for critical paths
+
+**Code Quality:**
 - [ ] Documentation updated
-- [ ] Code formatted (`clang-format -i src/*.cpp`)
-- [ ] Static analysis clean (`clang-tidy`)
+- [ ] Code formatted (`python3 tools/check_format.py --fix`)
+- [ ] Static analysis clean (`python3 tools/check_static_analysis.py --check`)
 
 ## Performance Guidelines
 

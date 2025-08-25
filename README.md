@@ -109,6 +109,7 @@ inference-systems-lab/
 │   ├── check_eof_newline.py  # POSIX compliance validation
 │   ├── run_benchmarks.py     # Performance regression detection
 │   ├── install_hooks.py      # Pre-commit hook management
+│   ├── run_comprehensive_tests.py # 🆕 Complete testing orchestrator
 │   ├── model_manager.py      # ML model version control and lifecycle
 │   ├── convert_model.py      # Automated model conversion pipeline
 │   ├── benchmark_inference.py # ML performance analysis and benchmarking
@@ -299,6 +300,28 @@ python3 tools/check_format.py --check
 python3 tools/check_static_analysis.py --check
 ```
 
+### **Comprehensive Testing**
+```bash
+# Single command for complete testing (recommended before releases)
+python3 tools/run_comprehensive_tests.py              # Full testing: all configs, all tests
+
+# Quick smoke tests (for rapid iteration)
+python3 tools/run_comprehensive_tests.py --quick      # Fast: essential tests only
+
+# Memory safety focused testing
+python3 tools/run_comprehensive_tests.py --memory     # Focus: AddressSanitizer, leak detection
+
+# Preserve build dirs for debugging
+python3 tools/run_comprehensive_tests.py --no-clean   # Keep: build directories after testing
+```
+
+**What the comprehensive testing includes:**
+- **Clean builds** of multiple configurations (Release, Debug, ASan, TSan, UBSan)
+- **All test suites**: unit, integration, stress, memory leak, benchmarks
+- **Memory safety validation** with AddressSanitizer leak detection
+- **HTML/JSON reports** saved to `test-results/` directory
+- **Future-proof design** for easy addition of new test suites
+
 ### **Development Workflow**
 ```bash
 # Quality assurance (automated via pre-commit hooks)
@@ -324,12 +347,14 @@ python3 tools/validate_model.py validate model.onnx --level standard --output re
 ## 🧪 **Quality Standards**
 
 ### **Testing Requirements**
-- **Comprehensive Coverage**: 80%+ code coverage achieved with unit, integration, and performance tests
-- **Enterprise Test Coverage**: Systematic test implementation targeting untested production code
+- **Comprehensive Testing**: Single-command test orchestrator (`tools/run_comprehensive_tests.py`) for systematic validation
+- **Coverage Excellence**: 87%+ code coverage achieved with unit, integration, stress, and performance tests
+- **Memory Safety Testing**: AddressSanitizer, ThreadSanitizer, UndefinedBehaviorSanitizer integration with leak detection
+- **Multiple Build Configurations**: Release, Debug, Sanitizer builds with clean build directories
+- **Enterprise Test Coverage**: Systematic test implementation targeting production-critical code
 - **Automated Validation**: Pre-commit hooks ensure code quality before commits
 - **Performance Monitoring**: Continuous benchmark tracking with regression detection
 - **Static Analysis**: 25+ check categories with error-level enforcement
-- **Memory Safety**: AddressSanitizer, UndefinedBehaviorSanitizer integration
 
 ### **Code Standards**
 - **Modern C++17+**: Leverage advanced language features and concepts
