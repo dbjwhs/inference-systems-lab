@@ -283,6 +283,25 @@ apply_strict_warnings(ml_types_tests)
 # Add ML types tests to CTest
 add_test(NAME MLTypesUnitTests COMMAND ml_types_tests)
 
+# Concurrent stress tests (Phase 4.3)
+add_executable(concurrency_stress_tests
+    tests/test_concurrency_stress.cpp
+)
+
+target_link_libraries(concurrency_stress_tests
+    common
+    ${GTEST_MAIN_TARGET}
+    ${ATOMIC_LIBRARY}
+)
+apply_strict_warnings(concurrency_stress_tests)
+
+# Add stress tests to CTest with extended timeout
+add_test(NAME ConcurrencyStressTests COMMAND concurrency_stress_tests)
+set_tests_properties(ConcurrencyStressTests PROPERTIES 
+    TIMEOUT 600  # 10 minutes for comprehensive stress testing
+    LABELS "stress;concurrency"
+)
+
 # Inference types demo
 add_executable(inference_types_demo
     examples/inference_types_demo.cpp

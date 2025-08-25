@@ -102,3 +102,23 @@ set_tests_properties(IntegrationPerfRegression PROPERTIES
     LABELS "performance"
 )
 
+# Concurrent stress tests for integration framework (Phase 4.3)
+add_executable(integration_stress_tests
+    tests/test_integration_stress.cpp
+)
+
+target_link_libraries(integration_stress_tests
+    integration
+    GTest::gtest_main
+)
+
+target_compile_definitions(integration_stress_tests PRIVATE
+    INTEGRATION_STRESS_TEST=1
+)
+
+add_test(NAME IntegrationStressTests COMMAND integration_stress_tests)
+set_tests_properties(IntegrationStressTests PROPERTIES
+    TIMEOUT 900  # 15 minutes for comprehensive stress testing
+    LABELS "stress;concurrency;integration"
+)
+
