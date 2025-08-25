@@ -323,16 +323,22 @@ auto MemoryPool<ElementType>::allocate(std::size_t count) -> ElementType* {
     auto* block = find_free_block(count);
 
     if (!block) {
-        // Need to expand the pool
+        // Need to expand the pool - lock protects blocks_ vector modification
         acquire_lock();
-        if (!expand_pool(count)) {
-            release_lock();
-            return nullptr;  // Expansion failed
+
+        // Double-check after acquiring lock (another thread may have expanded)
+        block = find_free_block(count);
+        if (!block) {
+            if (!expand_pool(count)) {
+                release_lock();
+                return nullptr;  // Expansion failed
+            }
+            // Try again after expansion while still holding lock
+            block = find_free_block(count);
         }
+
         release_lock();
 
-        // Try again after expansion (atomically reserves it)
-        block = find_free_block(count);
         if (!block) {
             return nullptr;  // Still couldn't find suitable block
         }
@@ -442,6 +448,11 @@ auto MemoryPool<ElementType>::expand_pool(std::size_t min_size) -> bool {
     auto block_size = std::max(min_size, std::size_t{64});  // Minimum 64 elements per block
     auto num_blocks = total_elements / block_size;
 
+    // Reserve space to prevent reallocation during push_back
+    // This is critical to prevent use-after-free when other threads are iterating
+    chunks_.reserve(chunks_.size() + 1);
+    blocks_.reserve(blocks_.size() + num_blocks);
+
     // Add to our collections first
     chunks_.push_back(std::move(new_chunk));
 
@@ -463,9 +474,19 @@ template <typename ElementType>
 auto MemoryPool<ElementType>::find_free_block(std::size_t count) -> Block* {
     // Simple first-fit algorithm with atomic reservation
     // In a production implementation, you might want best-fit or segregated lists
-    for (auto& block_ptr : blocks_) {
-        auto* block = block_ptr.get();
-        if (block->size >= count) {
+
+    // Capture the current size to avoid accessing new blocks added during iteration
+    // This prevents accessing blocks that may be added concurrently
+    auto current_size = blocks_.size();
+
+    for (std::size_t i = 0; i < current_size; ++i) {
+        // Check if index is still valid (defensive programming)
+        if (i >= blocks_.size()) {
+            break;
+        }
+
+        auto* block = blocks_[i].get();
+        if (block && block->size >= count) {
             // Atomically try to reserve this block
             bool expected = false;
             if (block->in_use.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
