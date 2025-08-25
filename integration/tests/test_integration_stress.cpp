@@ -39,6 +39,8 @@
 #include <gtest/gtest.h>
 
 #include "../../common/src/logging.hpp"
+
+using namespace inference_lab::common;
 #include "../../common/src/result.hpp"
 #include "../src/integration_test_utils.hpp"
 #include "../src/ml_integration_framework.hpp"
@@ -154,8 +156,8 @@ struct IntegrationStressStats {
 class IntegrationStressTestBase : public ::testing::Test {
   protected:
     void SetUp() override {
-        LOG_SET_LEVEL(LogLevel::INFO);
-        LOG_INFO("Setting up ML integration stress test environment");
+        Logger::set_level_enabled(common::LogLevel::INFO, true);
+        // LOG_INFO_PRINT("Setting up ML integration stress test environment");
 
         // Initialize framework (would be mock in real testing)
         // For now, we'll use a placeholder since the factory isn't fully implemented
@@ -164,24 +166,28 @@ class IntegrationStressTestBase : public ::testing::Test {
         // Seed random number generator
         rng_.seed(std::chrono::steady_clock::now().time_since_epoch().count());
 
-        LOG_INFO("ML integration stress test setup completed");
+        // LOG_INFO_PRINT("ML integration stress test setup completed");
     }
 
-    void TearDown() override { LOG_INFO("ML integration stress test cleanup completed"); }
+    void TearDown() override {
+        // LOG_INFO_PRINT("ML integration stress test cleanup completed");
+    }
 
     /**
      * @brief Generate test inference request
      */
     engines::InferenceRequest generate_test_request(std::size_t worker_id, std::size_t sequence) {
         engines::InferenceRequest request{};
-        request.request_id = (static_cast<std::uint64_t>(worker_id) << 32) | sequence;
+        // Generate synthetic input tensor data
+        request.input_tensors.resize(1);       // Single input tensor
+        request.input_tensors[0].resize(128);  // 128 float values
+        request.input_names.push_back("input_tensor");
 
-        // Generate synthetic input data
-        request.input_data.resize(128);  // 128 bytes of test data
-        std::uniform_int_distribution<std::uint8_t> data_dist(0, 255);
-        for (auto& byte : request.input_data) {
-            byte = data_dist(rng_);
+        std::uniform_real_distribution<float> data_dist(-1.0f, 1.0f);
+        for (auto& value : request.input_tensors[0]) {
+            value = data_dist(rng_);
         }
+        request.batch_size = 1;
 
         return request;
     }
@@ -205,6 +211,49 @@ class IntegrationStressTestBase : public ::testing::Test {
         return std::chrono::microseconds(dist(rng_));
     }
 
+    /**
+     * @brief Simulate inference operation with realistic timing and error rates
+     */
+    bool simulate_inference_operation(engines::InferenceBackend backend,
+                                      const engines::InferenceRequest& request,
+                                      const IntegrationStressConfig& config) {
+        // Simulate backend-specific processing times
+        std::chrono::microseconds base_latency;
+        double success_rate;
+
+        switch (backend) {
+            case engines::InferenceBackend::RULE_BASED:
+                base_latency = 50us;  // Fast rule processing
+                success_rate = 0.98;  // High reliability
+                break;
+
+            case engines::InferenceBackend::TENSORRT_GPU:
+                base_latency = 200us;  // GPU processing overhead
+                success_rate = 0.95;   // Occasional GPU issues
+                break;
+
+            case engines::InferenceBackend::ONNX_RUNTIME:
+                base_latency = 150us;  // Moderate processing time
+                success_rate = 0.96;   // Good reliability
+                break;
+
+            default:
+                base_latency = 100us;
+                success_rate = 0.90;
+                break;
+        }
+
+        // Add random variation to latency
+        auto latency_variation = get_random_delay(0us, base_latency / 2);
+        std::this_thread::sleep_for(base_latency + latency_variation);
+
+        // Apply error injection if configured
+        std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
+        double error_threshold = config.error_injection_rate + (1.0 - success_rate);
+
+        return prob_dist(rng_) > error_threshold;
+    }
+
     bool framework_initialized_{false};
     mutable std::mt19937 rng_;
 };
@@ -214,7 +263,7 @@ class IntegrationStressTestBase : public ::testing::Test {
 //=============================================================================
 
 class ConcurrentInferenceStressTest : public IntegrationStressTestBase {
-  protected:
+  public:
     void inference_worker(std::size_t worker_id,
                           const IntegrationStressConfig& config,
                           IntegrationStressStats& stats,
@@ -255,51 +304,11 @@ class ConcurrentInferenceStressTest : public IntegrationStressTestBase {
 
             } catch (const std::exception& e) {
                 stats.record_inference(engines::InferenceBackend::RULE_BASED, false, 0us);
-                LOG_ERROR("Worker {} inference failed: {}", worker_id, e.what());
+                LOG_ERROR_PRINT("Worker {} inference failed: {}", worker_id, e.what());
             }
         }
 
-        LOG_DEBUG("Inference worker {} completed {} operations", worker_id, inference_count);
-    }
-
-    bool simulate_inference_operation(engines::InferenceBackend backend,
-                                      const engines::InferenceRequest& request,
-                                      const IntegrationStressConfig& config) {
-        // Simulate backend-specific processing times
-        std::chrono::microseconds base_latency;
-        double success_rate;
-
-        switch (backend) {
-            case engines::InferenceBackend::RULE_BASED:
-                base_latency = 50us;  // Fast rule processing
-                success_rate = 0.98;  // High reliability
-                break;
-
-            case engines::InferenceBackend::TENSORRT_GPU:
-                base_latency = 200us;  // GPU processing overhead
-                success_rate = 0.95;   // Occasional GPU issues
-                break;
-
-            case engines::InferenceBackend::ONNX_RUNTIME:
-                base_latency = 150us;  // Moderate processing time
-                success_rate = 0.96;   // Good reliability
-                break;
-
-            default:
-                base_latency = 100us;
-                success_rate = 0.90;
-                break;
-        }
-
-        // Add random variation to latency
-        auto latency_variation = get_random_delay(0us, base_latency / 2);
-        std::this_thread::sleep_for(base_latency + latency_variation);
-
-        // Apply error injection if configured
-        std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
-        double error_threshold = config.error_injection_rate + (1.0 - success_rate);
-
-        return prob_dist(rng_) > error_threshold;
+        LOG_DEBUG_PRINT("Inference worker {} completed {} operations", worker_id, inference_count);
     }
 };
 
@@ -309,7 +318,8 @@ TEST_F(ConcurrentInferenceStressTest, HighThroughputInference) {
                                    .inferences_per_thread = 1000,
                                    .enable_backend_switching = true};
 
-    LOG_INFO("Starting high-throughput inference stress test with {} threads", config.thread_count);
+    // LOG_INFO_PRINT("Starting high-throughput inference stress test with {} threads",
+    // config.thread_count);
 
     IntegrationStressStats stats;
     std::atomic<bool> stop_flag{false};
@@ -331,10 +341,10 @@ TEST_F(ConcurrentInferenceStressTest, HighThroughputInference) {
     std::thread monitor([&]() {
         while (!stop_flag.load()) {
             std::this_thread::sleep_for(10s);
-            LOG_INFO("Progress: {} inferences ({:.1f}/sec), {:.2f}% success",
-                     stats.total_inferences.load(),
-                     stats.get_throughput(),
-                     stats.get_success_rate() * 100);
+            LOG_INFO_PRINT("Progress: {} inferences ({:.1f}/sec), {:.2f}% success",
+                           stats.total_inferences.load(),
+                           stats.get_throughput(),
+                           stats.get_success_rate() * 100);
         }
     });
 
@@ -368,20 +378,20 @@ TEST_F(ConcurrentInferenceStressTest, HighThroughputInference) {
             EXPECT_GT(backend_success_rate, 0.90)
                 << "Backend " << static_cast<int>(backend) << " success rate too low";
 
-            LOG_INFO("Backend {}: {} inferences, {:.2f}% success",
-                     static_cast<int>(backend),
-                     backend_total,
-                     backend_success_rate * 100);
+            LOG_INFO_PRINT("Backend {}: {} inferences, {:.2f}% success",
+                           static_cast<int>(backend),
+                           backend_total,
+                           backend_success_rate * 100);
         }
     }
 
-    LOG_INFO("High-throughput stress test completed:");
-    LOG_INFO("  Total: {} inferences in {:.2f}s",
-             stats.total_inferences.load(),
-             std::chrono::duration<double>(stats.end_time - stats.start_time).count());
-    LOG_INFO("  Throughput: {:.1f} inferences/second", stats.get_throughput());
-    LOG_INFO("  Success rate: {:.2f}%", stats.get_success_rate() * 100);
-    LOG_INFO("  Avg latency: {:.2f}ms", stats.get_average_latency_ms());
+    LOG_INFO_PRINT("High-throughput stress test completed:");
+    LOG_INFO_PRINT("  Total: {} inferences in {:.2f}s",
+                   stats.total_inferences.load(),
+                   std::chrono::duration<double>(stats.end_time - stats.start_time).count());
+    LOG_INFO_PRINT("  Throughput: {:.1f} inferences/second", stats.get_throughput());
+    LOG_INFO_PRINT("  Success rate: {:.2f}%", stats.get_success_rate() * 100);
+    LOG_INFO_PRINT("  Avg latency: {:.2f}ms", stats.get_average_latency_ms());
 }
 
 TEST_F(ConcurrentInferenceStressTest, ExtremeConcurrencyInference) {
@@ -393,7 +403,8 @@ TEST_F(ConcurrentInferenceStressTest, ExtremeConcurrencyInference) {
         .error_injection_rate = 0.01  // 1% error injection
     };
 
-    LOG_INFO("Starting extreme concurrency inference test with {} threads", config.thread_count);
+    LOG_INFO_PRINT("Starting extreme concurrency inference test with {} threads",
+                   config.thread_count);
 
     IntegrationStressStats stats;
     std::atomic<bool> stop_flag{false};
@@ -415,10 +426,10 @@ TEST_F(ConcurrentInferenceStressTest, ExtremeConcurrencyInference) {
     std::thread monitor([&]() {
         while (!stop_flag.load()) {
             std::this_thread::sleep_for(15s);
-            LOG_INFO("Extreme test progress: {} inferences, {:.1f}/sec, {:.2f}% success",
-                     stats.total_inferences.load(),
-                     stats.get_throughput(),
-                     stats.get_success_rate() * 100);
+            LOG_INFO_PRINT("Extreme test progress: {} inferences, {:.1f}/sec, {:.2f}% success",
+                           stats.total_inferences.load(),
+                           stats.get_throughput(),
+                           stats.get_success_rate() * 100);
         }
     });
 
@@ -441,16 +452,16 @@ TEST_F(ConcurrentInferenceStressTest, ExtremeConcurrencyInference) {
     EXPECT_GT(stats.total_inferences.load(), config.thread_count * 100)
         << "Should complete substantial work even under extreme contention";
 
-    LOG_INFO("Extreme concurrency test completed:");
-    LOG_INFO("  {} threads processed {} total inferences",
-             config.thread_count,
-             stats.total_inferences.load());
-    LOG_INFO("  Sustained throughput: {:.1f} inferences/second", stats.get_throughput());
-    LOG_INFO("  Success rate: {:.2f}%", stats.get_success_rate() * 100);
-    LOG_INFO("  Latency: {:.2f}ms avg, {}us min, {}us max",
-             stats.get_average_latency_ms(),
-             stats.min_latency_us.load(),
-             stats.max_latency_us.load());
+    LOG_INFO_PRINT("Extreme concurrency test completed:");
+    LOG_INFO_PRINT("  {} threads processed {} total inferences",
+                   config.thread_count,
+                   stats.total_inferences.load());
+    LOG_INFO_PRINT("  Sustained throughput: {:.1f} inferences/second", stats.get_throughput());
+    LOG_INFO_PRINT("  Success rate: {:.2f}%", stats.get_success_rate() * 100);
+    LOG_INFO_PRINT("  Latency: {:.2f}ms avg, {}us min, {}us max",
+                   stats.get_average_latency_ms(),
+                   stats.min_latency_us.load(),
+                   stats.max_latency_us.load());
 }
 
 //=============================================================================
@@ -458,7 +469,7 @@ TEST_F(ConcurrentInferenceStressTest, ExtremeConcurrencyInference) {
 //=============================================================================
 
 class BackendSwitchingStressTest : public IntegrationStressTestBase {
-  protected:
+  public:
     void backend_switching_worker(std::size_t worker_id,
                                   const IntegrationStressConfig& config,
                                   IntegrationStressStats& stats,
@@ -495,7 +506,7 @@ class BackendSwitchingStressTest : public IntegrationStressTestBase {
             }
         }
 
-        LOG_DEBUG(
+        LOG_DEBUG_PRINT(
             "Backend switching worker {} completed {} operations", worker_id, operation_count);
     }
 
@@ -507,8 +518,7 @@ class BackendSwitchingStressTest : public IntegrationStressTestBase {
         std::this_thread::sleep_for(switching_overhead);
 
         // Then do normal inference simulation
-        return static_cast<ConcurrentInferenceStressTest*>(this)->simulate_inference_operation(
-            backend, request, config);
+        return simulate_inference_operation(backend, request, config);
     }
 };
 
@@ -518,7 +528,8 @@ TEST_F(BackendSwitchingStressTest, RapidBackendSwitching) {
                                    .inferences_per_thread = 900,  // 300 per backend
                                    .enable_backend_switching = true};
 
-    LOG_INFO("Starting rapid backend switching stress test with {} threads", config.thread_count);
+    LOG_INFO_PRINT("Starting rapid backend switching stress test with {} threads",
+                   config.thread_count);
 
     IntegrationStressStats stats;
     std::atomic<bool> stop_flag{false};
@@ -559,16 +570,16 @@ TEST_F(BackendSwitchingStressTest, RapidBackendSwitching) {
         min_backend_usage = std::min(min_backend_usage, usage);
         max_backend_usage = std::max(max_backend_usage, usage);
 
-        LOG_INFO("Backend {} usage: {} inferences", static_cast<int>(backend), usage);
+        LOG_INFO_PRINT("Backend {} usage: {} inferences", static_cast<int>(backend), usage);
     }
 
     // Usage should be reasonably balanced
     double usage_ratio = static_cast<double>(min_backend_usage) / max_backend_usage;
     EXPECT_GT(usage_ratio, 0.7) << "Backend usage should be reasonably balanced";
 
-    LOG_INFO("Backend switching test completed: {:.1f} inferences/sec, {:.2f}% success",
-             stats.get_throughput(),
-             stats.get_success_rate() * 100);
+    LOG_INFO_PRINT("Backend switching test completed: {:.1f} inferences/sec, {:.2f}% success",
+                   stats.get_throughput(),
+                   stats.get_success_rate() * 100);
 }
 
 }  // namespace inference_lab::integration::test
