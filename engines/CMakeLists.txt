@@ -48,9 +48,9 @@ if(SQLITE3_INCLUDE_DIRS)
     target_include_directories(engines PRIVATE ${SQLITE3_INCLUDE_DIRS})
 endif()
 
-# Engines tests
+# Engines tests - Comprehensive Phase 4.1 test suite
 add_executable(engines_tests
-    tests/placeholder.cpp
+    tests/test_engines_comprehensive.cpp
 )
 
 target_link_libraries(engines_tests

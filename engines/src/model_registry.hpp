@@ -15,11 +15,11 @@
 
 #include "../../common/src/ml_types.hpp"
 #include "../../common/src/result.hpp"
+#include "inference_engine.hpp"
 
 namespace inference_lab::engines {
 
 using namespace inference_lab::common;
-using inference_lab::common::ml::InferenceBackend;
 
 /**
  * @brief Model lifecycle status matching Python ModelStatus enum

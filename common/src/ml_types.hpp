@@ -39,7 +39,7 @@
  *     .input_shapes = {{1, 3, 224, 224}},
  *     .output_shapes = {{1, 1000}},
  *     .precision = Precision::FP16,
- *     .backend = InferenceBackend::TENSORRT_GPU
+ *     .max_batch_size = 4
  * };
  *
  * // Run inference with uncertainty quantification
@@ -157,16 +157,7 @@ enum class Precision : std::uint8_t {
     MIXED = 3  ///< Mixed precision (FP16 compute, FP32 accumulate)
 };
 
-/**
- * @brief Supported inference backends
- */
-enum class InferenceBackend : std::uint8_t {
-    CPU_NATIVE = 0,             ///< CPU-only inference
-    TENSORRT_GPU = 1,           ///< NVIDIA TensorRT GPU acceleration
-    ONNX_RUNTIME = 2,           ///< ONNX Runtime (cross-platform)
-    RULE_BASED = 3,             ///< Traditional rule-based inference
-    HYBRID_NEURAL_SYMBOLIC = 4  ///< Combined neural+symbolic reasoning
-};
+// InferenceBackend enum moved to engines/src/inference_engine.hpp to avoid conflicts
 
 /**
  * @brief Tensor shape type (dimensions)
@@ -426,9 +417,8 @@ struct ModelConfig {
     std::vector<TensorSpec> output_specs;  ///< Output tensor specifications
 
     // Runtime configuration
-    InferenceBackend backend = InferenceBackend::CPU_NATIVE;  ///< Inference backend to use
-    Precision precision = Precision::FP32;                    ///< Computation precision
-    BatchSize max_batch_size = 1;                             ///< Maximum batch size
+    Precision precision = Precision::FP32;  ///< Computation precision
+    BatchSize max_batch_size = 1;           ///< Maximum batch size
     std::uint32_t max_sequence_length = 0;  ///< For sequence models (0 = not applicable)
 
     // Model file paths
