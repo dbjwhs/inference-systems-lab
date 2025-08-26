@@ -160,6 +160,24 @@ inference-systems-lab/
 - **Memory Safety**: AddressSanitizer, UBSan integration, no memory leaks
 - **Build Quality**: Zero warnings, clean static analysis, automated quality gates
 
+### CRITICAL: Code Cleanliness Standards
+**THESE PRACTICES ARE ABSOLUTELY PROHIBITED:**
+
+- **❌ NEVER commit commented-out code** - Use git history for deleted code
+- **❌ NO dead code or disabled functionality** - Remove unused code completely  
+- **❌ NO "temporary" commented blocks** - They become permanent technical debt
+- **❌ NO debugging artifacts left in commits** - Clean up before committing
+
+**Why this matters:** Commented code creates maintenance burden, confusion about intent, and violates professional engineering standards. Git already preserves deleted code history.
+
+**Correct approaches instead:**
+- **Use appropriate log levels**: `LOG_DEBUG_PRINT()` for development diagnostics
+- **Conditional compilation**: `#ifdef DEBUG` for debug-only code
+- **Complete removal**: Delete unused code entirely - git preserves the history
+- **Feature flags**: For incomplete features, use runtime configuration
+
+**This standard is NON-NEGOTIABLE** - violations will require immediate fixes.
+
 ### File & Naming Conventions
 - **Headers**: `.hpp` extension (not `.h`)
 - **Classes**: `PascalCase` 
@@ -486,6 +504,21 @@ When working on this project:
 5. **Documentation Required**: All public APIs need Doxygen documentation with examples
 6. **Follow Patterns**: Study existing code in `common/` for established patterns
 7. **Build Testing**: Verify changes don't break compilation or existing functionality
+
+### CRITICAL: Problem-Solving Standards
+
+**❌ NEVER take shortcuts when fixing issues:**
+- **DO NOT disable or comment out failing code** - This is absolutely unacceptable
+- **DO NOT bypass problems** - Fix the underlying architectural issues systematically  
+- **DO NOT prioritize speed over quality** - Especially under pressure when standards matter most
+
+**✅ ALWAYS fix root causes:**
+- **Fix API mismatches properly** - Update method calls to match actual interfaces
+- **Resolve namespace conflicts** - Use proper scoping and aliases
+- **Implement missing methods** - Don't comment out calls to non-existent functions
+- **Test define expected behavior** - They are specifications that drive implementation
+
+**Why this matters:** Taking shortcuts creates technical debt and violates the engineering standards this project maintains. When builds break, the solution is systematic fixes, never disabling functionality.
 
 ### Useful Commands for Development
 - `python3 tools/run_comprehensive_tests.py` - Complete testing: all configs, all tests (RECOMMENDED)

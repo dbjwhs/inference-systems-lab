@@ -165,6 +165,10 @@ check_tools() {{
         missing_tools+=("check_eof_newline.py")
     fi
     
+    if [[ ! -f "$TOOLS_DIR/check_commented_code.py" ]]; then
+        missing_tools+=("check_commented_code.py")
+    fi
+    
     if [[ ${{#missing_tools[@]}} -gt 0 ]]; then
         log_error "Missing required tools: ${{missing_tools[*]}}"
         log_error "Please ensure all development tools are available."
@@ -272,6 +276,40 @@ check_eof_newlines() {{
     fi
 }}
 
+# Check for commented-out code patterns
+check_commented_code() {{
+    log_info "Checking for commented-out code..."
+    
+    # Get staged C++ files
+    local staged_cpp_files=()
+    while IFS= read -r -d $'\\0' file; do
+        if [[ "$file" =~ \\.(cpp|hpp|cc|h|cxx|hxx)$ ]]; then
+            staged_cpp_files+=("$file")
+        fi
+    done < <(git diff --cached --name-only --diff-filter=AM -z)
+    
+    if [[ ${{#staged_cpp_files[@]}} -eq 0 ]]; then
+        log_info "No staged C++ files to check for commented code"
+        return 0
+    fi
+    
+    # Check for commented code patterns
+    if python3 "$TOOLS_DIR/check_commented_code.py" --staged --quiet 2>/dev/null; then
+        log_success "No commented code patterns found"
+        return 0
+    else
+        log_error "Found commented-out code in staged files"
+        log_info "Commented code violates project coding standards"
+        log_info "To review violations, run:"
+        log_info "  python3 tools/check_commented_code.py --staged"
+        log_info "To fix interactively, run:"
+        log_info "  python3 tools/check_commented_code.py --staged --fix"
+        log_info "See CLAUDE.md 'Code Cleanliness Standards' for policy"
+        log_info "To bypass this check (not recommended): git commit --no-verify"
+        return 1
+    fi
+}}
+
 # Basic validation checks
 check_basic_validation() {{
     log_info "Running basic validation checks..."
@@ -355,6 +393,11 @@ main() {{
     
     # Run EOF newline check
     if ! check_eof_newlines; then
+        overall_success=false
+    fi
+    
+    # Check for commented-out code
+    if ! check_commented_code; then
         overall_success=false
     fi
     
@@ -558,7 +601,7 @@ fi
         
         # Check if required tools exist
         tools_status = []
-        required_tools = ["check_format.py", "check_static_analysis.py", "check_eof_newline.py"]
+        required_tools = ["check_format.py", "check_static_analysis.py", "check_eof_newline.py", "check_commented_code.py"]
         
         for tool in required_tools:
             tool_path = self.tools_dir / tool
