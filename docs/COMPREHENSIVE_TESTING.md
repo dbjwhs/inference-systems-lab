@@ -49,8 +49,10 @@ The orchestrator builds and tests multiple configurations automatically:
 ### 3. AddressSanitizer Build (`build-sanitizer/`)
 - **Purpose**: Memory safety validation
 - **Config**: `-DCMAKE_BUILD_TYPE=Debug -DSANITIZER_TYPE=address`
-- **Features**: Memory leak detection, heap overflow detection
-- **Environment**: `ASAN_OPTIONS=detect_leaks=1:abort_on_error=0:print_summary=1`
+- **Features**: Memory leak detection (Linux only), heap overflow detection
+- **Environment**: 
+  - Linux: `ASAN_OPTIONS=detect_leaks=1:abort_on_error=0:print_summary=1`
+  - macOS: `ASAN_OPTIONS=detect_leaks=0:abort_on_error=0:print_summary=1` (LeakSanitizer not supported)
 
 ### 4. ThreadSanitizer Build (`build-tsan/`)
 - **Purpose**: Race condition detection
@@ -182,12 +184,16 @@ This bug would have been extremely difficult to debug manually but ASan found it
 The orchestrator automatically configures AddressSanitizer for comprehensive memory safety validation:
 
 ```bash
-# Environment variables set automatically
+# Environment variables set automatically (platform-dependent)
+# Linux:
 ASAN_OPTIONS=detect_leaks=1:abort_on_error=0:print_summary=1
+# macOS:
+ASAN_OPTIONS=detect_leaks=0:abort_on_error=0:print_summary=1
 ```
 
 **Configuration Details:**
-- `detect_leaks=1`: Enable leak detection at program termination  
+- `detect_leaks=1`: Enable leak detection at program termination (Linux only)
+- `detect_leaks=0`: Disable leak detection (macOS - not supported on Apple Silicon)
 - `abort_on_error=0`: Don't crash immediately, show error and continue testing
 - `print_summary=1`: Show detailed leak summary at program exit
 

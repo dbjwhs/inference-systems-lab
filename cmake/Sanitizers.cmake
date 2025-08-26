@@ -84,7 +84,14 @@ function(configure_sanitizers)
             add_link_options(${SANITIZER_LINK_FLAGS})
             
             # Set environment variables for better output
-            set(ENV{ASAN_OPTIONS} "abort_on_error=1:fast_unwind_on_malloc=0:detect_leaks=1")
+            # Note: detect_leaks is only supported on Linux x86_64/aarch64, not on macOS
+            if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+                set(ENV{ASAN_OPTIONS} "abort_on_error=1:fast_unwind_on_malloc=0:detect_leaks=1")
+                message(STATUS "LeakSanitizer enabled (Linux platform)")
+            else()
+                set(ENV{ASAN_OPTIONS} "abort_on_error=1:fast_unwind_on_malloc=0:detect_leaks=0")
+                message(STATUS "LeakSanitizer disabled (platform ${CMAKE_SYSTEM_NAME} not supported)")
+            endif()
             set(ENV{UBSAN_OPTIONS} "abort_on_error=1:print_stacktrace=1")
             
             message(STATUS "Sanitizer flags: ${SANITIZER_FLAGS}")

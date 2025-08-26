@@ -387,7 +387,12 @@ class TestOrchestrator:
         # Prepare environment for sanitizers
         env = os.environ.copy()
         if config.sanitizer == SanitizerType.ADDRESS:
-            env["ASAN_OPTIONS"] = "detect_leaks=1:abort_on_error=0:print_summary=1"
+            # LeakSanitizer is only supported on Linux, not on macOS
+            if platform.system() == "Linux":
+                env["ASAN_OPTIONS"] = "detect_leaks=1:abort_on_error=0:print_summary=1"
+            else:
+                env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0:print_summary=1"
+                print(f"Note: LeakSanitizer disabled on {platform.system()} (not supported)")
         elif config.sanitizer == SanitizerType.THREAD:
             env["TSAN_OPTIONS"] = "halt_on_error=0:print_summary=1"
         elif config.sanitizer == SanitizerType.UNDEFINED:
@@ -444,7 +449,12 @@ class TestOrchestrator:
         
         # Run specific memory-intensive tests with strict leak checking
         env = os.environ.copy()
-        env["ASAN_OPTIONS"] = "detect_leaks=1:leak_check_at_exit=1:verbosity=1:print_stats=1"
+        if platform.system() == "Linux":
+            env["ASAN_OPTIONS"] = "detect_leaks=1:leak_check_at_exit=1:verbosity=1:print_stats=1"
+            print("    Using full LeakSanitizer options (Linux)")
+        else:
+            env["ASAN_OPTIONS"] = "detect_leaks=0:verbosity=1:print_stats=1"
+            print(f"    LeakSanitizer disabled on {platform.system()} - using AddressSanitizer only")
         
         memory_tests = [
             "./common/concurrency_stress_tests",

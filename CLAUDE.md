@@ -411,7 +411,7 @@ Beyond the existing 80% coverage requirement, implement:
 - **Comprehensive Test Orchestrator**: `tools/run_comprehensive_tests.py` - Single command testing infrastructure  
   - **Clean Builds**: Fresh build directories (Release, Debug, ASan, TSan, UBSan) ensure reproducible results
   - **Complete Test Coverage**: Unit, integration, stress, memory leak, concurrency, benchmarks
-  - **Memory Safety Testing**: AddressSanitizer with leak detection (`detect_leaks=1`)
+  - **Memory Safety Testing**: AddressSanitizer with leak detection (Linux only - `detect_leaks=1`)
   - **Professional Reports**: HTML/JSON output in `test-results/` directory with detailed statistics
   - **Future-Proof Design**: Easy addition of new sanitizers and test suites
 - **Usage Options**: `--quick` (smoke tests), `--memory` (memory focus), `--no-clean` (preserve builds)

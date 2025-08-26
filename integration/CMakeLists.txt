@@ -75,9 +75,17 @@ if(SANITIZER_TYPE MATCHES "address")
     )
     
     add_test(NAME IntegrationMemoryTests COMMAND integration_memory_tests)
+    
+    # LeakSanitizer platform support check
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(ASAN_LEAK_OPTIONS "detect_leaks=1:halt_on_error=0")
+    else()
+        set(ASAN_LEAK_OPTIONS "detect_leaks=0:halt_on_error=0")
+    endif()
+    
     set_tests_properties(IntegrationMemoryTests PROPERTIES 
         TIMEOUT 600  # 10 minutes for memory testing
-        ENVIRONMENT "ASAN_OPTIONS=detect_leaks=1:halt_on_error=0"
+        ENVIRONMENT "ASAN_OPTIONS=${ASAN_LEAK_OPTIONS}"
     )
 endif()
 
