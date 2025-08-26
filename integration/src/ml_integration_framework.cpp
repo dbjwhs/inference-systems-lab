@@ -22,6 +22,7 @@
 
 #include "../../common/src/logging.hpp"
 #include "../../engines/src/inference_engine.hpp"
+#include "mock_engines.hpp"
 
 namespace inference_lab::integration {
 
@@ -312,8 +313,57 @@ auto MLIntegrationFramework::run_integration_test(const TestScenario& scenario)
 
     IntegrationTestResults results;
     results.scenario = scenario;
-    results.passed = false;  // Default to failed
-    results.failure_reason = "Not implemented";
+    results.passed = true;  // Start optimistic, set to false if any backend fails
+
+    // Generate test inputs if not provided in scenario
+    std::vector<engines::InferenceRequest> test_inputs;
+    if (scenario.iterations > 0) {
+        // Generate simple test inputs based on model config
+        for (uint32_t i = 0; i < scenario.iterations; ++i) {
+            engines::InferenceRequest request;
+            request.batch_size = 1;
+            request.input_tensors.resize(1);
+            request.input_tensors[0].resize(224 * 224 * 3, 0.5f);  // Mock image data
+            request.input_names = {"input"};
+            test_inputs.push_back(request);
+        }
+    }
+
+    // Run test on each backend
+    for (const auto& backend : scenario.backends) {
+        LOG_INFO_PRINT("Testing backend: {}", to_string(backend));
+
+        auto backend_result = test_single_backend(backend, scenario.model_config, test_inputs);
+        if (backend_result.is_err()) {
+            results.passed = false;
+            results.error_messages.push_back("Backend test failed: " + to_string(backend));
+            continue;
+        }
+
+        auto backend_test_result = backend_result.unwrap();
+        if (!backend_test_result.passed) {
+            results.passed = false;
+            for (const auto& error : backend_test_result.error_messages) {
+                results.error_messages.push_back(error);
+            }
+        }
+
+        // Store performance metrics for this backend
+        results.metrics[backend] = backend_test_result.performance;
+    }
+
+    // If all backends passed, set passed to true
+    if (results.error_messages.empty() && !results.metrics.empty()) {
+        results.passed = true;
+    } else if (results.metrics.empty()) {
+        results.passed = false;
+        results.error_messages.push_back("No backends completed successfully");
+    }
+
+    LOG_INFO_PRINT("Integration test '{}' completed: passed={}, backends={}",
+                   scenario.name,
+                   results.passed,
+                   results.metrics.size());
 
     return Ok(std::move(results));
 }
@@ -360,16 +410,32 @@ auto MLIntegrationFramework::test_single_backend(
     result.scenario.name = "single_backend_test_" + to_string(backend);
 
     try {
-        // Create inference engine for the backend
-        auto engine_result = engines::create_inference_engine(backend, config);
-        if (engine_result.is_err()) {
-            result.passed = false;
-            result.error_messages.push_back("Failed to create engine: " +
-                                            engines::to_string(engine_result.unwrap_err()));
-            return Ok(result);
+        // Create mock engine for testing (avoids hardware dependencies)
+        std::unique_ptr<engines::InferenceEngine> engine;
+
+        switch (backend) {
+            case engines::InferenceBackend::TENSORRT_GPU:
+                engine = std::make_unique<inference_lab::integration::mocks::MockTensorRTEngine>();
+                break;
+            case engines::InferenceBackend::ONNX_RUNTIME:
+                engine =
+                    std::make_unique<inference_lab::integration::mocks::MockONNXRuntimeEngine>();
+                break;
+            case engines::InferenceBackend::RULE_BASED:
+                engine = std::make_unique<inference_lab::integration::mocks::MockRuleBasedEngine>();
+                break;
+            default:
+                result.passed = false;
+                result.error_messages.push_back("Unsupported backend in mock framework: " +
+                                                to_string(backend));
+                return Ok(result);
         }
 
-        auto engine = std::move(engine_result).unwrap();
+        if (!engine) {
+            result.passed = false;
+            result.error_messages.push_back("Failed to create mock engine");
+            return Ok(result);
+        }
 
         // Verify engine is ready
         if (!engine->is_ready()) {
