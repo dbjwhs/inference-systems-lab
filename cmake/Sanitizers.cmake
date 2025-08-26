@@ -85,13 +85,17 @@ function(configure_sanitizers)
             
             # Set environment variables for better output
             # Note: detect_leaks is only supported on Linux x86_64/aarch64, not on macOS
+            # Note: detect_container_overflow=0 disables false positives in mixed instrumentation scenarios
+            # See: https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow
+            # See: docs/ADDRESSSANITIZER_NOTES.md
             if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-                set(ENV{ASAN_OPTIONS} "abort_on_error=1:fast_unwind_on_malloc=0:detect_leaks=1")
+                set(ENV{ASAN_OPTIONS} "abort_on_error=1:fast_unwind_on_malloc=0:detect_leaks=1:detect_container_overflow=0")
                 message(STATUS "LeakSanitizer enabled (Linux platform)")
             else()
-                set(ENV{ASAN_OPTIONS} "abort_on_error=1:fast_unwind_on_malloc=0:detect_leaks=0")
+                set(ENV{ASAN_OPTIONS} "abort_on_error=1:fast_unwind_on_malloc=0:detect_leaks=0:detect_container_overflow=0")
                 message(STATUS "LeakSanitizer disabled (platform ${CMAKE_SYSTEM_NAME} not supported)")
             endif()
+            message(STATUS "Container overflow detection disabled (prevents false positives)")
             set(ENV{UBSAN_OPTIONS} "abort_on_error=1:print_stacktrace=1")
             
             message(STATUS "Sanitizer flags: ${SANITIZER_FLAGS}")

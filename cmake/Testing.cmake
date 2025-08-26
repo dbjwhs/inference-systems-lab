@@ -6,20 +6,15 @@ function(configure_testing)
     include(CTest)
     enable_testing()
     
-    # Google Test - prefer system-installed version for ABI compatibility
-    find_package(GTest QUIET)
-    if(NOT GTest_FOUND)
-        message(STATUS "System GoogleTest not found, using FetchContent")
-        include(FetchContent)
-        FetchContent_Declare(
-            googletest
-            GIT_REPOSITORY https://github.com/google/googletest.git
-            GIT_TAG        release-1.12.1
-        )
-        FetchContent_MakeAvailable(googletest)
-    else()
-        message(STATUS "Using system-installed GoogleTest: ${GTEST_VERSION}")
-    endif()
+    # Google Test - force FetchContent to ensure we get v1.17.0 with container overflow fix
+    message(STATUS "Using FetchContent for GoogleTest v1.17.0 (container overflow fix)")
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.17.0
+    )
+    FetchContent_MakeAvailable(googletest)
     
     message(STATUS "Testing framework configured")
 endfunction()

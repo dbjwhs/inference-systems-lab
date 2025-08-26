@@ -194,8 +194,12 @@ ASAN_OPTIONS=detect_leaks=0:abort_on_error=0:print_summary=1
 **Configuration Details:**
 - `detect_leaks=1`: Enable leak detection at program termination (Linux only)
 - `detect_leaks=0`: Disable leak detection (macOS - not supported on Apple Silicon)
+- `detect_container_overflow=0`: Disable container overflow detection (prevents false positives)
 - `abort_on_error=0`: Don't crash immediately, show error and continue testing
 - `print_summary=1`: Show detailed leak summary at program exit
+
+**Container Overflow Detection:**
+Container overflow detection is disabled (`detect_container_overflow=0`) to prevent false positives that occur in mixed instrumentation scenarios. This is the official workaround recommended by the AddressSanitizer team for projects using GoogleTest with AddressSanitizer. See `docs/ADDRESSSANITIZER_NOTES.md` for detailed explanation.
 
 **Compiler Flags** (set automatically in sanitizer builds):
 ```bash

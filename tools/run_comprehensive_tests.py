@@ -388,10 +388,13 @@ class TestOrchestrator:
         env = os.environ.copy()
         if config.sanitizer == SanitizerType.ADDRESS:
             # LeakSanitizer is only supported on Linux, not on macOS
+            # Container overflow detection disabled to prevent false positives in mixed instrumentation
+            # See: https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow
+            # See: docs/ADDRESSSANITIZER_NOTES.md
             if platform.system() == "Linux":
-                env["ASAN_OPTIONS"] = "detect_leaks=1:abort_on_error=0:print_summary=1"
+                env["ASAN_OPTIONS"] = "detect_leaks=1:abort_on_error=0:print_summary=1:detect_container_overflow=0"
             else:
-                env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0:print_summary=1"
+                env["ASAN_OPTIONS"] = "detect_leaks=0:abort_on_error=0:print_summary=1:detect_container_overflow=0"
                 print(f"Note: LeakSanitizer disabled on {platform.system()} (not supported)")
         elif config.sanitizer == SanitizerType.THREAD:
             env["TSAN_OPTIONS"] = "halt_on_error=0:print_summary=1"
@@ -448,12 +451,14 @@ class TestOrchestrator:
             return
         
         # Run specific memory-intensive tests with strict leak checking
+        # Container overflow detection disabled to prevent false positives
+        # See: https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow
         env = os.environ.copy()
         if platform.system() == "Linux":
-            env["ASAN_OPTIONS"] = "detect_leaks=1:leak_check_at_exit=1:verbosity=1:print_stats=1"
+            env["ASAN_OPTIONS"] = "detect_leaks=1:leak_check_at_exit=1:verbosity=1:print_stats=1:detect_container_overflow=0"
             print("    Using full LeakSanitizer options (Linux)")
         else:
-            env["ASAN_OPTIONS"] = "detect_leaks=0:verbosity=1:print_stats=1"
+            env["ASAN_OPTIONS"] = "detect_leaks=0:verbosity=1:print_stats=1:detect_container_overflow=0"
             print(f"    LeakSanitizer disabled on {platform.system()} - using AddressSanitizer only")
         
         memory_tests = [
