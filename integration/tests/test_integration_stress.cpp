@@ -156,8 +156,8 @@ struct IntegrationStressStats {
 class IntegrationStressTestBase : public ::testing::Test {
   protected:
     void SetUp() override {
-        Logger::set_level_enabled(common::LogLevel::INFO, true);
-        // LOG_INFO_PRINT("Setting up ML integration stress test environment");
+        Logger::set_level_enabled(common::LogLevel::DEBUG, true);
+        LOG_DEBUG_PRINT("Setting up ML integration stress test environment");
 
         // Initialize framework (would be mock in real testing)
         // For now, we'll use a placeholder since the factory isn't fully implemented
@@ -166,12 +166,10 @@ class IntegrationStressTestBase : public ::testing::Test {
         // Seed random number generator
         rng_.seed(std::chrono::steady_clock::now().time_since_epoch().count());
 
-        // LOG_INFO_PRINT("ML integration stress test setup completed");
+        LOG_DEBUG_PRINT("ML integration stress test setup completed");
     }
 
-    void TearDown() override {
-        // LOG_INFO_PRINT("ML integration stress test cleanup completed");
-    }
+    void TearDown() override { LOG_DEBUG_PRINT("ML integration stress test cleanup completed"); }
 
     /**
      * @brief Generate test inference request
@@ -318,8 +316,8 @@ TEST_F(ConcurrentInferenceStressTest, HighThroughputInference) {
                                    .inferences_per_thread = 1000,
                                    .enable_backend_switching = true};
 
-    // LOG_INFO_PRINT("Starting high-throughput inference stress test with {} threads",
-    // config.thread_count);
+    LOG_DEBUG_PRINT("Starting high-throughput inference stress test with {} threads",
+                    config.thread_count);
 
     IntegrationStressStats stats;
     std::atomic<bool> stop_flag{false};
