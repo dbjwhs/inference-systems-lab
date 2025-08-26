@@ -110,6 +110,73 @@ The orchestrator builds and tests multiple configurations automatically:
 
 ## Memory Safety Testing
 
+### What is AddressSanitizer?
+
+**AddressSanitizer (ASan) is a runtime memory error detector** that instruments C++ code to catch memory safety bugs immediately when they occur. It's essential for projects with complex memory management and concurrent code.
+
+#### Critical Memory Bugs ASan Detects
+
+1. **Heap Buffer Overflow/Underflow**
+   ```cpp
+   char* buffer = new char[10];
+   buffer[15] = 'x';  // ❌ ASan: heap-buffer-overflow
+   buffer[-1] = 'y';  // ❌ ASan: heap-buffer-underflow
+   ```
+
+2. **Use-After-Free** (Common in concurrent code)
+   ```cpp
+   char* ptr = new char[100];
+   delete[] ptr;
+   ptr[0] = 'x';  // ❌ ASan: heap-use-after-free
+   ```
+
+3. **Memory Leaks** (with leak detection enabled)
+   ```cpp
+   char* ptr = new char[100];
+   // Missing delete[] ptr  // ❌ ASan: memory leak at exit
+   ```
+
+4. **Double-Free**
+   ```cpp
+   char* ptr = new char[100];
+   delete[] ptr;
+   delete[] ptr;  // ❌ ASan: double-free
+   ```
+
+5. **Stack Buffer Overflow**
+   ```cpp
+   char buffer[10];
+   buffer[15] = 'x';  // ❌ ASan: stack-buffer-overflow
+   ```
+
+#### Why ASan is Critical for This Project
+
+- **Concurrent Memory Management**: Our MemoryPool, lock-free queues, and concurrent data structures are prone to race conditions
+- **Complex RAII Patterns**: Zero-cost abstractions and custom allocators need validation
+- **Early Bug Detection**: Memory bugs often don't crash immediately - ASan catches them when they happen
+- **Production Safety**: Prevents memory corruption that could cause security vulnerabilities
+
+#### Real Example from Our Codebase
+
+**Bug Found**: Heap-use-after-free in MemoryPool during concurrent access
+```cpp
+// Thread A: Reading blocks_ vector
+for (auto& block_ptr : blocks_) { /* ... */ }
+
+// Thread B: Simultaneously reallocating vector  
+blocks_.push_back(new_block);  // Frees old memory Thread A is using!
+```
+
+**AddressSanitizer Output**:
+```
+==88576==ERROR: AddressSanitizer: heap-use-after-free on address 0x61d0000005d8
+READ of size 8 at 0x61d0000005d8 thread T10
+    #0 0x0001002864e4 in MemoryPool<unsigned long long>::allocate
+    #1 0x000100276ad8 in memory_pool_worker
+```
+
+This bug would have been extremely difficult to debug manually but ASan found it immediately.
+
 ### AddressSanitizer Integration
 
 The orchestrator automatically configures AddressSanitizer for comprehensive memory safety validation:
@@ -119,11 +186,29 @@ The orchestrator automatically configures AddressSanitizer for comprehensive mem
 ASAN_OPTIONS=detect_leaks=1:abort_on_error=0:print_summary=1
 ```
 
+**Configuration Details:**
+- `detect_leaks=1`: Enable leak detection at program termination  
+- `abort_on_error=0`: Don't crash immediately, show error and continue testing
+- `print_summary=1`: Show detailed leak summary at program exit
+
+**Compiler Flags** (set automatically in sanitizer builds):
+```bash
+-fsanitize=address          # Enable AddressSanitizer instrumentation
+-fno-omit-frame-pointer     # Better stack traces in error reports
+-O1 -g                      # Some optimization + debug symbols
+```
+
+**Performance Impact:**
+- **Runtime**: ~2-3x slower execution (worth it for bug detection)
+- **Memory**: ~3x more memory usage (needed for shadow memory)
+- **Build time**: Slightly slower due to instrumentation
+
 **Key Features:**
 - **Leak Detection**: Automatically detects memory leaks at program termination
 - **Heap Overflow**: Detects buffer overruns and underruns
-- **Use-After-Free**: Detects access to freed memory
+- **Use-After-Free**: Detects access to freed memory  
 - **Double-Free**: Detects multiple frees of same memory
+- **Stack Overflow**: Detects stack buffer overflows
 
 ### Memory Analysis Phase
 
@@ -132,6 +217,43 @@ In full testing mode, the orchestrator runs dedicated memory analysis:
 1. **Repeat Testing**: Runs tests 3 times to catch intermittent issues
 2. **Leak Summary**: Analyzes output for leak patterns
 3. **Verbose Reporting**: Uses `verbosity=1` for detailed leak information
+
+### Other Sanitizers
+
+#### ThreadSanitizer (TSan)
+**Purpose**: Detects data races and thread safety violations
+
+```cpp
+// Example race condition TSan would catch:
+int global_counter = 0;
+
+// Thread A:
+global_counter++;  // ❌ TSan: data race
+
+// Thread B (simultaneously):
+global_counter++;  // ❌ TSan: data race  
+```
+
+**When to use**: Testing concurrent algorithms, lock-free data structures
+**Note**: Incompatible with AddressSanitizer (run separately)
+
+#### UndefinedBehaviorSanitizer (UBSan)  
+**Purpose**: Detects undefined behavior that may work "by accident"
+
+```cpp
+// Examples UBSan catches:
+int x = INT_MAX;
+x++;                    // ❌ UBSan: signed integer overflow
+
+int* p = nullptr;
+int& ref = *p;         // ❌ UBSan: null pointer dereference
+
+int arr[10];
+return arr[15];        // ❌ UBSan: array bounds violation
+```
+
+**When to use**: Combined with ASan for comprehensive safety validation
+**Configuration**: `address+undefined` combines both sanitizers
 
 ## Report Generation
 
