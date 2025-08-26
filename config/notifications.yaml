@@ -1,0 +1,81 @@
+# Notification Configuration for Inference Systems Laboratory
+# This file controls how test results are delivered to you locally and remotely
+
+notifications:
+  # Local macOS notifications using osascript
+  local:
+    enabled: true
+    sound: true
+    sound_name: "Glass"  # Glass, Ping, Pop, Bottle, etc.
+    show_progress: true
+    
+  # Pushover push notifications (requires account + $5 app)
+  pushover:
+    enabled: true   # Enabled - credentials loaded from environment variables
+    # Credentials are loaded from environment variables for security:
+    # PUSHOVER_API_TOKEN and PUSHOVER_USER_KEY (set in .env file)
+    device: ""      # Optional: specific device name
+    priority_normal: 0      # -2=silent, -1=quiet, 0=normal
+    priority_success: 0     # For successful test runs
+    priority_failure: 1     # For test failures (high priority)
+    priority_critical: 2    # For build breakage (emergency)
+    sound_success: "intermission"
+    sound_failure: "siren"
+    sound_progress: "mechanical"
+    
+  # Email notifications (Phase 2)
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    sender_email: ""
+    sender_password: ""  # Use app-specific password for Gmail
+    recipients: []
+    
+  # Slack webhooks (Phase 2)
+  slack:
+    enabled: false
+    webhook_url: ""
+    channel: "#development"
+    username: "InferenceLabBot"
+    
+# Notification triggers and filters
+triggers:
+  notify_on_start: false        # When tests begin
+  notify_on_config_complete: false  # When each config finishes
+  notify_on_success: true       # When all tests pass
+  notify_on_failure: true       # When any tests fail
+  notify_on_improvement: true   # When pass rate improves
+  notify_on_regression: true    # When pass rate decreases
+  
+  # Only notify if test run takes longer than this (seconds)
+  min_duration_threshold: 300   # 5 minutes
+  
+  # Pass rate thresholds for different notification levels
+  success_threshold: 0.95       # 95%+ = success notification
+  warning_threshold: 0.80       # 80-95% = warning notification
+  failure_threshold: 0.50       # <50% = failure notification
+
+# Log storage and history
+logging:
+  # Persistent log storage directory
+  log_directory: "logs/comprehensive_tests"
+  
+  # Keep logs for this many days
+  retention_days: 30
+  
+  # Compress logs older than this many days
+  compress_after_days: 7
+  
+  # Include in notifications
+  attach_summary_log: true
+  include_failure_details: true
+  max_log_lines_in_notification: 20
+
+# Remote development settings
+remote:
+  # Sync results back to main development machine
+  sync_results: false
+  main_machine_host: ""
+  main_machine_path: ""
+  ssh_key_path: ""

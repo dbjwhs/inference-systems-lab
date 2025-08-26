@@ -1,0 +1,78 @@
+# SECURE NOTIFICATION CONFIGURATION TEMPLATE
+# This is a TEMPLATE file - copy to notifications.yaml and fill in your settings
+# 
+# IMPORTANT SECURITY NOTICE:
+# DO NOT put API keys or passwords in notifications.yaml!
+# Instead, use environment variables in .env file:
+#   PUSHOVER_API_TOKEN=your_api_token_here
+#   PUSHOVER_USER_KEY=your_user_key_here
+#
+# The .env file is gitignored and will never be committed
+
+notifications:
+  # Local macOS notifications using osascript
+  local:
+    enabled: true
+    sound: true
+    sound_name: "Glass"  # Glass, Ping, Pop, Bottle, etc.
+    show_progress: true
+    
+  # Pushover push notifications (requires account + $5 app)
+  pushover:
+    enabled: true  # Enable after setting up .env file
+    # DO NOT PUT CREDENTIALS HERE! Use .env file instead:
+    # api_token: ""  # Set PUSHOVER_API_TOKEN in .env
+    # user_key: ""   # Set PUSHOVER_USER_KEY in .env
+    device: ""      # Optional: specific device name
+    priority_normal: 0      # -2=silent, -1=quiet, 0=normal
+    priority_success: 0     # For successful test runs
+    priority_failure: 1     # For test failures (high priority)
+    priority_critical: 2    # For build breakage (emergency)
+    sound_success: "intermission"
+    sound_failure: "siren"
+    sound_progress: "mechanical"
+    
+  # Email notifications (Phase 2)
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    # DO NOT PUT CREDENTIALS HERE! Use environment variables
+    sender_email: ""
+    sender_password: ""  # Use app-specific password for Gmail
+    recipients: []
+    
+  # Slack webhooks (Phase 2)
+  slack:
+    enabled: false
+    # DO NOT PUT WEBHOOK URL HERE! Use environment variable
+    webhook_url: ""
+    channel: "#development"
+    username: "InferenceLabBot"
+
+# Rest of configuration remains the same...
+triggers:
+  notify_on_start: false
+  notify_on_config_complete: false
+  notify_on_success: true
+  notify_on_failure: true
+  notify_on_improvement: true
+  notify_on_regression: true
+  min_duration_threshold: 300
+  success_threshold: 0.95
+  warning_threshold: 0.80
+  failure_threshold: 0.50
+
+logging:
+  log_directory: "logs/comprehensive_tests"
+  retention_days: 30
+  compress_after_days: 7
+  attach_summary_log: true
+  include_failure_details: true
+  max_log_lines_in_notification: 20
+
+remote:
+  sync_results: false
+  main_machine_host: ""
+  main_machine_path: ""
+  ssh_key_path: ""
