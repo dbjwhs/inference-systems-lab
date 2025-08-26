@@ -179,3 +179,7 @@ core.*
 # Local environment
 .env
 .env.local
+
+# Test artifacts and logs
+logs/
+test-results/
