@@ -30,6 +30,19 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Import our notification and logging systems
+try:
+    from .notification_system import NotificationManager, TestResults
+    from .log_manager import LogManager
+    NOTIFICATIONS_AVAILABLE = True
+except ImportError:
+    # Handle case where notification system is not available
+    print("Warning: Notification system not available. Install required dependencies for notifications.")
+    NOTIFICATIONS_AVAILABLE = False
+    NotificationManager = None
+    TestResults = None
+    LogManager = None
+
 
 class BuildType(Enum):
     """Build configuration types"""
@@ -96,6 +109,20 @@ class TestOrchestrator:
         # Setup output directory for results
         self.output_dir = root_dir / "test-results" / datetime.now().strftime("%Y%m%d_%H%M%S")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Initialize notification and logging systems
+        self.notification_manager = None
+        self.log_manager = None
+        
+        if NOTIFICATIONS_AVAILABLE and not args.no_notifications:
+            try:
+                self.notification_manager = NotificationManager()
+                self.log_manager = LogManager()
+                print("🔔 Notification system enabled")
+            except Exception as e:
+                print(f"Warning: Failed to initialize notification system: {e}")
+        elif args.no_notifications:
+            print("🔇 Notifications disabled by user")
         
     def _setup_build_configs(self) -> List[BuildConfig]:
         """Setup build configurations based on platform and requirements"""
@@ -236,6 +263,12 @@ class TestOrchestrator:
         print(f"Output directory: {self.output_dir}")
         print(f"Test mode: {'QUICK' if self.args.quick else 'FULL'}")
         print("=" * 80)
+        
+        # Notify test start
+        if self.notification_manager:
+            enabled_configs = [c for c in self.build_configs if c.enabled]
+            estimated_duration = 15 if self.args.quick else 30  # rough estimate
+            self.notification_manager.notify_test_start(len(enabled_configs), estimated_duration)
         
         # Phase 1: Build all configurations
         print("\n📦 PHASE 1: Building configurations...")
@@ -559,13 +592,71 @@ class TestOrchestrator:
         total_tests = sum(len(r) for r in self.results.values())
         passed_tests = sum(1 for r in self.results.values() for t in r.values() if t == TestResult.PASSED)
         failed_tests = sum(1 for r in self.results.values() for t in r.values() if t == TestResult.FAILED)
+        duration = time.time() - self.start_time
         
         print(f"Total configurations tested: {len([c for c in self.build_configs if c.enabled])}")
         print(f"Total test suites run: {total_tests}")
         print(f"Passed: {passed_tests}")
         print(f"Failed: {failed_tests}")
-        print(f"Duration: {time.time() - self.start_time:.2f} seconds")
+        print(f"Duration: {duration:.2f} seconds")
         print(f"\nResults saved to: {self.output_dir}")
+        
+        # Collect failed test names
+        failed_test_names = []
+        for config_name, config_results in self.results.items():
+            for suite_name, result in config_results.items():
+                if result == TestResult.FAILED:
+                    failed_test_names.append(f"{config_name}/{suite_name}")
+        
+        # Send notifications and store logs
+        if self.notification_manager or self.log_manager:
+            # Create test results object for notifications
+            test_results = None
+            if NOTIFICATIONS_AVAILABLE:
+                test_results = TestResults(
+                    total_tests=total_tests,
+                    passed_tests=passed_tests,
+                    failed_tests=failed_tests,
+                    skipped_tests=0,
+                    duration_seconds=duration,
+                    configurations=[c.name for c in self.build_configs if c.enabled],
+                    failed_test_names=failed_test_names,
+                    platform=f"{platform.system()}-{platform.release()}-{platform.machine()}",
+                    timestamp=datetime.now()
+                )
+            
+            # Send notifications
+            if self.notification_manager and test_results:
+                try:
+                    self.notification_manager.notify_test_complete(test_results)
+                except Exception as e:
+                    print(f"Warning: Failed to send notification: {e}")
+            
+            # Store persistent logs
+            if self.log_manager:
+                try:
+                    # Collect all log files
+                    logs = {}
+                    for log_file in self.output_dir.glob("*.log"):
+                        with open(log_file, 'r') as f:
+                            logs[log_file.stem] = f.read()
+                    
+                    # Store test run in persistent storage
+                    results_dict = {
+                        'total_tests': total_tests,
+                        'passed_tests': passed_tests,
+                        'failed_tests': failed_tests,
+                        'duration_seconds': duration,
+                        'configurations': [c.name for c in self.build_configs if c.enabled],
+                        'platform': f"{platform.system()}-{platform.release()}-{platform.machine()}",
+                        'failed_test_names': failed_test_names
+                    }
+                    
+                    run_id = self.log_manager.store_test_run(results_dict, logs)
+                    print(f"📁 Test run stored with ID: {run_id}")
+                    
+                except Exception as e:
+                    print(f"Warning: Failed to store persistent logs: {e}")
         
         if failed_tests == 0:
             print("\n✅ ALL TESTS PASSED!")
@@ -573,10 +664,8 @@ class TestOrchestrator:
         else:
             print(f"\n❌ {failed_tests} TESTS FAILED")
             print("\nFailed tests:")
-            for config_name, config_results in self.results.items():
-                for suite_name, result in config_results.items():
-                    if result == TestResult.FAILED:
-                        print(f"  - {config_name}/{suite_name}")
+            for test_name in failed_test_names:
+                print(f"  - {test_name}")
             return 1
 
 
@@ -610,6 +699,11 @@ def main():
         "--no-clean",
         action="store_true",
         help="Do not clean build directories (preserve for debugging)"
+    )
+    parser.add_argument(
+        "--no-notifications",
+        action="store_true",
+        help="Disable notifications and persistent logging"
     )
     
     args = parser.parse_args()
