@@ -410,32 +410,15 @@ auto MLIntegrationFramework::test_single_backend(
     result.scenario.name = "single_backend_test_" + to_string(backend);
 
     try {
-        // Create mock engine for testing (avoids hardware dependencies)
-        std::unique_ptr<engines::InferenceEngine> engine;
-
-        switch (backend) {
-            case engines::InferenceBackend::TENSORRT_GPU:
-                engine = std::make_unique<inference_lab::integration::mocks::MockTensorRTEngine>();
-                break;
-            case engines::InferenceBackend::ONNX_RUNTIME:
-                engine =
-                    std::make_unique<inference_lab::integration::mocks::MockONNXRuntimeEngine>();
-                break;
-            case engines::InferenceBackend::RULE_BASED:
-                engine = std::make_unique<inference_lab::integration::mocks::MockRuleBasedEngine>();
-                break;
-            default:
-                result.passed = false;
-                result.error_messages.push_back("Unsupported backend in mock framework: " +
-                                                to_string(backend));
-                return Ok(result);
-        }
-
-        if (!engine) {
+        // Create engine using the backend factory (enables error injection)
+        auto engine_result = backend_factory_->create_engine(backend, config);
+        if (engine_result.is_err()) {
             result.passed = false;
-            result.error_messages.push_back("Failed to create mock engine");
+            result.error_messages.push_back("Failed to create engine: " +
+                                            to_string(engine_result.unwrap_err()));
             return Ok(result);
         }
+        auto engine = std::move(engine_result).unwrap();
 
         // Verify engine is ready
         if (!engine->is_ready()) {
@@ -523,10 +506,95 @@ auto create_hardware_integration_framework()
     return Err(IntegrationTestError::BACKEND_NOT_AVAILABLE);
 }
 
+/**
+ * @brief Mock backend factory for testing without hardware dependencies
+ */
+class MockBackendFactory : public BackendFactory {
+  public:
+    MockBackendFactory() = default;
+    ~MockBackendFactory() override = default;
+
+    auto create_engine(engines::InferenceBackend backend, const engines::ModelConfig& config)
+        -> common::Result<std::unique_ptr<engines::InferenceEngine>,
+                          IntegrationTestError> override {
+        using namespace inference_lab::integration::mocks;
+
+        // Get error injection configuration from model config if available
+        MockEngineConfig mock_config;
+
+        // Configure realistic performance characteristics for each backend
+        switch (backend) {
+            case engines::InferenceBackend::TENSORRT_GPU:
+                mock_config.performance.base_latency_ms = 5.0f;  // TensorRT is fast
+                break;
+            case engines::InferenceBackend::ONNX_RUNTIME:
+                mock_config.performance.base_latency_ms = 15.0f;  // ONNX Runtime is slower
+                break;
+            case engines::InferenceBackend::RULE_BASED:
+                mock_config.performance.base_latency_ms = 2.0f;  // Rule-based is fastest
+                break;
+            default:
+                mock_config.performance.base_latency_ms = 10.0f;  // Default
+                break;
+        }
+
+        // Check if this is an error injection test by examining the model path
+        if (config.model_path.find("error_injection") != std::string::npos) {
+            // Configure error injection based on model path
+            if (config.model_path.find("GPU_MEMORY_EXHAUSTED") != std::string::npos) {
+                mock_config.error_injection.error_rates["GPU_MEMORY_EXHAUSTED"] = 1.0f;
+            } else if (config.model_path.find("MODEL_LOAD_FAILED") != std::string::npos) {
+                mock_config.error_injection.error_rates["MODEL_LOAD_FAILED"] = 1.0f;
+            } else if (config.model_path.find("INFERENCE_EXECUTION_FAILED") != std::string::npos) {
+                mock_config.error_injection.error_rates["INFERENCE_EXECUTION_FAILED"] = 1.0f;
+            }
+        }
+
+        mock_config.engine_name = "Mock_" + to_string(backend);
+        mock_config.enable_logging = true;
+
+        std::unique_ptr<engines::InferenceEngine> engine;
+        switch (backend) {
+            case engines::InferenceBackend::TENSORRT_GPU:
+                engine = std::make_unique<MockTensorRTEngine>(mock_config);
+                break;
+            case engines::InferenceBackend::ONNX_RUNTIME:
+                engine = std::make_unique<MockONNXRuntimeEngine>(mock_config);
+                break;
+            case engines::InferenceBackend::RULE_BASED:
+                engine = std::make_unique<MockRuleBasedEngine>(mock_config);
+                break;
+            default:
+                return Err(IntegrationTestError::BACKEND_NOT_AVAILABLE);
+        }
+
+        if (!engine) {
+            return Err(IntegrationTestError::BACKEND_CREATION_FAILED);
+        }
+
+        return Ok(std::move(engine));
+    }
+
+    auto is_backend_available(engines::InferenceBackend backend) const -> bool override {
+        // All mock backends are always available
+        switch (backend) {
+            case engines::InferenceBackend::TENSORRT_GPU:
+            case engines::InferenceBackend::ONNX_RUNTIME:
+            case engines::InferenceBackend::RULE_BASED:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    auto get_factory_type() const -> std::string override { return "MockBackendFactory"; }
+};
+
 auto create_mock_integration_framework()
     -> common::Result<std::unique_ptr<MLIntegrationFramework>, IntegrationTestError> {
-    // For now, return an error since mock factory isn't implemented
-    return Err(IntegrationTestError::BACKEND_NOT_AVAILABLE);
+    auto factory = std::make_unique<MockBackendFactory>();
+    auto framework = std::make_unique<MLIntegrationFramework>(std::move(factory));
+    return Ok(std::move(framework));
 }
 
 auto create_hybrid_integration_framework(bool use_real_tensorrt, bool use_real_onnx)

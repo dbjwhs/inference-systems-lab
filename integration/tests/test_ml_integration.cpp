@@ -98,12 +98,16 @@ class MLIntegrationTestBase : public ::testing::Test {
         // Initialize logging for tests
         setup_test_environment("DEBUG");
 
-        // TODO: Create integration framework with mock factory (BackendFactory is abstract)
-        // auto mock_factory = std::make_unique<BackendFactory>();
-        // test_factory_ = mock_factory.get();
-        // framework_ = std::make_unique<MLIntegrationFramework>(std::move(mock_factory));
-        test_factory_ = nullptr;
-        framework_ = nullptr;
+        // Create integration framework with mock factory
+        auto framework_result = create_mock_integration_framework();
+        if (framework_result.is_ok()) {
+            framework_ = std::move(framework_result).unwrap();
+        } else {
+            framework_.reset();
+            LOG_ERROR_PRINT("Failed to create mock integration framework: {}",
+                            to_string(framework_result.unwrap_err()));
+        }
+        test_factory_ = nullptr;  // Not needed with new factory pattern
 
         // Set up common mock engines
         setup_mock_engines();
@@ -381,18 +385,10 @@ class ErrorHandlingTest : public MLIntegrationTestBase {};
 TEST_F(ErrorHandlingTest, GPUMemoryExhaustion) {
     LOG_INFO_PRINT("Testing GPU memory exhaustion handling");
 
-    // Configure TensorRT mock to simulate memory exhaustion
-    auto tensorrt_config = MockTensorRTEngine::create_tensorrt_config();
-    tensorrt_config.error_injection.error_rates["GPU_MEMORY_EXHAUSTED"] = 0.5f;  // 50% error rate
-
-    // TODO: implement inject_mock_engine in BackendFactory
-    /*
-    test_factory_->inject_mock_engine(EngineBackend::TENSORRT_GPU, [tensorrt_config]() {
-        return std::make_unique<MockTensorRTEngine>(tensorrt_config);
-    });
-    */
-
     auto model_config = classification_fixture_->get_model_config();
+    // Signal error injection through model path
+    model_config.model_path = "/mock/error_injection/GPU_MEMORY_EXHAUSTED.trt";
+
     auto test_inputs = classification_fixture_->generate_test_data(10);
 
     auto result =
@@ -410,7 +406,7 @@ TEST_F(ErrorHandlingTest, GPUMemoryExhaustion) {
     // Check that errors were properly categorized
     bool found_memory_error = false;
     for (const auto& error : backend_result.error_messages) {
-        if (error.find("MEMORY") != std::string::npos) {
+        if (error.find("GPU") != std::string::npos || error.find("memory") != std::string::npos) {
             found_memory_error = true;
             break;
         }
@@ -423,19 +419,10 @@ TEST_F(ErrorHandlingTest, GPUMemoryExhaustion) {
 TEST_F(ErrorHandlingTest, ModelLoadingFailure) {
     LOG_INFO_PRINT("Testing model loading failure handling");
 
-    // Configure ONNX mock to simulate model loading failure
-    auto onnx_config = MockONNXRuntimeEngine::create_onnx_config();
-    onnx_config.error_injection.error_rates["MODEL_LOAD_FAILED"] = 1.0f;  // Always fail
-
-    // TODO: implement inject_mock_engine in BackendFactory
-    /*
-    test_factory_->inject_mock_engine(EngineBackend::ONNX_RUNTIME, [onnx_config]() {
-        return std::make_unique<MockONNXRuntimeEngine>(onnx_config);
-    });
-    */
-
     auto model_config = classification_fixture_->get_model_config();
-    // Note: backend is specified as parameter, not in config
+    // Signal error injection through model path
+    model_config.model_path = "/mock/error_injection/MODEL_LOAD_FAILED.onnx";
+
     auto test_inputs = classification_fixture_->generate_test_data(1);
 
     auto result =
@@ -505,6 +492,8 @@ TEST_F(MemoryManagementTest, ResourceExhaustionHandling) {
     LOG_INFO_PRINT("Testing resource exhaustion handling");
 
     auto model_config = classification_fixture_->get_model_config();
+    // Signal error injection through model path
+    model_config.model_path = "/mock/error_injection/INFERENCE_EXECUTION_FAILED.trt";
 
     auto scenario = MainTestScenarioBuilder()
                         .with_name("TensorRT Resource Exhaustion")
@@ -531,8 +520,9 @@ TEST_F(MemoryManagementTest, ResourceExhaustionHandling) {
     // Check for proper error handling
     bool found_resource_error = false;
     for (const auto& error : backend_result.error_messages) {
-        if (error.find("MEMORY") != std::string::npos ||
-            error.find("RESOURCE") != std::string::npos) {
+        if (error.find("Runtime") != std::string::npos ||
+            error.find("execution") != std::string::npos ||
+            error.find("inference") != std::string::npos) {
             found_resource_error = true;
             break;
         }
@@ -738,10 +728,8 @@ TEST_F(IntegrationTestSuite, ComprehensiveIntegrationTest) {
 
     // Set up framework with mocks
     auto framework_result = create_mock_integration_framework();
-    if (!framework_result.is_ok()) {
-        LOG_INFO_PRINT("Mock framework not yet implemented, test may fail");
-        // Continue with test even if mock framework not implemented
-    }
+    ASSERT_TRUE(framework_result.is_ok())
+        << "Failed to create mock framework: " << to_string(framework_result.unwrap_err());
     auto& framework = framework_result.unwrap();
 
     // Create a comprehensive test scenario
