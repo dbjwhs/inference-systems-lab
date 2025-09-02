@@ -47,6 +47,10 @@ include(Documentation)
 configure_documentation()
 configure_formatting()
 
+include(MLIntegration)
+validate_ml_options()
+configure_ml_integration()
+
 include(Pybind11)
 # Python bindings configured if BUILD_PYTHON_BINDINGS=ON
 
@@ -99,5 +103,6 @@ display_sanitizer_status()
 display_testing_status()
 display_benchmarking_status()
 display_documentation_status()
+display_ml_integration_status()
 message(STATUS "==========================================")
 message(STATUS "")
