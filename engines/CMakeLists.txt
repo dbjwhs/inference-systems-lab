@@ -30,6 +30,7 @@ add_library(engines STATIC
     src/inference_engine.cpp
     src/forward_chaining.cpp
     src/model_registry.cpp
+    src/ml_config.cpp
     src/momentum_bp/momentum_bp.cpp
     src/circular_bp/circular_bp.cpp
     src/mamba_ssm/mamba_ssm.cpp
@@ -49,6 +50,12 @@ target_link_libraries(engines
 # Add SQLite include directories if found
 if(SQLITE3_INCLUDE_DIRS)
     target_include_directories(engines PRIVATE ${SQLITE3_INCLUDE_DIRS})
+endif()
+
+# Link ML frameworks if available
+if(TARGET ML::Frameworks)
+    target_link_libraries(engines PUBLIC ML::Frameworks)
+    message(STATUS "Engines library linked with ML frameworks")
 endif()
 
 # Engines tests - Comprehensive Phase 4.1 test suite + Momentum-BP + Circular-BP + Mamba-SSM tests
@@ -113,6 +120,15 @@ add_executable(mamba_ssm_demo
 )
 
 target_link_libraries(mamba_ssm_demo
+    engines
+)
+
+# ML Framework Detection demo
+add_executable(ml_framework_detection_demo
+    examples/ml_framework_detection_demo.cpp
+)
+
+target_link_libraries(ml_framework_detection_demo
     engines
 )
 
