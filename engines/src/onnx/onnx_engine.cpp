@@ -10,6 +10,11 @@ namespace inference_lab {
 namespace engines {
 namespace onnx {
 
+// Import needed types from common namespace
+using common::Err;
+using common::LogLevel;
+using common::Ok;
+
 // TensorInfo implementation
 TensorInfo::TensorInfo(std::string name, DataType type, Shape shape)
     : name(std::move(name)), data_type(type), shape(std::move(shape)) {}
@@ -91,9 +96,9 @@ class ONNXRuntimeImpl {
     explicit ONNXRuntimeImpl(const ONNXRuntimeConfig& config);
     ~ONNXRuntimeImpl() = default;
 
-    auto load_model(const std::string& model_path) -> Result<void, ONNXError>;
+    auto load_model(const std::string& model_path) -> Result<bool, ONNXError>;
     auto load_model_from_buffer(const std::vector<uint8_t>& buffer, const std::string& model_name)
-        -> Result<void, ONNXError>;
+        -> Result<bool, ONNXError>;
 
     auto get_input_info() const -> Result<std::vector<TensorInfo>, ONNXError>;
     auto get_output_info() const -> Result<std::vector<TensorInfo>, ONNXError>;
@@ -106,7 +111,7 @@ class ONNXRuntimeImpl {
         -> Result<std::unordered_map<std::string, FloatTensor>, ONNXError>;
 
     auto get_available_providers() const -> std::vector<ExecutionProvider>;
-    auto set_execution_provider(ExecutionProvider provider) -> Result<void, ONNXError>;
+    auto set_execution_provider(ExecutionProvider provider) -> Result<bool, ONNXError>;
     auto get_current_provider() const -> ExecutionProvider;
 
     auto is_model_loaded() const -> bool;
@@ -176,7 +181,7 @@ auto ONNXRuntimeImpl::setup_session_options() -> void {
     }
 }
 
-auto ONNXRuntimeImpl::load_model(const std::string& model_path) -> Result<void, ONNXError> {
+auto ONNXRuntimeImpl::load_model(const std::string& model_path) -> Result<bool, ONNXError> {
     try {
         // Configure execution provider
         auto provider_result = set_execution_provider(config_.provider);
@@ -221,7 +226,7 @@ auto ONNXRuntimeImpl::load_model(const std::string& model_path) -> Result<void, 
         }
 
         model_loaded_ = true;
-        return Ok();
+        return Ok(true);
 
     } catch (const Ort::Exception& e) {
         LOG_ERROR_PRINT("ONNX Runtime error loading model: {}", e.what());
@@ -323,7 +328,7 @@ auto ONNXRuntimeImpl::get_available_providers() const -> std::vector<ExecutionPr
 }
 
 auto ONNXRuntimeImpl::set_execution_provider(ExecutionProvider provider)
-    -> Result<void, ONNXError> {
+    -> Result<bool, ONNXError> {
     try {
         switch (provider) {
             case ExecutionProvider::CPU:
@@ -340,7 +345,7 @@ auto ONNXRuntimeImpl::set_execution_provider(ExecutionProvider provider)
         }
 
         current_provider_ = provider;
-        return Ok();
+        return Ok(true);
 
     } catch (const Ort::Exception& e) {
         LOG_ERROR_PRINT("Failed to set execution provider: {}", e.what());
@@ -355,7 +360,7 @@ auto ONNXRuntimeImpl::get_current_provider() const -> ExecutionProvider {
 // Stub implementations for remaining methods
 auto ONNXRuntimeImpl::load_model_from_buffer(const std::vector<uint8_t>& buffer,
                                              const std::string& model_name)
-    -> Result<void, ONNXError> {
+    -> Result<bool, ONNXError> {
     return Err(ONNXError::MODEL_LOAD_FAILED);  // Stub
 }
 
@@ -391,12 +396,12 @@ class ONNXRuntimeStub {
         LOG_WARNING_PRINT("ONNX Runtime not available - using stub implementation");
     }
 
-    auto load_model(const std::string& model_path) -> Result<void, ONNXError> {
+    auto load_model(const std::string& model_path) -> Result<bool, ONNXError> {
         return Err(ONNXError::UNSUPPORTED_MODEL_FORMAT);
     }
 
     auto load_model_from_buffer(const std::vector<uint8_t>& buffer, const std::string& model_name)
-        -> Result<void, ONNXError> {
+        -> Result<bool, ONNXError> {
         return Err(ONNXError::UNSUPPORTED_MODEL_FORMAT);
     }
 
@@ -427,7 +432,7 @@ class ONNXRuntimeStub {
         return {ExecutionProvider::CPU};  // Only report CPU as available
     }
 
-    auto set_execution_provider(ExecutionProvider provider) -> Result<void, ONNXError> {
+    auto set_execution_provider(ExecutionProvider provider) -> Result<bool, ONNXError> {
         return Err(ONNXError::EXECUTION_PROVIDER_ERROR);
     }
 
@@ -455,11 +460,12 @@ ONNXRuntimeEngine::ONNXRuntimeEngine(const ONNXRuntimeConfig& config) : config_(
 
 ONNXRuntimeEngine::~ONNXRuntimeEngine() = default;
 
-ONNXRuntimeEngine::ONNXRuntimeEngine(ONNXRuntimeEngine&&) noexcept = default;
-ONNXRuntimeEngine& ONNXRuntimeEngine::operator=(ONNXRuntimeEngine&&) noexcept = default;
+// Move operations are deleted due to base class InferenceEngine
+// ONNXRuntimeEngine::ONNXRuntimeEngine(ONNXRuntimeEngine&&) noexcept = default;
+// ONNXRuntimeEngine& ONNXRuntimeEngine::operator=(ONNXRuntimeEngine&&) noexcept = default;
 
 // Delegate methods to implementation
-auto ONNXRuntimeEngine::load_model(const std::string& model_path) -> Result<void, ONNXError> {
+auto ONNXRuntimeEngine::load_model(const std::string& model_path) -> Result<bool, ONNXError> {
     auto result = impl_->load_model(model_path);
     if (result.is_ok()) {
         metrics_.model_path = model_path;
@@ -539,6 +545,21 @@ auto ONNXRuntimeEngine::get_performance_stats() const -> std::string {
 
 bool ONNXRuntimeEngine::is_ready() const {
     return is_model_loaded();
+}
+
+// Additional interface methods
+auto ONNXRuntimeEngine::run_inference(const std::vector<FloatTensor>& inputs)
+    -> Result<std::vector<FloatTensor>, ONNXError> {
+    return impl_->run_inference(inputs);
+}
+
+auto ONNXRuntimeEngine::set_execution_provider(ExecutionProvider provider)
+    -> Result<bool, ONNXError> {
+    auto result = impl_->set_execution_provider(provider);
+    if (result.is_ok()) {
+        config_.provider = provider;
+    }
+    return result;
 }
 
 // Factory functions
@@ -634,8 +655,8 @@ auto is_provider_available(ExecutionProvider provider) -> bool {
 }
 
 // Stub implementations for remaining utility functions
-auto validate_onnx_model(const std::string& model_path) -> Result<void, ONNXError> {
-    return Ok();  // Stub - would validate ONNX model format
+auto validate_onnx_model(const std::string& model_path) -> Result<bool, ONNXError> {
+    return Ok(true);  // Stub - would validate ONNX model format
 }
 
 auto get_model_info(const std::string& model_path)
