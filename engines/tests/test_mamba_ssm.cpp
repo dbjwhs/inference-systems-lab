@@ -119,8 +119,7 @@ TEST_F(MambaSSMTest, SequenceLengthLimits) {
 
     // Test sequence that exceeds maximum length
     const size_t excessive_seq_len = config_.max_seq_len + 100;
-    FloatTensor long_input(Shape{1, excessive_seq_len, config_.d_model},
-                                  DataType::FLOAT32);
+    FloatTensor long_input(Shape{1, excessive_seq_len, config_.d_model});
 
     auto result = engine->run_mamba_ssm(long_input);
     EXPECT_FALSE(result.is_ok());
@@ -158,7 +157,8 @@ TEST_F(MambaSSMTest, StateManagement) {
     EXPECT_EQ(initial_state.sequence_length, 0);
 
     // Process a sequence
-    FloatTensor input = testing::generate_random_sequence(1, 16, config_.d_model);
+    FloatTensor input = inference_lab::engines::mamba_ssm::testing::generate_random_sequence(
+        1, 16, config_.d_model);
     auto result = engine->run_mamba_ssm(input);
     ASSERT_TRUE(result.is_ok());
 
@@ -291,13 +291,13 @@ TEST_F(MambaSSMTest, UnifiedInferenceInterface) {
     auto engine = std::move(engine_result).unwrap();
 
     // Test unified InferenceEngine interface
-    InferenceRequest request;
+    inference_lab::engines::InferenceRequest request;
     // Request details are ignored in favor of demo model
 
     auto response_result = engine->run_inference(request);
     ASSERT_TRUE(response_result.is_ok());
 
-    auto response = response_std::move(result).unwrap();
+    auto response = std::move(response_result).unwrap();
 
     // Should have output tensors
     EXPECT_EQ(response.output_tensors.size(), 1);
@@ -325,7 +325,8 @@ TEST_F(MambaSSMTest, PerformanceMetrics) {
     EXPECT_EQ(initial_metrics.total_flops, 0);
 
     // Run inference to generate metrics
-    FloatTensor input = testing::generate_random_sequence(1, 64, config_.d_model);
+    FloatTensor input = inference_lab::engines::mamba_ssm::testing::generate_random_sequence(
+        1, 64, config_.d_model);
     auto result = engine->run_mamba_ssm(input);
     ASSERT_TRUE(result.is_ok());
 
@@ -362,7 +363,8 @@ TEST_F(MambaSSMTest, LinearComplexityScaling) {
         ASSERT_TRUE(engine_result.is_ok());
 
         auto engine = std::move(engine_result).unwrap();
-        FloatTensor input = testing::generate_random_sequence(1, seq_len, config_.d_model);
+        FloatTensor input = inference_lab::engines::mamba_ssm::testing::generate_random_sequence(
+            1, seq_len, config_.d_model);
 
         auto result = engine->run_mamba_ssm(input);
         ASSERT_TRUE(result.is_ok());
@@ -399,7 +401,8 @@ TEST_F(MambaSSMTest, DifferentActivationTypes) {
         ASSERT_TRUE(engine_result.is_ok());
 
         auto engine = std::move(engine_result).unwrap();
-        FloatTensor input = testing::generate_random_sequence(1, 32, config_.d_model);
+        FloatTensor input = inference_lab::engines::mamba_ssm::testing::generate_random_sequence(
+            1, 32, config_.d_model);
 
         auto result = engine->run_mamba_ssm(input);
         EXPECT_TRUE(result.is_ok())
@@ -428,7 +431,7 @@ TEST_F(MambaSSMTest, ErrorStringConversions) {
 
 TEST_F(MambaSSMTest, TestingUtilities) {
     // Test random sequence generation
-    auto sequence = testing::generate_random_sequence(2, 32, 64);
+    auto sequence = inference_lab::engines::mamba_ssm::testing::generate_random_sequence(2, 32, 64);
     EXPECT_EQ(sequence.shape().size(), 3);
     EXPECT_EQ(sequence.shape()[0], 2);   // batch
     EXPECT_EQ(sequence.shape()[1], 32);  // seq_len
@@ -447,7 +450,7 @@ TEST_F(MambaSSMTest, TestingUtilities) {
     EXPECT_TRUE(has_variation) << "Generated sequence should have variation";
 
     // Test model configuration creation
-    auto test_config = testing::create_test_model(128, 32);
+    auto test_config = inference_lab::engines::mamba_ssm::testing::create_test_model(128, 32);
     EXPECT_EQ(test_config.d_model, 128);
     EXPECT_EQ(test_config.d_state, 32);
     EXPECT_EQ(test_config.d_inner, 256);  // 2 * d_model
@@ -458,7 +461,8 @@ TEST_F(MambaSSMTest, TestingUtilities) {
 TEST_F(MambaSSMTest, BenchmarkSequenceLengths) {
     // Test the benchmarking utility
     std::vector<size_t> lengths = {16, 32, 64};
-    auto benchmark_results = testing::benchmark_sequence_lengths(lengths);
+    auto benchmark_results =
+        inference_lab::engines::mamba_ssm::testing::benchmark_sequence_lengths(lengths);
 
     // Should have results for each length (if no errors occurred)
     EXPECT_LE(benchmark_results.size(), lengths.size());

@@ -359,6 +359,8 @@ MambaSSMEngine::MambaSSMEngine(const MambaSSMConfig& config)
     LOG_DEBUG_PRINT("Mamba SSM engine initialized successfully");
 }
 
+MambaSSMEngine::~MambaSSMEngine() = default;
+
 auto MambaSSMEngine::run_mamba_ssm(const FloatTensor& input_sequence)
     -> Result<FloatTensor, MambaSSMError> {
     const auto start_time = std::chrono::high_resolution_clock::now();
@@ -585,8 +587,8 @@ auto MambaSSMEngine::run_inference(const InferenceRequest& request)
     auto output = std::move(result).unwrap();
 
     InferenceResponse response;
-    
-    // Convert FloatTensor to vector<float> 
+
+    // Convert FloatTensor to vector<float>
     std::vector<float> output_data(output.data(), output.data() + output.size());
     response.output_tensors.push_back(std::move(output_data));
     response.output_names.push_back("mamba_output");
@@ -650,7 +652,6 @@ void MambaSSMEngine::update_config(const MambaSSMConfig& new_config) {
         config_.batch_size, config_.d_inner, config_.d_state, config_.d_conv);
     reset_metrics();
 }
-
 
 void MambaSSMEngine::reset_metrics() {
     metrics_ = MambaSSMMetrics{};

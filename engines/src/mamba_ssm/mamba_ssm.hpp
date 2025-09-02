@@ -123,7 +123,7 @@ class SelectiveScanImpl;
 class MambaSSMEngine : public InferenceEngine {
   public:
     explicit MambaSSMEngine(const MambaSSMConfig& config = MambaSSMConfig{});
-    ~MambaSSMEngine() override = default;
+    ~MambaSSMEngine() override;
 
     // Disable copy and move to align with InferenceEngine base class
     MambaSSMEngine(const MambaSSMEngine&) = delete;

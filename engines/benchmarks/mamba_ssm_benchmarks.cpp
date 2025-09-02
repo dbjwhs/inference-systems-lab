@@ -39,15 +39,15 @@ class MambaSSMFixture : public ::benchmark::Fixture {
   protected:
     MambaSSMConfig config_;
     std::unique_ptr<MambaSSMEngine> engine_;
-    TypedTensor<float> small_sequence_;
-    TypedTensor<float> medium_sequence_;
-    TypedTensor<float> large_sequence_;
+    FloatTensor small_sequence_;
+    FloatTensor medium_sequence_;
+    FloatTensor large_sequence_;
 
-    TypedTensor<float> create_test_sequence(size_t batch, size_t seq_len, size_t d_model) {
-        TypedTensor<float> sequence(TensorShape{batch, seq_len, d_model}, DataType::FLOAT32);
+    FloatTensor create_test_sequence(size_t batch, size_t seq_len, size_t d_model) {
+        FloatTensor sequence(Shape{batch, seq_len, d_model});
 
-        auto data = sequence.mutable_data<float>();
-        for (size_t i = 0; i < sequence.total_elements(); ++i) {
+        auto data = sequence.data();
+        for (size_t i = 0; i < sequence.size(); ++i) {
             // Create a realistic test pattern with some structure
             float t = static_cast<float>(i % seq_len) / static_cast<float>(seq_len);
             float d = static_cast<float>((i / seq_len) % d_model) / static_cast<float>(d_model);
@@ -65,7 +65,7 @@ BENCHMARK_F(MambaSSMFixture, SmallSequenceInference)(::benchmark::State& state) 
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -83,7 +83,7 @@ BENCHMARK_F(MambaSSMFixture, MediumSequenceInference)(::benchmark::State& state)
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -101,7 +101,7 @@ BENCHMARK_F(MambaSSMFixture, LargeSequenceInference)(::benchmark::State& state) 
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -122,7 +122,7 @@ BENCHMARK_F(MambaSSMFixture, LinearComplexityScaling)(::benchmark::State& state)
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -135,8 +135,8 @@ BENCHMARK_F(MambaSSMFixture, LinearComplexityScaling)(::benchmark::State& state)
     state.counters["flops_per_token"] = static_cast<double>(metrics.total_flops) / seq_len;
 }
 BENCHMARK_REGISTER_F(MambaSSMFixture, LinearComplexityScaling)
-    ->Range(16, 1024)             // Test sequence lengths from 16 to 1024
-    ->Complexity(benchmark::oN);  // Expected linear complexity
+    ->Range(16, 1024)               // Test sequence lengths from 16 to 1024
+    ->Complexity(::benchmark::oN);  // Expected linear complexity
 
 BENCHMARK_F(MambaSSMFixture, BatchSizeScaling)(::benchmark::State& state) {
     // Test performance with different batch sizes
@@ -154,7 +154,7 @@ BENCHMARK_F(MambaSSMFixture, BatchSizeScaling)(::benchmark::State& state) {
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -188,7 +188,7 @@ BENCHMARK_F(MambaSSMFixture, ModelDimensionScaling)(::benchmark::State& state) {
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -217,7 +217,7 @@ BENCHMARK_F(MambaSSMFixture, SIMDKernelComparison)(::benchmark::State& state) {
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -247,7 +247,7 @@ BENCHMARK_F(MambaSSMFixture, ActivationFunctionComparison)(::benchmark::State& s
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -283,7 +283,7 @@ BENCHMARK_F(MambaSSMFixture, StateSpaceDimensionScaling)(::benchmark::State& sta
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -360,7 +360,7 @@ BENCHMARK_F(MambaSSMFixture, ComplexityComparison)(::benchmark::State& state) {
         ::benchmark::DoNotOptimize(result);
 
         if (result.is_ok()) {
-            auto output = result.unwrap();
+            auto output = std::move(result).unwrap();
             ::benchmark::DoNotOptimize(output);
         }
     }
@@ -380,7 +380,7 @@ BENCHMARK_F(MambaSSMFixture, ComplexityComparison)(::benchmark::State& state) {
 }
 BENCHMARK_REGISTER_F(MambaSSMFixture, ComplexityComparison)
     ->Range(32, 2048)  // Test range where O(n²) vs O(n) difference is significant
-    ->Complexity(benchmark::oN);
+    ->Complexity(::benchmark::oN);
 
 }  // namespace benchmark
 }  // namespace inference_lab::engines::mamba_ssm
