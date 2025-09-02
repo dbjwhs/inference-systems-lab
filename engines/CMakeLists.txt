@@ -30,6 +30,7 @@ add_library(engines STATIC
     src/inference_engine.cpp
     src/forward_chaining.cpp
     src/model_registry.cpp
+    src/momentum_bp/momentum_bp.cpp
 )
 
 target_include_directories(engines PUBLIC
@@ -48,9 +49,10 @@ if(SQLITE3_INCLUDE_DIRS)
     target_include_directories(engines PRIVATE ${SQLITE3_INCLUDE_DIRS})
 endif()
 
-# Engines tests - Comprehensive Phase 4.1 test suite
+# Engines tests - Comprehensive Phase 4.1 test suite + Momentum-BP tests
 add_executable(engines_tests
     tests/test_engines_comprehensive.cpp
+    tests/test_momentum_bp.cpp
 )
 
 target_link_libraries(engines_tests
@@ -60,9 +62,9 @@ target_link_libraries(engines_tests
 
 add_test(NAME EnginesTests COMMAND engines_tests)
 
-# Engines benchmarks (using placeholder for now)
+# Engines benchmarks - Momentum-BP performance tests
 add_executable(engines_benchmarks
-    benchmarks/placeholder.cpp
+    benchmarks/momentum_bp_benchmarks.cpp
 )
 
 target_link_libraries(engines_benchmarks
@@ -78,6 +80,15 @@ add_executable(simple_forward_chaining_demo
 )
 
 target_link_libraries(simple_forward_chaining_demo
+    engines
+)
+
+# Momentum-BP demo
+add_executable(momentum_bp_demo
+    examples/momentum_bp_demo.cpp
+)
+
+target_link_libraries(momentum_bp_demo
     engines
 )
 
