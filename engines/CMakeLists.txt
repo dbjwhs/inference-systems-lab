@@ -32,6 +32,7 @@ add_library(engines STATIC
     src/model_registry.cpp
     src/momentum_bp/momentum_bp.cpp
     src/circular_bp/circular_bp.cpp
+    src/mamba_ssm/mamba_ssm.cpp
 )
 
 target_include_directories(engines PUBLIC
@@ -50,11 +51,12 @@ if(SQLITE3_INCLUDE_DIRS)
     target_include_directories(engines PRIVATE ${SQLITE3_INCLUDE_DIRS})
 endif()
 
-# Engines tests - Comprehensive Phase 4.1 test suite + Momentum-BP + Circular-BP tests
+# Engines tests - Comprehensive Phase 4.1 test suite + Momentum-BP + Circular-BP + Mamba-SSM tests
 add_executable(engines_tests
     tests/test_engines_comprehensive.cpp
     tests/test_momentum_bp.cpp
     tests/test_circular_bp.cpp
+    tests/test_mamba_ssm.cpp
 )
 
 target_link_libraries(engines_tests
@@ -64,10 +66,11 @@ target_link_libraries(engines_tests
 
 add_test(NAME EnginesTests COMMAND engines_tests)
 
-# Engines benchmarks - Momentum-BP and Circular-BP performance tests
+# Engines benchmarks - Momentum-BP, Circular-BP, and Mamba-SSM performance tests
 add_executable(engines_benchmarks
     benchmarks/momentum_bp_benchmarks.cpp
     benchmarks/circular_bp_benchmarks.cpp
+    benchmarks/mamba_ssm_benchmarks.cpp
 )
 
 target_link_libraries(engines_benchmarks
@@ -101,6 +104,15 @@ add_executable(circular_bp_demo
 )
 
 target_link_libraries(circular_bp_demo
+    engines
+)
+
+# Mamba-SSM demo
+add_executable(mamba_ssm_demo
+    examples/mamba_ssm_demo.cpp
+)
+
+target_link_libraries(mamba_ssm_demo
     engines
 )
 

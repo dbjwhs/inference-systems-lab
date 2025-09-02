@@ -495,6 +495,28 @@ auto run_inference(const InferenceRequest& request)
 
 ## AI Assistant Guidelines
 
+### **CRITICAL: Pull Request Workflow (MANDATORY)**
+
+**❌ NEVER commit directly to main branch**
+- All changes MUST go through pull request review process
+- User needs to view and approve all pull requests before merging
+- This applies to ALL commits, regardless of size or type
+
+**✅ ALWAYS use feature branch workflow:**
+```bash
+# Create feature branch for new work
+git checkout -b feature/description-of-work
+
+# Make changes, commit to feature branch
+git add . && git commit -m "Implementation details"
+
+# Push feature branch and create PR
+git push -u origin feature/description-of-work
+gh pr create --title "Title" --body "Description"
+```
+
+**Why this matters:** Direct commits to main bypass code review, quality gates, and approval processes that are essential for production systems.
+
 When working on this project:
 
 1. **Quality First**: All code must pass formatting, static analysis, and comprehensive tests
