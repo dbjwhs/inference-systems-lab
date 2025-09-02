@@ -218,6 +218,12 @@ class MomentumBPEngine : public InferenceEngine {
         -> common::Result<std::monostate, MomentumBPError>;
 
     /**
+     * @brief Validate model consistency with configuration
+     */
+    auto validate_model_consistency(const GraphicalModel& model)
+        -> common::Result<std::monostate, MomentumBPError>;
+
+    /**
      * @brief Compute message from one node to another
      */
     auto compute_message(const GraphicalModel& model, EdgeId edge_id)

@@ -10,6 +10,8 @@
 
 #include "../../common/src/logging.hpp"
 
+using inference_lab::common::LogLevel;
+
 namespace inference_lab::engines::momentum_bp {
 
 std::string to_string(MomentumBPError error) {
@@ -100,11 +102,28 @@ auto MomentumBPEngine::run_momentum_bp(const GraphicalModel& model)
     -> common::Result<std::vector<std::vector<double>>, MomentumBPError> {
     auto start_time = std::chrono::high_resolution_clock::now();
 
+    LOG_DEBUG_PRINT("Starting Momentum-BP inference with {} nodes, {} edges",
+                    model.nodes.size(),
+                    model.edges.size());
+    LOG_DEBUG_PRINT("Configuration: momentum={}, adagrad={}, max_iterations={}",
+                    config_.enable_momentum,
+                    config_.enable_adagrad,
+                    config_.max_iterations);
+
+    // Validate model consistency with configuration
+    auto validation_result = validate_model_consistency(model);
+    if (validation_result.is_err()) {
+        LOG_ERROR_PRINT("Model validation failed: {}", to_string(validation_result.unwrap_err()));
+        return common::Err(validation_result.unwrap_err());
+    }
+
     // Initialize messages
     auto init_result = initialize_messages(model);
     if (init_result.is_err()) {
+        LOG_ERROR_PRINT("Failed to initialize messages: {}", to_string(init_result.unwrap_err()));
         return common::Err(init_result.unwrap_err());
     }
+    LOG_DEBUG_PRINT("Initialized {} edge messages", model.edges.size());
 
     double residual = std::numeric_limits<double>::max();
     std::uint32_t iteration = 0;
@@ -148,6 +167,20 @@ auto MomentumBPEngine::run_momentum_bp(const GraphicalModel& model)
     metrics_.final_residual = residual;
     metrics_.converged = check_convergence(residual);
 
+    if (metrics_.converged) {
+        LOG_INFO_PRINT("Momentum-BP converged after {} iterations with residual {:.2e}",
+                       metrics_.iterations_to_convergence,
+                       metrics_.final_residual);
+    } else {
+        LOG_WARNING_PRINT(
+            "Momentum-BP failed to converge after {} iterations, final residual: {:.2e}",
+            metrics_.iterations_to_convergence,
+            metrics_.final_residual);
+    }
+    LOG_DEBUG_PRINT("Inference completed in {}ms with {} message updates",
+                    metrics_.inference_time_ms.count(),
+                    metrics_.message_updates);
+
     // Compute marginals
     return compute_marginals(model);
 }
@@ -157,6 +190,10 @@ auto MomentumBPEngine::get_metrics() const -> MomentumBPMetrics {
 }
 
 void MomentumBPEngine::update_config(const MomentumBPConfig& new_config) {
+    LOG_DEBUG_PRINT("Updating Momentum-BP configuration: momentum={}, adagrad={}, domain_size={}",
+                    new_config.enable_momentum,
+                    new_config.enable_adagrad,
+                    new_config.variable_domain_size);
     config_ = new_config;
     reset();  // Clear state when config changes
 }
@@ -185,6 +222,44 @@ auto MomentumBPEngine::initialize_messages(const GraphicalModel& model)
         adagrad_accumulator_[edge.id] = std::vector<double>(config_.variable_domain_size, 0.0);
     }
 
+    return common::Ok(std::monostate{});
+}
+
+auto MomentumBPEngine::validate_model_consistency(const GraphicalModel& model)
+    -> common::Result<std::monostate, MomentumBPError> {
+    // Check that all nodes have consistent domain sizes with configuration
+    for (const auto& node : model.nodes) {
+        if (node.local_potential.size() != config_.variable_domain_size) {
+            LOG_WARNING_PRINT("Node {} has domain size {} but config expects {}",
+                              node.id,
+                              node.local_potential.size(),
+                              config_.variable_domain_size);
+            // Allow if node domain is smaller or equal (with padding/truncation)
+            if (node.local_potential.empty()) {
+                LOG_ERROR_PRINT("Node {} has empty local potential", node.id);
+                return common::Err(MomentumBPError::INVALID_POTENTIAL_FUNCTION);
+            }
+        }
+    }
+
+    // Check edge potential matrix dimensions
+    for (const auto& edge : model.edges) {
+        if (edge.potential_matrix.empty()) {
+            LOG_ERROR_PRINT("Edge {} has empty potential matrix", edge.id);
+            return common::Err(MomentumBPError::INVALID_POTENTIAL_FUNCTION);
+        }
+
+        for (const auto& row : edge.potential_matrix) {
+            if (row.empty()) {
+                LOG_ERROR_PRINT("Edge {} has empty potential matrix row", edge.id);
+                return common::Err(MomentumBPError::INVALID_POTENTIAL_FUNCTION);
+            }
+        }
+    }
+
+    LOG_DEBUG_PRINT("Model validation passed: {} nodes validated, {} edges validated",
+                    model.nodes.size(),
+                    model.edges.size());
     return common::Ok(std::monostate{});
 }
 

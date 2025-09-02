@@ -34,7 +34,6 @@ class MomentumBPFixture : public ::benchmark::Fixture {
     std::unique_ptr<MomentumBPEngine> engine_;
     GraphicalModel test_model_;
 
-  private:
     GraphicalModel create_test_model(size_t num_nodes) {
         GraphicalModel model;
 
@@ -62,7 +61,7 @@ class MomentumBPFixture : public ::benchmark::Fixture {
 };
 
 BENCHMARK_F(MomentumBPFixture, SmallGraphInference)(::benchmark::State& state) {
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto result = engine_->run_momentum_bp(test_model_);
         ::benchmark::DoNotOptimize(result);
 
@@ -82,7 +81,7 @@ BENCHMARK_F(MomentumBPFixture, MediumGraphInference)(::benchmark::State& state) 
     // Create larger model for this benchmark
     auto large_model = create_test_model(5);  // 5-node chain
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto result = engine_->run_momentum_bp(large_model);
         ::benchmark::DoNotOptimize(result);
 
@@ -107,7 +106,7 @@ BENCHMARK_F(MomentumBPFixture, MomentumVsStandardBP)(::benchmark::State& state) 
     auto standard_engine_result = create_momentum_bp_engine(standard_config);
     auto standard_engine = std::move(standard_engine_result).unwrap();
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         // Benchmark momentum-enhanced version
         auto momentum_result = engine_->run_momentum_bp(test_model_);
         ::benchmark::DoNotOptimize(momentum_result);
@@ -126,7 +125,7 @@ BENCHMARK_F(MomentumBPFixture, MomentumVsStandardBP)(::benchmark::State& state) 
 }
 
 BENCHMARK_F(MomentumBPFixture, EngineCreationCost)(::benchmark::State& state) {
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto engine_result = create_momentum_bp_engine(config_);
         ::benchmark::DoNotOptimize(engine_result);
 

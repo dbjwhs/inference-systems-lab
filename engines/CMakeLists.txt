@@ -62,9 +62,9 @@ target_link_libraries(engines_tests
 
 add_test(NAME EnginesTests COMMAND engines_tests)
 
-# Engines benchmarks (using placeholder for now)
+# Engines benchmarks - Momentum-BP performance tests
 add_executable(engines_benchmarks
-    benchmarks/placeholder.cpp
+    benchmarks/momentum_bp_benchmarks.cpp
 )
 
 target_link_libraries(engines_benchmarks
