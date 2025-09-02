@@ -34,18 +34,18 @@ void print_metrics(const std::string& label, const MambaSSMMetrics& metrics) {
 }
 
 void print_tensor_sample(const std::string& label,
-                         const TypedTensor<float>& tensor,
+                         const FloatTensor& tensor,
                          size_t max_elements = 5) {
     std::cout << label << " (shape: [";
-    for (size_t i = 0; i < tensor.shape().dims(); ++i) {
-        std::cout << tensor.shape().dim(i);
-        if (i < tensor.shape().dims() - 1)
+    for (size_t i = 0; i < tensor.shape().size(); ++i) {
+        std::cout << tensor.shape()[i];
+        if (i < tensor.shape().size() - 1)
             std::cout << ", ";
     }
     std::cout << "]):\n";
 
-    const auto* data = tensor.data<float>();
-    size_t total_elements = tensor.total_elements();
+    const auto* data = tensor.data();
+    size_t total_elements = tensor.size();
     size_t show_elements = std::min(max_elements, total_elements);
 
     std::cout << "  First " << show_elements << " elements: [";
@@ -69,10 +69,10 @@ void print_tensor_sample(const std::string& label,
     std::cout << "\n";
 }
 
-TypedTensor<float> create_structured_sequence(size_t batch, size_t seq_len, size_t d_model) {
-    TypedTensor<float> sequence(TensorShape{batch, seq_len, d_model}, DataType::FLOAT32);
+FloatTensor create_structured_sequence(size_t batch, size_t seq_len, size_t d_model) {
+    FloatTensor sequence(Shape{batch, seq_len, d_model});
 
-    auto data = sequence.mutable_data<float>();
+    auto data = sequence.data();
     for (size_t b = 0; b < batch; ++b) {
         for (size_t t = 0; t < seq_len; ++t) {
             for (size_t d = 0; d < d_model; ++d) {
@@ -131,7 +131,7 @@ int main() {
 
     auto engine_result = create_mamba_ssm_engine(config);
     if (!engine_result.is_ok()) {
-        std::cerr << "Failed to create Mamba SSM engine: " << to_string(engine_result.error())
+        std::cerr << "Failed to create Mamba SSM engine: " << to_string(engine_result.unwrap_err())
                   << "\n";
         return 1;
     }
@@ -147,11 +147,11 @@ int main() {
 
     auto result = engine->run_mamba_ssm(test_input);
     if (!result.is_ok()) {
-        std::cerr << "Inference failed: " << to_string(result.error()) << "\n";
+        std::cerr << "Inference failed: " << to_string(result.unwrap_err()) << "\n";
         return 1;
     }
 
-    auto output = result.unwrap();
+    auto output = std::move(result).unwrap();
     print_tensor_sample("Output Sequence", output, 8);
     print_metrics("Basic Inference", engine->get_metrics());
 
@@ -221,15 +221,18 @@ int main() {
     std::cout << "Analyzing the selective state space mechanism:\n\n";
 
     // Test different input patterns to show selectivity
-    std::vector<std::pair<std::string, TypedTensor<float>>> test_patterns = {
-        {"Constant Input",
-         TypedTensor<float>(TensorShape{1, 32, config.d_model}, DataType::FLOAT32)},
-        {"Linear Ramp", create_structured_sequence(1, 32, config.d_model)},
-        {"Random Noise", testing::generate_random_sequence(1, 32, config.d_model)}};
+    std::vector<std::pair<std::string, FloatTensor>> test_patterns;
 
-    // Initialize constant input
-    auto constant_data = test_patterns[0].second.mutable_data<float>();
-    std::fill_n(constant_data, test_patterns[0].second.total_elements(), 0.5f);
+    // Create constant input
+    FloatTensor constant_input(Shape{1, 32, config.d_model});
+    auto constant_data = constant_input.data();
+    std::fill_n(constant_data, constant_input.size(), 0.5f);
+    test_patterns.emplace_back("Constant Input", std::move(constant_input));
+
+    // Create other patterns
+    test_patterns.emplace_back("Linear Ramp", create_structured_sequence(1, 32, config.d_model));
+    test_patterns.emplace_back("Random Noise",
+                               testing::generate_random_sequence(1, 32, config.d_model));
 
     for (const auto& [pattern_name, pattern_input] : test_patterns) {
         engine->reset_state();
@@ -289,7 +292,7 @@ int main() {
 
     std::cout << "Demonstrating compatibility with the unified inference interface:\n\n";
 
-    InferenceRequest request;
+    inference_lab::engines::InferenceRequest request;
     auto interface_result = engine->run_inference(request);
 
     if (interface_result.is_ok()) {
