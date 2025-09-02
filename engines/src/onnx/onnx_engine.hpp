@@ -141,14 +141,15 @@ class ONNXRuntimeEngine : public InferenceEngine {
     // Disable copy, enable move
     ONNXRuntimeEngine(const ONNXRuntimeEngine&) = delete;
     ONNXRuntimeEngine& operator=(const ONNXRuntimeEngine&) = delete;
-    ONNXRuntimeEngine(ONNXRuntimeEngine&&) noexcept;
-    ONNXRuntimeEngine& operator=(ONNXRuntimeEngine&&) noexcept;
+    // Move operations deleted due to base class InferenceEngine
+    ONNXRuntimeEngine(ONNXRuntimeEngine&&) = delete;
+    ONNXRuntimeEngine& operator=(ONNXRuntimeEngine&&) = delete;
 
     // Model management
-    auto load_model(const std::string& model_path) -> Result<void, ONNXError>;
+    auto load_model(const std::string& model_path) -> Result<bool, ONNXError>;
     auto load_model_from_buffer(const std::vector<uint8_t>& buffer,
                                 const std::string& model_name = "buffer_model")
-        -> Result<void, ONNXError>;
+        -> Result<bool, ONNXError>;
 
     // Model inspection
     auto get_input_info() const -> Result<std::vector<TensorInfo>, ONNXError>;
@@ -168,7 +169,7 @@ class ONNXRuntimeEngine : public InferenceEngine {
 
     // Provider management
     auto get_available_providers() const -> std::vector<ExecutionProvider>;
-    auto set_execution_provider(ExecutionProvider provider) -> Result<void, ONNXError>;
+    auto set_execution_provider(ExecutionProvider provider) -> Result<bool, ONNXError>;
     auto get_current_provider() const -> ExecutionProvider;
 
     // Performance monitoring
@@ -214,7 +215,7 @@ auto get_system_providers() -> std::vector<ExecutionProvider>;
 auto is_provider_available(ExecutionProvider provider) -> bool;
 
 // Model format validation
-auto validate_onnx_model(const std::string& model_path) -> Result<void, ONNXError>;
+auto validate_onnx_model(const std::string& model_path) -> Result<bool, ONNXError>;
 auto get_model_info(const std::string& model_path)
     -> Result<std::pair<std::vector<TensorInfo>, std::vector<TensorInfo>>, ONNXError>;
 

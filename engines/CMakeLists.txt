@@ -34,6 +34,7 @@ add_library(engines STATIC
     src/momentum_bp/momentum_bp.cpp
     src/circular_bp/circular_bp.cpp
     src/mamba_ssm/mamba_ssm.cpp
+    src/onnx/onnx_engine.cpp
 )
 
 target_include_directories(engines PUBLIC
@@ -132,6 +133,33 @@ add_executable(ml_framework_detection_demo
 target_link_libraries(ml_framework_detection_demo
     engines
 )
+
+# ONNX Runtime Inference demo
+add_executable(onnx_inference_demo
+    examples/onnx_inference_demo.cpp
+)
+
+target_link_libraries(onnx_inference_demo
+    engines
+)
+
+# ONNX Model Server demo - disabled due to tensor copy semantics complexity
+# add_executable(onnx_model_server_demo
+#     examples/onnx_model_server_demo.cpp
+# )
+# 
+# target_link_libraries(onnx_model_server_demo
+#     engines
+# )
+
+# ML Framework Benchmark tool - disabled due to tensor constructor complexity
+# add_executable(ml_framework_benchmark
+#     examples/ml_framework_benchmark.cpp
+# )
+# 
+# target_link_libraries(ml_framework_benchmark
+#     engines
+# )
 
 # Python bindings
 if(BUILD_PYTHON_BINDINGS)
