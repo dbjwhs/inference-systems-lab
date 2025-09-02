@@ -8,6 +8,8 @@
 #include <numeric>
 #include <sstream>
 
+#include "../../common/src/logging.hpp"
+
 namespace inference_lab::engines::momentum_bp {
 
 std::string to_string(MomentumBPError error) {
@@ -176,10 +178,11 @@ auto MomentumBPEngine::initialize_messages(const GraphicalModel& model)
 
     for (const auto& edge : model.edges) {
         // Initialize with uniform messages
-        Message uniform_msg(2, 0.5);  // Binary variables for simplicity
+        const double uniform_prob = 1.0 / config_.variable_domain_size;
+        Message uniform_msg(config_.variable_domain_size, uniform_prob);
         messages_[edge.id] = uniform_msg;
-        momentum_terms_[edge.id] = Message(2, 0.0);
-        adagrad_accumulator_[edge.id] = std::vector<double>(2, 0.0);
+        momentum_terms_[edge.id] = Message(config_.variable_domain_size, 0.0);
+        adagrad_accumulator_[edge.id] = std::vector<double>(config_.variable_domain_size, 0.0);
     }
 
     return common::Ok(std::monostate{});
@@ -200,9 +203,8 @@ auto MomentumBPEngine::compute_message(const GraphicalModel& model, EdgeId edge_
         return common::Err(MomentumBPError::INVALID_GRAPH_STRUCTURE);
     }
 
-    // Simple message computation for binary variables
-    // In full implementation, this would handle arbitrary potentials
-    Message message(2);
+    // Message computation for configurable domain size variables
+    Message message(config_.variable_domain_size);
 
     // Find source node
     const Node* from_node = nullptr;
@@ -218,11 +220,18 @@ auto MomentumBPEngine::compute_message(const GraphicalModel& model, EdgeId edge_
     }
 
     // Compute message: sum over source states
-    for (std::size_t to_state = 0; to_state < 2; ++to_state) {
+    const auto domain_size =
+        std::min(config_.variable_domain_size,
+                 static_cast<std::uint32_t>(from_node->local_potential.size()));
+    for (std::size_t to_state = 0; to_state < domain_size; ++to_state) {
         double sum = 0.0;
-        for (std::size_t from_state = 0; from_state < 2; ++from_state) {
-            sum += from_node->local_potential[from_state] *
-                   edge->potential_matrix[from_state][to_state];
+        for (std::size_t from_state = 0; from_state < domain_size; ++from_state) {
+            if (from_state < from_node->local_potential.size() &&
+                from_state < edge->potential_matrix.size() &&
+                to_state < edge->potential_matrix[from_state].size()) {
+                sum += from_node->local_potential[from_state] *
+                       edge->potential_matrix[from_state][to_state];
+            }
         }
         message[to_state] = sum;
     }
@@ -294,7 +303,7 @@ auto MomentumBPEngine::compute_marginals(const GraphicalModel& model)
 
         // Normalize marginal
         double sum = std::accumulate(marginal.begin(), marginal.end(), 0.0);
-        if (sum > 1e-10) {
+        if (sum > config_.numerical_epsilon) {
             for (auto& prob : marginal) {
                 prob /= sum;
             }
@@ -308,7 +317,7 @@ auto MomentumBPEngine::compute_marginals(const GraphicalModel& model)
 
 void MomentumBPEngine::normalize_message(Message& message) const {
     double sum = std::accumulate(message.begin(), message.end(), 0.0);
-    if (sum > 1e-10) {
+    if (sum > config_.numerical_epsilon) {
         for (auto& prob : message) {
             prob /= sum;
         }

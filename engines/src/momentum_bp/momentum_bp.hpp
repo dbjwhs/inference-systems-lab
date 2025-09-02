@@ -82,14 +82,16 @@ using Message = std::vector<double>;
  * @brief Configuration for Momentum-BP engine
  */
 struct MomentumBPConfig {
-    std::uint32_t max_iterations{100};   ///< Maximum BP iterations
-    double convergence_threshold{1e-6};  ///< Convergence tolerance
-    double momentum_factor{0.9};         ///< Momentum coefficient (β₁)
-    double learning_rate{0.1};           ///< Base learning rate
-    double adagrad_epsilon{1e-8};        ///< AdaGrad epsilon for numerical stability
-    bool enable_momentum{true};          ///< Enable momentum updates
-    bool enable_adagrad{true};           ///< Enable adaptive learning rates
-    bool normalize_messages{true};       ///< Normalize messages to valid probabilities
+    std::uint32_t max_iterations{100};      ///< Maximum BP iterations
+    double convergence_threshold{1e-6};     ///< Convergence tolerance
+    double momentum_factor{0.9};            ///< Momentum coefficient (β₁)
+    double learning_rate{0.1};              ///< Base learning rate
+    double adagrad_epsilon{1e-8};           ///< AdaGrad epsilon for numerical stability
+    double numerical_epsilon{1e-10};        ///< Epsilon for numerical stability checks
+    std::uint32_t variable_domain_size{2};  ///< Domain size for variables (default binary)
+    bool enable_momentum{true};             ///< Enable momentum updates
+    bool enable_adagrad{true};              ///< Enable adaptive learning rates
+    bool normalize_messages{true};          ///< Normalize messages to valid probabilities
 };
 
 /**
