@@ -247,6 +247,16 @@ RealtimeCircularBuffer<StateVector> ssm_states(sequence_length);
 ```cpp
 // Comprehensive test suites for each technique
 TEST(MomentumBPTest, ConvergenceOnCyclicGraph) { /* ... */ }
+```
+
+**Algorithm Documentation**: Each POC includes comprehensive technical documentation
+```cpp
+// Required documentation for each POC algorithm:
+// • ALGORITHM_GUIDE.md - Mathematical foundation, implementation details, complexity analysis
+// • Performance benchmarking results with scaling analysis
+// • Working demonstrations showing key algorithmic advantages
+// • Integration patterns with existing project infrastructure
+```
 TEST(MambaSSMTest, LinearComplexityScaling) { /* ... */ }
 ```
 
