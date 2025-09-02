@@ -63,9 +63,28 @@ function(configure_ml_integration)
             math(EXPR ML_FRAMEWORKS_FOUND "${ML_FRAMEWORKS_FOUND} + 1")
             list(APPEND ML_FRAMEWORKS_ENABLED "TensorRT ${TensorRT_VERSION}")
             
-            # Create ML-specific alias for easier usage
+            # Create ML-specific alias for easier usage with error handling
             if(NOT TARGET ML::TensorRT)
-                add_library(ML::TensorRT ALIAS TensorRT::TensorRT)
+                if(TARGET TensorRT::TensorRT)
+                    add_library(ML::TensorRT ALIAS TensorRT::TensorRT)
+                    message(DEBUG "Created ML::TensorRT alias for TensorRT::TensorRT")
+                else()
+                    message(WARNING "TensorRT found but TensorRT::TensorRT target not available")
+                    # Fallback: try to create interface library if we have the components
+                    if(TensorRT_LIBRARIES AND TensorRT_INCLUDE_DIRS)
+                        add_library(ML::TensorRT INTERFACE IMPORTED)
+                        set_target_properties(ML::TensorRT PROPERTIES
+                            INTERFACE_INCLUDE_DIRECTORIES "${TensorRT_INCLUDE_DIRS}"
+                            INTERFACE_LINK_LIBRARIES "${TensorRT_LIBRARIES}"
+                        )
+                        message(STATUS "Created fallback ML::TensorRT interface library")
+                    else()
+                        message(ERROR "Cannot create ML::TensorRT target - missing components")
+                        set(ENABLE_TENSORRT OFF)
+                        math(EXPR ML_FRAMEWORKS_FOUND "${ML_FRAMEWORKS_FOUND} - 1")
+                        list(REMOVE_ITEM ML_FRAMEWORKS_ENABLED "TensorRT ${TensorRT_VERSION}")
+                    endif()
+                endif()
             endif()
         endif()
     endif()
@@ -88,9 +107,28 @@ function(configure_ml_integration)
             math(EXPR ML_FRAMEWORKS_FOUND "${ML_FRAMEWORKS_FOUND} + 1")
             list(APPEND ML_FRAMEWORKS_ENABLED "ONNX Runtime ${ONNXRuntime_VERSION}")
             
-            # Create ML-specific alias for easier usage
+            # Create ML-specific alias for easier usage with error handling
             if(NOT TARGET ML::ONNXRuntime)
-                add_library(ML::ONNXRuntime ALIAS ONNXRuntime::ONNXRuntime)
+                if(TARGET ONNXRuntime::ONNXRuntime)
+                    add_library(ML::ONNXRuntime ALIAS ONNXRuntime::ONNXRuntime)
+                    message(DEBUG "Created ML::ONNXRuntime alias for ONNXRuntime::ONNXRuntime")
+                else()
+                    message(WARNING "ONNX Runtime found but ONNXRuntime::ONNXRuntime target not available")
+                    # Fallback: try to create interface library if we have the components
+                    if(ONNXRuntime_LIBRARIES AND ONNXRuntime_INCLUDE_DIRS)
+                        add_library(ML::ONNXRuntime INTERFACE IMPORTED)
+                        set_target_properties(ML::ONNXRuntime PROPERTIES
+                            INTERFACE_INCLUDE_DIRECTORIES "${ONNXRuntime_INCLUDE_DIRS}"
+                            INTERFACE_LINK_LIBRARIES "${ONNXRuntime_LIBRARIES}"
+                        )
+                        message(STATUS "Created fallback ML::ONNXRuntime interface library")
+                    else()
+                        message(ERROR "Cannot create ML::ONNXRuntime target - missing components")
+                        set(ENABLE_ONNX_RUNTIME OFF)
+                        math(EXPR ML_FRAMEWORKS_FOUND "${ML_FRAMEWORKS_FOUND} - 1")
+                        list(REMOVE_ITEM ML_FRAMEWORKS_ENABLED "ONNX Runtime ${ONNXRuntime_VERSION}")
+                    endif()
+                endif()
             endif()
         endif()
     endif()

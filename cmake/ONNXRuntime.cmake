@@ -13,20 +13,82 @@
 # Allow user to specify ONNX Runtime root directory
 set(ONNXRUNTIME_ROOT "" CACHE PATH "Root directory of ONNX Runtime installation")
 
+# Validate and sanitize environment variable if present
+function(validate_path_security path_var result_var)
+    set(${result_var} "" PARENT_SCOPE)
+    
+    if(NOT ${path_var})
+        return()
+    endif()
+    
+    # Get the path value
+    set(path_value ${${path_var}})
+    
+    # Basic security checks
+    string(LENGTH ${path_value} path_length)
+    if(path_length GREATER 1000)
+        message(WARNING "Suspiciously long path in ${path_var}, ignoring: ${path_value}")
+        return()
+    endif()
+    
+    # Check for suspicious characters (basic path traversal prevention)
+    if(path_value MATCHES "\\.\\.[\\/\\\\]" OR path_value MATCHES "[\\/\\\\]\\.\\.")
+        message(WARNING "Potential path traversal detected in ${path_var}, ignoring: ${path_value}")
+        return()
+    endif()
+    
+    # Check for null bytes or other suspicious patterns
+    if(path_value MATCHES "\\x00" OR path_value MATCHES "[<>|*?]")
+        message(WARNING "Invalid characters in path ${path_var}, ignoring: ${path_value}")
+        return()
+    endif()
+    
+    # Normalize path (resolve relative components)
+    get_filename_component(normalized_path "${path_value}" ABSOLUTE)
+    
+    # Verify the path exists if we're checking an environment variable
+    if(EXISTS "${normalized_path}")
+        set(${result_var} "${normalized_path}" PARENT_SCOPE)
+        message(DEBUG "Validated path from ${path_var}: ${normalized_path}")
+    else()
+        message(DEBUG "Path from ${path_var} does not exist, ignoring: ${normalized_path}")
+    endif()
+endfunction()
+
 # Try to find ONNX Runtime in standard locations
 if(NOT ONNXRUNTIME_ROOT)
+    # Validate environment variable if present
+    set(VALIDATED_ENV_PATH "")
+    if(DEFINED ENV{ONNXRUNTIME_ROOT})
+        set(ENV_ONNXRUNTIME_ROOT "$ENV{ONNXRUNTIME_ROOT}")
+        validate_path_security(ENV_ONNXRUNTIME_ROOT VALIDATED_ENV_PATH)
+    endif()
+    
+    # Build search paths with validated environment path
+    set(SEARCH_PATHS
+        /usr/local/onnxruntime
+        /opt/onnxruntime
+        /usr/local
+        /opt
+    )
+    
+    # Add validated environment path if available
+    if(VALIDATED_ENV_PATH)
+        list(APPEND SEARCH_PATHS "${VALIDATED_ENV_PATH}")
+    endif()
+    
+    # Add platform-specific paths
+    if(WIN32)
+        list(APPEND SEARCH_PATHS
+            "C:/Program Files/onnxruntime"
+            "C:/onnxruntime"
+        )
+    endif()
+    
     # Standard installation paths
     find_path(ONNXRUNTIME_ROOT
         NAMES include/onnxruntime_cxx_api.h
-        PATHS
-            /usr/local/onnxruntime
-            /opt/onnxruntime
-            /usr/local
-            /opt
-            $ENV{ONNXRUNTIME_ROOT}
-            # Platform-specific paths
-            "C:/Program Files/onnxruntime"
-            "C:/onnxruntime"
+        PATHS ${SEARCH_PATHS}
         DOC "Root directory of ONNX Runtime installation"
     )
 endif()
@@ -81,31 +143,50 @@ if(ONNXRuntime_INCLUDE_DIRS)
     if(ONNX_VERSION_FILE)
         file(READ ${ONNX_VERSION_FILE} ONNX_VERSION_CONTENT)
         
-        # Try to extract version numbers
-        string(REGEX MATCH "ORT_VERSION_MAJOR[ ]+([0-9]+)" _ ${ONNX_VERSION_CONTENT})
-        if(CMAKE_MATCH_1)
-            set(ONNXRuntime_VERSION_MAJOR ${CMAKE_MATCH_1})
-        else()
-            set(ONNXRuntime_VERSION_MAJOR "1") # Default fallback
+        # Initialize version components with safe defaults
+        set(ONNXRuntime_VERSION_MAJOR "1")
+        set(ONNXRuntime_VERSION_MINOR "16")
+        set(ONNXRuntime_VERSION_PATCH "0")
+        
+        # Try to extract version numbers with robust error handling
+        string(REGEX MATCH "ORT_VERSION_MAJOR[ \t]+([0-9]+)" _ ${ONNX_VERSION_CONTENT})
+        if(CMAKE_MATCH_1 AND CMAKE_MATCH_1 MATCHES "^[0-9]+$")
+            # Validate the extracted major version is reasonable (1-99)
+            if(CMAKE_MATCH_1 GREATER 0 AND CMAKE_MATCH_1 LESS 100)
+                set(ONNXRuntime_VERSION_MAJOR ${CMAKE_MATCH_1})
+                message(DEBUG "Extracted ONNX Runtime major version: ${CMAKE_MATCH_1}")
+            else()
+                message(WARNING "Invalid ONNX Runtime major version '${CMAKE_MATCH_1}', using default")
+            endif()
         endif()
         
-        string(REGEX MATCH "ORT_VERSION_MINOR[ ]+([0-9]+)" _ ${ONNX_VERSION_CONTENT})
-        if(CMAKE_MATCH_1)
-            set(ONNXRuntime_VERSION_MINOR ${CMAKE_MATCH_1})
-        else()
-            set(ONNXRuntime_VERSION_MINOR "16") # Default fallback
+        string(REGEX MATCH "ORT_VERSION_MINOR[ \t]+([0-9]+)" _ ${ONNX_VERSION_CONTENT})
+        if(CMAKE_MATCH_1 AND CMAKE_MATCH_1 MATCHES "^[0-9]+$")
+            # Validate the extracted minor version is reasonable (0-99)
+            if(CMAKE_MATCH_1 GREATER_EQUAL 0 AND CMAKE_MATCH_1 LESS 100)
+                set(ONNXRuntime_VERSION_MINOR ${CMAKE_MATCH_1})
+                message(DEBUG "Extracted ONNX Runtime minor version: ${CMAKE_MATCH_1}")
+            else()
+                message(WARNING "Invalid ONNX Runtime minor version '${CMAKE_MATCH_1}', using default")
+            endif()
         endif()
         
-        string(REGEX MATCH "ORT_VERSION_PATCH[ ]+([0-9]+)" _ ${ONNX_VERSION_CONTENT})
-        if(CMAKE_MATCH_1)
-            set(ONNXRuntime_VERSION_PATCH ${CMAKE_MATCH_1})
-        else()
-            set(ONNXRuntime_VERSION_PATCH "0") # Default fallback
+        string(REGEX MATCH "ORT_VERSION_PATCH[ \t]+([0-9]+)" _ ${ONNX_VERSION_CONTENT})
+        if(CMAKE_MATCH_1 AND CMAKE_MATCH_1 MATCHES "^[0-9]+$")
+            # Validate the extracted patch version is reasonable (0-999)
+            if(CMAKE_MATCH_1 GREATER_EQUAL 0 AND CMAKE_MATCH_1 LESS 1000)
+                set(ONNXRuntime_VERSION_PATCH ${CMAKE_MATCH_1})
+                message(DEBUG "Extracted ONNX Runtime patch version: ${CMAKE_MATCH_1}")
+            else()
+                message(WARNING "Invalid ONNX Runtime patch version '${CMAKE_MATCH_1}', using default")
+            endif()
         endif()
         
         set(ONNXRuntime_VERSION "${ONNXRuntime_VERSION_MAJOR}.${ONNXRuntime_VERSION_MINOR}.${ONNXRuntime_VERSION_PATCH}")
+        message(DEBUG "Final ONNX Runtime version: ${ONNXRuntime_VERSION}")
     else()
-        set(ONNXRuntime_VERSION "1.16.0") # Reasonable default
+        set(ONNXRuntime_VERSION "1.16.0") # Safe default when version file not found
+        message(DEBUG "ONNX Runtime version file not found, using default: ${ONNXRuntime_VERSION}")
     endif()
 endif()
 

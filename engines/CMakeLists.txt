@@ -58,9 +58,10 @@ if(TARGET ML::Frameworks)
     message(STATUS "Engines library linked with ML frameworks")
 endif()
 
-# Engines tests - Comprehensive Phase 4.1 test suite + Momentum-BP + Circular-BP + Mamba-SSM tests
+# Engines tests - Comprehensive Phase 4.1 test suite + ML Config + Momentum-BP + Circular-BP + Mamba-SSM tests
 add_executable(engines_tests
     tests/test_engines_comprehensive.cpp
+    tests/test_ml_config.cpp
     tests/test_momentum_bp.cpp
     tests/test_circular_bp.cpp
     tests/test_mamba_ssm.cpp
