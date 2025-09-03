@@ -87,6 +87,16 @@ target_link_libraries(engines_benchmarks
     benchmark::benchmark_main
 )
 
+# Unified inference benchmarks - Phase 7A Weeks 5-6 Implementation
+add_executable(unified_inference_benchmarks
+    benchmarks/unified_inference_benchmarks.cpp
+)
+
+target_link_libraries(unified_inference_benchmarks
+    engines
+    benchmark::benchmark_main
+)
+
 # Forward chaining demos have been replaced with simple_forward_chaining_demo
 
 # Simple forward chaining demo
