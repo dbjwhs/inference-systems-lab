@@ -440,55 +440,107 @@ class UnifiedBenchmarkSuite {
 
 using namespace inference_lab::engines::unified_benchmarks;
 
-static void BM_UnifiedComparison_SmallBinary(benchmark::State& state) {
+// Individual technique benchmarks for proper comparison
+static void BM_MomentumBP_SmallBinary(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto small_dataset = datasets[0];  // "small_binary"
 
     for (auto _ : state) {
         auto momentum_metrics = UnifiedBenchmarkSuite::benchmark_momentum_bp(small_dataset);
-        auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(small_dataset);
-        auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(small_dataset);
-
         benchmark::DoNotOptimize(momentum_metrics);
+    }
+}
+
+static void BM_CircularBP_SmallBinary(benchmark::State& state) {
+    auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
+    auto small_dataset = datasets[0];  // "small_binary"
+
+    for (auto _ : state) {
+        auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(small_dataset);
         benchmark::DoNotOptimize(circular_metrics);
+    }
+}
+
+static void BM_MambaSSM_SmallBinary(benchmark::State& state) {
+    auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
+    auto small_dataset = datasets[0];  // "small_binary"
+
+    for (auto _ : state) {
+        auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(small_dataset);
         benchmark::DoNotOptimize(mamba_metrics);
     }
 }
 
-static void BM_UnifiedComparison_MediumChain(benchmark::State& state) {
+static void BM_MomentumBP_MediumChain(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto medium_dataset = datasets[1];  // "medium_chain"
 
     for (auto _ : state) {
         auto momentum_metrics = UnifiedBenchmarkSuite::benchmark_momentum_bp(medium_dataset);
-        auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(medium_dataset);
-        auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(medium_dataset);
-
         benchmark::DoNotOptimize(momentum_metrics);
+    }
+}
+
+static void BM_CircularBP_MediumChain(benchmark::State& state) {
+    auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
+    auto medium_dataset = datasets[1];  // "medium_chain"
+
+    for (auto _ : state) {
+        auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(medium_dataset);
         benchmark::DoNotOptimize(circular_metrics);
+    }
+}
+
+static void BM_MambaSSM_MediumChain(benchmark::State& state) {
+    auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
+    auto medium_dataset = datasets[1];  // "medium_chain"
+
+    for (auto _ : state) {
+        auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(medium_dataset);
         benchmark::DoNotOptimize(mamba_metrics);
     }
 }
 
-static void BM_UnifiedComparison_LargeGrid(benchmark::State& state) {
+static void BM_MomentumBP_LargeGrid(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto large_dataset = datasets[2];  // "large_grid"
 
     for (auto _ : state) {
         auto momentum_metrics = UnifiedBenchmarkSuite::benchmark_momentum_bp(large_dataset);
-        auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(large_dataset);
-        auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(large_dataset);
-
         benchmark::DoNotOptimize(momentum_metrics);
+    }
+}
+
+static void BM_CircularBP_LargeGrid(benchmark::State& state) {
+    auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
+    auto large_dataset = datasets[2];  // "large_grid"
+
+    for (auto _ : state) {
+        auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(large_dataset);
         benchmark::DoNotOptimize(circular_metrics);
+    }
+}
+
+static void BM_MambaSSM_LargeGrid(benchmark::State& state) {
+    auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
+    auto large_dataset = datasets[2];  // "large_grid"
+
+    for (auto _ : state) {
+        auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(large_dataset);
         benchmark::DoNotOptimize(mamba_metrics);
     }
 }
 
-// Register benchmarks
-BENCHMARK(BM_UnifiedComparison_SmallBinary)->Unit(benchmark::kMillisecond);
-BENCHMARK(BM_UnifiedComparison_MediumChain)->Unit(benchmark::kMillisecond);
-BENCHMARK(BM_UnifiedComparison_LargeGrid)->Unit(benchmark::kMillisecond);
+// Register individual technique benchmarks for proper comparison
+BENCHMARK(BM_MomentumBP_SmallBinary)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_CircularBP_SmallBinary)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_MambaSSM_SmallBinary)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_MomentumBP_MediumChain)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_CircularBP_MediumChain)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_MambaSSM_MediumChain)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_MomentumBP_LargeGrid)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_CircularBP_LargeGrid)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_MambaSSM_LargeGrid)->Unit(benchmark::kMillisecond);
 
 // Standalone performance comparison
 static void BM_StandaloneComparativeAnalysis(benchmark::State& state) {

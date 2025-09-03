@@ -183,3 +183,6 @@ core.*
 # Test artifacts and logs
 logs/
 test-results/
+
+# Generated benchmark reports (unified POC benchmarking)
+unified-benchmark-results/

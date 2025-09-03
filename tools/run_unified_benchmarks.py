@@ -174,7 +174,18 @@ class UnifiedBenchmarkSuite:
             
             for bench in benchmarks:
                 name = bench.get("name", "")
-                time_ms = bench.get("real_time", 0.0) / 1e6  # Convert nanoseconds to milliseconds
+                time_unit = bench.get("time_unit", "ms")
+                raw_time = bench.get("real_time", 0.0)
+                
+                # Convert to milliseconds based on actual time unit
+                if time_unit == "ms":
+                    time_ms = raw_time  # Already in milliseconds
+                elif time_unit == "ns":
+                    time_ms = raw_time / 1e6  # Convert nanoseconds to milliseconds  
+                elif time_unit == "s":
+                    time_ms = raw_time * 1000  # Convert seconds to milliseconds
+                else:
+                    time_ms = raw_time  # Assume milliseconds as fallback
                 
                 # Extract dataset from benchmark name
                 dataset = "unknown"
@@ -185,17 +196,35 @@ class UnifiedBenchmarkSuite:
                 elif "LargeGrid" in name:
                     dataset = "large_grid"
                 
-                # Parse technique from benchmark name or use StandaloneComparativeAnalysis
-                if "StandaloneComparativeAnalysis" in name:
+                # Extract technique from benchmark name
+                technique = "unknown"
+                if "MomentumBP" in name:
+                    technique = "Momentum-Enhanced BP"
+                elif "CircularBP" in name:
+                    technique = "Circular BP"
+                elif "MambaSSM" in name:
+                    technique = "Mamba SSM"
+                elif "StandaloneComparativeAnalysis" in name:
                     # This benchmark runs all techniques - we need to extract results from logs
                     # For now, skip this and rely on individual technique benchmarks
                     continue
-                elif "UnifiedComparison" in name:
-                    # These are the individual technique comparison benchmarks
-                    # The actual technique results come from the C++ logging output
-                    # We'll parse the structured logs to extract real performance data
-                    parsed_results = self._parse_comparative_benchmark_logs(name, time_ms, dataset, timestamp)
-                    results.extend(parsed_results)
+                
+                # Skip if we couldn't identify the technique
+                if technique == "unknown":
+                    continue
+                    
+                # Create result for individual technique benchmark
+                result = UnifiedBenchmarkResult(
+                    technique_name=technique,
+                    dataset_name=dataset,
+                    inference_time_ms=time_ms,
+                    memory_usage_mb=0.0,  # Will be filled from logging if available
+                    converged=True,  # Default assumption
+                    convergence_iterations=0,
+                    final_accuracy=0.0,
+                    timestamp=timestamp
+                )
+                results.append(result)
                 
         except json.JSONDecodeError as e:
             print(f"⚠️  Could not parse JSON output: {e}")
