@@ -17,7 +17,7 @@ brew install uv
 ### 2. Automated Setup (Recommended)
 ```bash
 # Run the setup script
-./setup_venv.sh
+./setup_python.sh
 
 # Activate the environment
 source .venv/bin/activate
@@ -48,8 +48,8 @@ uv pip install -r requirements-dev.txt
 source .venv/bin/activate
 
 # Run any Python tool
-python3 tools/run_unified_benchmarks.py
-python3 tools/model_manager.py --help
+python3 run_unified_benchmarks.py
+python3 model_manager.py --help
 
 # Install new packages with uv (much faster!)
 uv pip install new-package
@@ -109,7 +109,7 @@ uv pip install package-name
 ```bash
 # Reset virtual environment
 rm -rf .venv
-./setup_venv.sh
+./setup_python.sh
 ```
 
 ## Integration with Build System

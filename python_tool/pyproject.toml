@@ -3,7 +3,7 @@
 
 # Tool configurations
 [tool.pytest.ini_options]
-testpaths = ["tools"]
+testpaths = ["."]
 python_files = "test_*.py"
 python_functions = "test_*"
 addopts = "-v --tb=short"
