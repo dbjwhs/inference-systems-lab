@@ -2,11 +2,18 @@
 // Copyright (c) 2025 Inference Systems Lab
 
 #include <chrono>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
+
+#ifdef __APPLE__
+    #include <mach/mach.h>
+    #include <mach/task.h>
+#endif
 
 #include <benchmark/benchmark.h>
 
@@ -192,6 +199,12 @@ class UnifiedBenchmarkSuite {
             auto engine_result = momentum_bp::create_momentum_bp_engine(config);
             if (!engine_result.is_ok()) {
                 metrics.converged = false;
+                metrics.inference_time_ms = 0.0;
+                metrics.memory_usage_mb = get_memory_usage_mb();
+                metrics.convergence_iterations = 0;
+                metrics.final_accuracy = 0.0;
+                LOG_ERROR_PRINT("Failed to create Momentum-BP engine: {}",
+                                momentum_bp::to_string(engine_result.unwrap_err()));
                 return metrics;
             }
 
@@ -212,8 +225,7 @@ class UnifiedBenchmarkSuite {
                 metrics.convergence_iterations = bp_metrics.iterations_to_convergence;
                 metrics.final_accuracy =
                     1.0 - bp_metrics.final_residual;  // Convert residual to accuracy
-                metrics.memory_usage_mb =
-                    estimate_memory_usage_mb(model.nodes.size(), model.edges.size());
+                metrics.memory_usage_mb = get_memory_usage_mb();
             }
 
         } catch (const std::exception& e) {
@@ -240,6 +252,12 @@ class UnifiedBenchmarkSuite {
             auto engine_result = circular_bp::create_circular_bp_engine(config);
             if (!engine_result.is_ok()) {
                 metrics.converged = false;
+                metrics.inference_time_ms = 0.0;
+                metrics.memory_usage_mb = get_memory_usage_mb();
+                metrics.convergence_iterations = 0;
+                metrics.final_accuracy = 0.0;
+                LOG_ERROR_PRINT("Failed to create Circular-BP engine: {}",
+                                circular_bp::to_string(engine_result.unwrap_err()));
                 return metrics;
             }
 
@@ -258,8 +276,7 @@ class UnifiedBenchmarkSuite {
                 metrics.converged = bp_metrics.converged;
                 metrics.convergence_iterations = bp_metrics.iterations_to_convergence;
                 metrics.final_accuracy = 1.0 - bp_metrics.final_residual;
-                metrics.memory_usage_mb =
-                    estimate_memory_usage_mb(model.nodes.size(), model.edges.size());
+                metrics.memory_usage_mb = get_memory_usage_mb();
             }
 
         } catch (const std::exception& e) {
@@ -284,6 +301,12 @@ class UnifiedBenchmarkSuite {
             auto engine_result = mamba_ssm::create_mamba_ssm_engine(config);
             if (!engine_result.is_ok()) {
                 metrics.converged = false;
+                metrics.inference_time_ms = 0.0;
+                metrics.memory_usage_mb = get_memory_usage_mb();
+                metrics.convergence_iterations = 0;
+                metrics.final_accuracy = 0.0;
+                LOG_ERROR_PRINT("Failed to create Mamba-SSM engine: {}",
+                                mamba_ssm::to_string(engine_result.unwrap_err()));
                 return metrics;
             }
 
@@ -372,10 +395,42 @@ class UnifiedBenchmarkSuite {
         }
     }
 
-    static double estimate_memory_usage_mb(size_t num_nodes, size_t num_edges) {
-        // Rough estimation: nodes + edges + messages + momentum terms
-        double base_size = (num_nodes * 64 + num_edges * 256) / (1024.0 * 1024.0);  // Convert to MB
-        return std::max(0.1, base_size);  // Minimum 0.1 MB
+    static double get_memory_usage_mb() {
+        // Get actual memory usage using platform-specific APIs
+#ifdef __APPLE__
+        // macOS - use mach task info
+        struct mach_task_basic_info info;
+        mach_msg_type_number_t infoCount = MACH_TASK_BASIC_INFO_COUNT;
+        if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &infoCount) ==
+            KERN_SUCCESS) {
+            return static_cast<double>(info.resident_size) / (1024.0 * 1024.0);
+        }
+#elif defined(__linux__)
+        // Linux - read from /proc/self/status
+        std::ifstream status_file("/proc/self/status");
+        std::string line;
+        while (std::getline(status_file, line)) {
+            if (line.find("VmRSS:") == 0) {
+                std::istringstream iss(line);
+                std::string key, value, unit;
+                iss >> key >> value >> unit;
+                return std::stod(value) / 1024.0;  // Convert KB to MB
+            }
+        }
+#endif
+        // Fallback estimation for unsupported platforms
+        return estimate_memory_usage_mb_fallback();
+    }
+
+    static double estimate_memory_usage_mb_fallback() {
+        // Fallback estimation when platform APIs unavailable
+        // This is a rough estimate based on typical memory usage patterns
+        static size_t baseline_mb = 0;
+        if (baseline_mb == 0) {
+            // Get baseline memory usage at startup (approximate)
+            baseline_mb = 5;  // Assume ~5MB baseline for the process
+        }
+        return static_cast<double>(baseline_mb);
     }
 };
 
@@ -415,9 +470,25 @@ static void BM_UnifiedComparison_MediumChain(benchmark::State& state) {
     }
 }
 
+static void BM_UnifiedComparison_LargeGrid(benchmark::State& state) {
+    auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
+    auto large_dataset = datasets[2];  // "large_grid"
+
+    for (auto _ : state) {
+        auto momentum_metrics = UnifiedBenchmarkSuite::benchmark_momentum_bp(large_dataset);
+        auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(large_dataset);
+        auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(large_dataset);
+
+        benchmark::DoNotOptimize(momentum_metrics);
+        benchmark::DoNotOptimize(circular_metrics);
+        benchmark::DoNotOptimize(mamba_metrics);
+    }
+}
+
 // Register benchmarks
 BENCHMARK(BM_UnifiedComparison_SmallBinary)->Unit(benchmark::kMillisecond);
 BENCHMARK(BM_UnifiedComparison_MediumChain)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_UnifiedComparison_LargeGrid)->Unit(benchmark::kMillisecond);
 
 // Standalone performance comparison
 static void BM_StandaloneComparativeAnalysis(benchmark::State& state) {
