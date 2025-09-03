@@ -66,6 +66,7 @@ add_executable(engines_tests
     tests/test_momentum_bp.cpp
     tests/test_circular_bp.cpp
     tests/test_mamba_ssm.cpp
+    tests/test_unified_benchmarks.cpp
 )
 
 target_link_libraries(engines_tests
