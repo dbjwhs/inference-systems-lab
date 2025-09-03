@@ -1,0 +1,19 @@
+# Tool configurations for Python development tools
+# This is a C++ project with Python tooling, not a Python package
+
+# Tool configurations
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

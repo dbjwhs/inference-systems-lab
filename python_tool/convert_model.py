@@ -13,23 +13,23 @@ This tool provides comprehensive model conversion functionality including:
 
 Usage:
     # Convert PyTorch model to ONNX
-    python3 tools/convert_model.py pytorch-to-onnx model.pt model.onnx \
+    python3 python_tool/convert_model.py pytorch-to-onnx model.pt model.onnx \
         --input-shapes "[1,3,224,224]" --input-names "input" --output-names "output"
     
     # Convert ONNX to TensorRT (requires TensorRT)
-    python3 tools/convert_model.py onnx-to-tensorrt model.onnx model.engine \
+    python3 python_tool/convert_model.py onnx-to-tensorrt model.onnx model.engine \
         --precision fp16 --max-batch-size 8
     
     # Optimize ONNX model
-    python3 tools/convert_model.py optimize-onnx input.onnx output.onnx \
+    python3 python_tool/convert_model.py optimize-onnx input.onnx output.onnx \
         --simplify --fold-constants
     
     # Convert precision
-    python3 tools/convert_model.py convert-precision model.onnx model_fp16.onnx \
+    python3 python_tool/convert_model.py convert-precision model.onnx model_fp16.onnx \
         --from fp32 --to fp16
     
     # Validate conversion
-    python3 tools/convert_model.py validate model1.onnx model2.onnx \
+    python3 python_tool/convert_model.py validate model1.onnx model2.onnx \
         --tolerance 1e-5 --test-inputs sample.npy
 """
 

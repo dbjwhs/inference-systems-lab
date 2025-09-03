@@ -7,7 +7,7 @@ the project's coding standards. It helps enforce the policy that
 no commented code should be committed.
 
 Usage:
-    python3 tools/check_commented_code.py [--fix] [--staged]
+    python3 python_tool/check_commented_code.py [--fix] [--staged]
     
 Exit codes:
     0: No commented code found or all issues fixed

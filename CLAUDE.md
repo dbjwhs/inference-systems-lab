@@ -47,9 +47,9 @@ Recently completed comprehensive schema versioning framework:
 
 #### **Development Tooling Excellence**
 - **Quality Assurance**: `clang-format` (Google Style + modern C++), `clang-tidy` (25+ check categories), pre-commit hooks
-- **Module Scaffolding**: `tools/new_module.py` generates complete module structure with tests
-- **Performance Monitoring**: `tools/run_benchmarks.py` with regression detection and baseline comparison
-- **Coverage Analysis**: `tools/check_coverage.py` with configurable thresholds and HTML reports
+- **Module Scaffolding**: `python_tool/new_module.py` generates complete module structure with tests
+- **Performance Monitoring**: `python_tool/run_benchmarks.py` with regression detection and baseline comparison
+- **Coverage Analysis**: `python_tool/check_coverage.py` with configurable thresholds and HTML reports
 - **Static Analysis**: Comprehensive modernization with systematic fixing tools (1405→650+ issues resolved, plus 12 easy win files completed)
 - **Build Quality**: **ZERO build warnings** achieved - gold standard compilation quality
 - **ML Operations**: Complete toolchain with model_manager.py, convert_model.py, benchmark_inference.py, validate_model.py
@@ -195,7 +195,7 @@ git clone <repository-url>
 cd inference-systems-lab
 
 # Install pre-commit hooks (recommended)
-python3 tools/install_hooks.py --install
+python3 python_tool/install_hooks.py --install
 
 # Standard build
 mkdir build && cd build
@@ -213,20 +213,20 @@ ctest --output-on-failure
 ### Quality Assurance Workflow
 ```bash
 # Automated quality checks (run by pre-commit hooks)
-python3 tools/check_format.py --fix --backup          # Fix formatting
-python3 tools/check_static_analysis.py --check        # Static analysis
-python3 tools/check_eof_newline.py --fix             # POSIX compliance
+python3 python_tool/check_format.py --fix --backup          # Fix formatting
+python3 python_tool/check_static_analysis.py --check        # Static analysis
+python3 python_tool/check_eof_newline.py --fix             # POSIX compliance
 
 # Performance and coverage tracking
-python3 tools/run_benchmarks.py --save-baseline name  # Save baseline
-python3 tools/run_benchmarks.py --compare-against name # Check regressions
-python3 tools/check_coverage.py --threshold 80.0      # Coverage verification
+python3 python_tool/run_benchmarks.py --save-baseline name  # Save baseline
+python3 python_tool/run_benchmarks.py --compare-against name # Check regressions
+python3 python_tool/check_coverage.py --threshold 80.0      # Coverage verification
 ```
 
 ### Module Development
 ```bash
 # Create new module with complete scaffolding
-python3 tools/new_module.py my_module --author "Name" --description "Description"
+python3 python_tool/new_module.py my_module --author "Name" --description "Description"
 # Generates: src/, tests/, examples/, benchmarks/, docs/, CMakeLists.txt
 ```
 
@@ -408,7 +408,7 @@ Beyond the existing 80% coverage requirement, implement:
 - **Memory Safety Bug Fix**: Fixed critical heap-use-after-free in MemoryPool detected by AddressSanitizer
   - Race condition in concurrent vector access during pool expansion
   - Verified fix eliminates all memory errors under high contention
-- **Comprehensive Test Orchestrator**: `tools/run_comprehensive_tests.py` - Single command testing infrastructure  
+- **Comprehensive Test Orchestrator**: `python_tool/run_comprehensive_tests.py` - Single command testing infrastructure  
   - **Clean Builds**: Fresh build directories (Release, Debug, ASan, TSan, UBSan) ensure reproducible results
   - **Complete Test Coverage**: Unit, integration, stress, memory leak, concurrency, benchmarks
   - **Memory Safety Testing**: AddressSanitizer with leak detection (Linux only - `detect_leaks=1`)
@@ -543,27 +543,27 @@ When working on this project:
 **Why this matters:** Taking shortcuts creates technical debt and violates the engineering standards this project maintains. When builds break, the solution is systematic fixes, never disabling functionality.
 
 ### Useful Commands for Development
-- `python3 tools/run_comprehensive_tests.py` - Complete testing: all configs, all tests (RECOMMENDED)
-- `python3 tools/run_comprehensive_tests.py --quick` - Quick smoke tests for development
-- `python3 tools/run_comprehensive_tests.py --memory` - Memory safety focused testing
+- `python3 python_tool/run_comprehensive_tests.py` - Complete testing: all configs, all tests (RECOMMENDED)
+- `python3 python_tool/run_comprehensive_tests.py --quick` - Quick smoke tests for development
+- `python3 python_tool/run_comprehensive_tests.py --memory` - Memory safety focused testing
 - `make clean && make -j4` - Clean build to verify no compilation issues
 - `ctest --output-on-failure` - Run all tests with detailed failure output
-- `python3 tools/check_format.py --fix` - Fix formatting issues
-- `python3 tools/check_static_analysis.py --check` - Verify static analysis
-- `python3 tools/run_benchmarks.py` - Check performance benchmarks
+- `python3 python_tool/check_format.py --fix` - Fix formatting issues
+- `python3 python_tool/check_static_analysis.py --check` - Verify static analysis
+- `python3 python_tool/run_benchmarks.py` - Check performance benchmarks
 
 ### Pre-Commit Workflow Best Practices
 **IMPORTANT**: To avoid commit/hook/fix/commit churn, always run formatting before committing:
 
 ```bash
 # Recommended workflow before any commit:
-python3 tools/check_format.py --fix --staged    # Fix formatting for staged files
+python3 python_tool/check_format.py --fix --staged    # Fix formatting for staged files
 git add -A                                       # Stage formatting fixes
 git commit -m "Your commit message"              # Commit with clean formatting
 
 # Alternative: Run all quality checks at once
-python3 tools/check_format.py --fix
-python3 tools/check_static_analysis.py --check --severity warning
+python3 python_tool/check_format.py --fix
+python3 python_tool/check_static_analysis.py --check --severity warning
 git add -A && git commit -m "Your message"
 
 # Emergency bypass (use sparingly)

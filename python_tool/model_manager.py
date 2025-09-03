@@ -11,28 +11,28 @@ This tool provides comprehensive model registry functionality including:
 
 Usage:
     # Register a new model
-    python3 tools/model_manager.py register model.onnx --version 1.2.0 --stage dev
+    python3 python_tool/model_manager.py register model.onnx --version 1.2.0 --stage dev
     
     # List all registered models
-    python3 tools/model_manager.py list
+    python3 python_tool/model_manager.py list
     
     # Get model details
-    python3 tools/model_manager.py info resnet50 --version 1.2.0
+    python3 python_tool/model_manager.py info resnet50 --version 1.2.0
     
     # Promote model to production
-    python3 tools/model_manager.py promote resnet50 --version 1.2.0 --to production
+    python3 python_tool/model_manager.py promote resnet50 --version 1.2.0 --to production
     
     # Rollback to previous version
-    python3 tools/model_manager.py rollback resnet50 --to 1.1.0
+    python3 python_tool/model_manager.py rollback resnet50 --to 1.1.0
     
     # Validate model file
-    python3 tools/model_manager.py validate model.onnx
+    python3 python_tool/model_manager.py validate model.onnx
     
     # Compare two versions
-    python3 tools/model_manager.py compare resnet50 --from 1.1.0 --to 1.2.0
+    python3 python_tool/model_manager.py compare resnet50 --from 1.1.0 --to 1.2.0
     
     # Export registry to JSON
-    python3 tools/model_manager.py export --output registry.json
+    python3 python_tool/model_manager.py export --output registry.json
 """
 
 import argparse

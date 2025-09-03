@@ -13,27 +13,27 @@ This tool provides comprehensive ML inference performance analysis including:
 
 Usage:
     # Benchmark single model latency
-    python3 tools/benchmark_inference.py latency model.onnx \
+    python3 python_tool/benchmark_inference.py latency model.onnx \
         --iterations 1000 --warmup 100 --input-shape "[1,3,224,224]"
     
     # Benchmark throughput with batch scaling
-    python3 tools/benchmark_inference.py throughput model.onnx \
+    python3 python_tool/benchmark_inference.py throughput model.onnx \
         --batch-sizes "1,4,8,16,32" --duration 30 --target-latency 100
     
     # Compare multiple models
-    python3 tools/benchmark_inference.py compare model1.onnx model2.onnx model3.onnx \
+    python3 python_tool/benchmark_inference.py compare model1.onnx model2.onnx model3.onnx \
         --metrics latency,throughput,memory --output comparison.json
     
     # Profile GPU performance
-    python3 tools/benchmark_inference.py profile model.onnx \
+    python3 python_tool/benchmark_inference.py profile model.onnx \
         --device cuda --profile-kernels --profile-memory
     
     # Regression testing
-    python3 tools/benchmark_inference.py regression model.onnx \
+    python3 python_tool/benchmark_inference.py regression model.onnx \
         --baseline baseline.json --threshold 5.0 --save-results current.json
     
     # Resource monitoring
-    python3 tools/benchmark_inference.py monitor model.onnx \
+    python3 python_tool/benchmark_inference.py monitor model.onnx \
         --duration 60 --track-cpu --track-memory --track-gpu
 """
 

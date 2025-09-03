@@ -18,14 +18,14 @@ Features:
 - Integration with build system and CI/CD
 
 Usage:
-    python tools/check_static_analysis.py [options]
+    python python_tool/check_static_analysis.py [options]
     
 Examples:
-    python tools/check_static_analysis.py --check
-    python tools/check_static_analysis.py --fix --backup
-    python tools/check_static_analysis.py --auto-fix --auto-commit
-    python tools/check_static_analysis.py --check --filter "common/src/*" --severity error
-    python tools/check_static_analysis.py --generate-suppressions
+    python python_tool/check_static_analysis.py --check
+    python python_tool/check_static_analysis.py --fix --backup
+    python python_tool/check_static_analysis.py --auto-fix --auto-commit
+    python python_tool/check_static_analysis.py --check --filter "common/src/*" --severity error
+    python python_tool/check_static_analysis.py --generate-suppressions
 """
 
 import argparse
@@ -716,7 +716,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Determine project root (script is in tools/ subdirectory)
+    # Determine project root (script is in python_tool/ subdirectory)
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     
@@ -817,7 +817,7 @@ Examples:
             if len(report.issues) > 10:
                 print(f"  ... and {len(report.issues) - 10} more")
             
-            print(f"\nTo fix issues automatically: python tools/check_static_analysis.py --fix")
+            print(f"\nTo fix issues automatically: python python_tool/check_static_analysis.py --fix")
             if not args.backup:
                 print("Add --backup to create backup files before fixing")
             

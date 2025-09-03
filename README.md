@@ -94,12 +94,12 @@ This project emphasizes developer productivity with comprehensive automation:
 - **Coverage Tracking**: Automated test coverage analysis with configurable thresholds
 
 ### **Development Scripts**
-- **Module Scaffolding**: `tools/new_module.py` - Generate complete module structure with tests
-- **Performance Monitoring**: `tools/run_benchmarks.py` - Regression detection with baseline comparison
-- **ML Model Management**: `tools/model_manager.py` - Version control and lifecycle management
-- **Model Conversion**: `tools/convert_model.py` - Automated PyTorch→ONNX→TensorRT conversion pipeline
-- **Inference Benchmarking**: `tools/benchmark_inference.py` - ML performance analysis with percentiles
-- **Model Validation**: `tools/validate_model.py` - Correctness and accuracy testing framework
+- **Module Scaffolding**: `python_tool/new_module.py` - Generate complete module structure with tests
+- **Performance Monitoring**: `python_tool/run_benchmarks.py` - Regression detection with baseline comparison
+- **ML Model Management**: `python_tool/model_manager.py` - Version control and lifecycle management
+- **Model Conversion**: `python_tool/convert_model.py` - Automated PyTorch→ONNX→TensorRT conversion pipeline
+- **Inference Benchmarking**: `python_tool/benchmark_inference.py` - ML performance analysis with percentiles
+- **Model Validation**: `python_tool/validate_model.py` - Correctness and accuracy testing framework
 - **Build Automation**: Modular CMake with sanitizers, cross-platform compatibility
 - **Documentation**: Comprehensive guides for formatting, static analysis, and workflow integration
 
@@ -327,7 +327,7 @@ git clone <repository-url>
 cd inference-systems-lab
 
 # Setup development environment with tools
-python3 tools/install_hooks.py --install  # Install pre-commit hooks
+python3 python_tool/install_hooks.py --install  # Install pre-commit hooks
 mkdir build && cd build
 
 # Basic build (Core functionality only)
@@ -340,8 +340,8 @@ make -j$(nproc)
 
 # Verify installation
 ctest --output-on-failure
-python3 tools/check_format.py --check
-python3 tools/check_static_analysis.py --check
+python3 python_tool/check_format.py --check
+python3 python_tool/check_static_analysis.py --check
 
 # Try ML framework detection demo
 ./engines/ml_framework_detection_demo
@@ -351,16 +351,16 @@ python3 tools/check_static_analysis.py --check
 ### **Comprehensive Testing**
 ```bash
 # Single command for complete testing (recommended before releases)
-python3 tools/run_comprehensive_tests.py              # Full testing: all configs, all tests
+python3 python_tool/run_comprehensive_tests.py              # Full testing: all configs, all tests
 
 # Quick smoke tests (for rapid iteration)
-python3 tools/run_comprehensive_tests.py --quick      # Fast: essential tests only
+python3 python_tool/run_comprehensive_tests.py --quick      # Fast: essential tests only
 
 # Memory safety focused testing
-python3 tools/run_comprehensive_tests.py --memory     # Focus: AddressSanitizer, leak detection
+python3 python_tool/run_comprehensive_tests.py --memory     # Focus: AddressSanitizer, leak detection
 
 # Preserve build dirs for debugging
-python3 tools/run_comprehensive_tests.py --no-clean   # Keep: build directories after testing
+python3 python_tool/run_comprehensive_tests.py --no-clean   # Keep: build directories after testing
 ```
 
 **What the comprehensive testing includes:**
@@ -373,29 +373,29 @@ python3 tools/run_comprehensive_tests.py --no-clean   # Keep: build directories 
 ### **Development Workflow**
 ```bash
 # Quality assurance (automated via pre-commit hooks)
-python3 tools/check_format.py --fix --backup          # Fix formatting issues with backup
-python3 tools/check_static_analysis.py --fix --backup # Fix static analysis issues with backup
-python3 tools/check_eof_newline.py --fix --backup     # Fix EOF newlines with backup
+python3 python_tool/check_format.py --fix --backup          # Fix formatting issues with backup
+python3 python_tool/check_static_analysis.py --fix --backup # Fix static analysis issues with backup
+python3 python_tool/check_eof_newline.py --fix --backup     # Fix EOF newlines with backup
 
 # Performance and quality tracking
-python3 tools/run_benchmarks.py --save-baseline baseline_name    # Save performance baseline
-python3 tools/run_benchmarks.py --compare-against baseline_name  # Check for regressions
-python3 tools/check_coverage.py --threshold 80.0 --skip-build    # Check coverage (build separately)
+python3 python_tool/run_benchmarks.py --save-baseline baseline_name    # Save performance baseline
+python3 python_tool/run_benchmarks.py --compare-against baseline_name  # Check for regressions
+python3 python_tool/check_coverage.py --threshold 80.0 --skip-build    # Check coverage (build separately)
 
 # Module development
-python3 tools/new_module.py my_module --author "Your Name" --description "Module description"
+python3 python_tool/new_module.py my_module --author "Your Name" --description "Module description"
 
 # ML model management workflow
-python3 tools/model_manager.py register model.onnx --version 1.2.0 --author "Team"
-python3 tools/convert_model.py pytorch-to-onnx model.pt model.onnx --input-shape 1,3,224,224
-python3 tools/benchmark_inference.py latency model.onnx --samples 1000 --percentiles 50,95,99
-python3 tools/validate_model.py validate model.onnx --level standard --output report.json
+python3 python_tool/model_manager.py register model.onnx --version 1.2.0 --author "Team"
+python3 python_tool/convert_model.py pytorch-to-onnx model.pt model.onnx --input-shape 1,3,224,224
+python3 python_tool/benchmark_inference.py latency model.onnx --samples 1000 --percentiles 50,95,99
+python3 python_tool/validate_model.py validate model.onnx --level standard --output report.json
 ```
 
 ## 🧪 **Quality Standards**
 
 ### **Testing Requirements**
-- **Comprehensive Testing**: Single-command test orchestrator (`tools/run_comprehensive_tests.py`) for systematic validation
+- **Comprehensive Testing**: Single-command test orchestrator (`python_tool/run_comprehensive_tests.py`) for systematic validation
 - **Coverage Excellence**: 87%+ code coverage achieved with unit, integration, stress, and performance tests
 - **Memory Safety Testing**: AddressSanitizer, ThreadSanitizer, UndefinedBehaviorSanitizer integration with leak detection
 - **Multiple Build Configurations**: Release, Debug, Sanitizer builds with clean build directories
@@ -424,10 +424,10 @@ python3 tools/validate_model.py validate model.onnx --level standard --output re
 - [x] **Performance**: Zero-cost abstractions with 1.02x overhead ratio
 
 ### **Phase 3: ML Tooling Infrastructure (COMPLETED ✅)**
-- [x] **Model Management**: `tools/model_manager.py` with version control and lifecycle
-- [x] **Model Conversion**: `tools/convert_model.py` with PyTorch→ONNX→TensorRT pipeline
-- [x] **Performance Analysis**: `tools/benchmark_inference.py` with latency percentiles and GPU profiling
-- [x] **Model Validation**: `tools/validate_model.py` with multi-level correctness testing
+- [x] **Model Management**: `python_tool/model_manager.py` with version control and lifecycle
+- [x] **Model Conversion**: `python_tool/convert_model.py` with PyTorch→ONNX→TensorRT pipeline
+- [x] **Performance Analysis**: `python_tool/benchmark_inference.py` with latency percentiles and GPU profiling
+- [x] **Model Validation**: `python_tool/validate_model.py` with multi-level correctness testing
 
 ### **Phase 4: Enterprise Test Coverage (COMPLETED ✅)**
 - [x] **Critical Test Implementation**: Comprehensive testing of inference_builders.cpp (0% → 65% coverage)
@@ -489,7 +489,7 @@ python3 tools/validate_model.py validate model.onnx --level standard --output re
 **Generate Documentation Locally:**
 ```bash
 # Build and copy documentation to committed location (requires Doxygen)
-python3 tools/check_documentation.py --generate --copy
+python3 python_tool/check_documentation.py --generate --copy
 
 # Or use traditional CMake approach
 mkdir -p build && cd build
