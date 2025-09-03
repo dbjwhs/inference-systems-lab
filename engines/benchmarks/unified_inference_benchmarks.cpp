@@ -21,6 +21,7 @@
 #include "../src/circular_bp/circular_bp.hpp"
 #include "../src/mamba_ssm/mamba_ssm.hpp"
 #include "../src/momentum_bp/momentum_bp.hpp"
+#include "unified_benchmark_config.hpp"
 
 using namespace inference_lab::engines;
 using inference_lab::common::LogLevel;
@@ -46,7 +47,7 @@ class UnifiedDatasetGenerator {
 
     static momentum_bp::GraphicalModel create_momentum_bp_model(const TestDataset& dataset) {
         momentum_bp::GraphicalModel model;
-        std::mt19937 rng(42);  // Fixed seed for reproducibility
+        std::mt19937 rng(UnifiedBenchmarkConfig::RANDOM_SEED);  // Fixed seed for reproducibility
         std::uniform_real_distribution<double> potential_dist(0.1, 0.9);
 
         // Create nodes
@@ -58,19 +59,29 @@ class UnifiedDatasetGenerator {
             model.node_index[i] = i - 1;
         }
 
-        // Create simple chain topology for all datasets
-        for (size_t i = 1; i < dataset.num_nodes; ++i) {
-            std::uniform_real_distribution<double> edge_dist(0.2, 1.8);
-            momentum_bp::EdgePotential edge{static_cast<momentum_bp::EdgeId>(i),
-                                            static_cast<momentum_bp::NodeId>(i),
-                                            static_cast<momentum_bp::NodeId>(i + 1),
+        // Create standardized edge structure with equivalent complexity to other techniques
+        // Use dataset.num_edges to ensure same computational load across all techniques
+        std::uniform_real_distribution<double> edge_dist(0.2, 1.8);
+        std::uniform_int_distribution<size_t> node_dist(1, dataset.num_nodes);
+
+        for (size_t edge_id = 1; edge_id <= dataset.num_edges; ++edge_id) {
+            size_t node1, node2;
+            // Ensure different nodes and avoid duplicates
+            do {
+                node1 = node_dist(rng);
+                node2 = node_dist(rng);
+            } while (node1 == node2);
+
+            momentum_bp::EdgePotential edge{static_cast<momentum_bp::EdgeId>(edge_id),
+                                            static_cast<momentum_bp::NodeId>(node1),
+                                            static_cast<momentum_bp::NodeId>(node2),
                                             {{edge_dist(rng), edge_dist(rng)},
                                              {edge_dist(rng), edge_dist(rng)}}};
             model.edges.push_back(edge);
 
-            // Add neighbors
-            model.nodes[i - 1].neighbors.push_back(i + 1);
-            model.nodes[i].neighbors.push_back(i);
+            // Add neighbors bidirectionally
+            model.nodes[node1 - 1].neighbors.push_back(node2);
+            model.nodes[node2 - 1].neighbors.push_back(node1);
         }
 
         return model;
@@ -78,7 +89,7 @@ class UnifiedDatasetGenerator {
 
     static circular_bp::GraphicalModel create_circular_bp_model(const TestDataset& dataset) {
         circular_bp::GraphicalModel model;
-        std::mt19937 rng(42);  // Same seed for consistency
+        std::mt19937 rng(UnifiedBenchmarkConfig::RANDOM_SEED);  // Same seed for consistency
         std::uniform_real_distribution<double> potential_dist(0.1, 0.9);
 
         // Create nodes
@@ -90,30 +101,29 @@ class UnifiedDatasetGenerator {
             model.node_index[i] = i - 1;
         }
 
-        // Create chain with cycle for circular BP
+        // Create standardized edge structure with same complexity as other techniques
+        // Use exact same number of edges to ensure fair computational comparison
         std::uniform_real_distribution<double> edge_dist(0.2, 1.8);
-        for (size_t i = 1; i < dataset.num_nodes; ++i) {
-            circular_bp::EdgePotential edge{static_cast<circular_bp::EdgeId>(i),
-                                            static_cast<circular_bp::NodeId>(i),
-                                            static_cast<circular_bp::NodeId>(i + 1),
+        std::uniform_int_distribution<size_t> node_dist(1, dataset.num_nodes);
+
+        for (size_t edge_id = 1; edge_id <= dataset.num_edges; ++edge_id) {
+            size_t node1, node2;
+            // Ensure different nodes and avoid duplicates
+            do {
+                node1 = node_dist(rng);
+                node2 = node_dist(rng);
+            } while (node1 == node2);
+
+            circular_bp::EdgePotential edge{static_cast<circular_bp::EdgeId>(edge_id),
+                                            static_cast<circular_bp::NodeId>(node1),
+                                            static_cast<circular_bp::NodeId>(node2),
                                             {{edge_dist(rng), edge_dist(rng)},
                                              {edge_dist(rng), edge_dist(rng)}}};
             model.edges.push_back(edge);
 
-            model.nodes[i - 1].neighbors.push_back(i + 1);
-            model.nodes[i].neighbors.push_back(i);
-        }
-
-        // Add cycle for circular BP testing
-        if (dataset.num_nodes > 3) {
-            circular_bp::EdgePotential cycle_edge{
-                static_cast<circular_bp::EdgeId>(dataset.num_nodes),
-                static_cast<circular_bp::NodeId>(dataset.num_nodes),
-                static_cast<circular_bp::NodeId>(1),
-                {{edge_dist(rng), edge_dist(rng)}, {edge_dist(rng), edge_dist(rng)}}};
-            model.edges.push_back(cycle_edge);
-            model.nodes[dataset.num_nodes - 1].neighbors.push_back(1);
-            model.nodes[0].neighbors.push_back(dataset.num_nodes);
+            // Add neighbors bidirectionally
+            model.nodes[node1 - 1].neighbors.push_back(node2);
+            model.nodes[node2 - 1].neighbors.push_back(node1);
         }
 
         return model;
@@ -121,8 +131,11 @@ class UnifiedDatasetGenerator {
 
     static common::ml::FloatTensor create_mamba_sequence_data(const TestDataset& dataset) {
         size_t batch_size = 1;
-        size_t seq_len = dataset.num_nodes * 10;  // Scale sequence length
-        size_t d_model = 128;
+        // Scale sequence length proportional to computational complexity (nodes + edges)
+        // This ensures equivalent computational load to graph-based techniques
+        size_t computational_units = dataset.num_nodes + dataset.num_edges;
+        size_t seq_len = computational_units * 2;  // Balanced scaling factor
+        size_t d_model = UnifiedBenchmarkConfig::MAMBA_SSM_D_MODEL;
 
         return mamba_ssm::testing::generate_random_sequence(batch_size, seq_len, d_model);
     }
@@ -191,10 +204,11 @@ class UnifiedBenchmarkSuite {
         try {
             // Create engine
             momentum_bp::MomentumBPConfig config;
-            config.max_iterations = 100;
-            config.convergence_threshold = 1e-6;
-            config.enable_momentum = true;
-            config.enable_adagrad = true;
+            config.max_iterations = UnifiedBenchmarkConfig::MOMENTUM_BP_MAX_ITERATIONS;
+            config.convergence_threshold =
+                UnifiedBenchmarkConfig::MOMENTUM_BP_CONVERGENCE_THRESHOLD;
+            config.enable_momentum = UnifiedBenchmarkConfig::MOMENTUM_BP_ENABLE_MOMENTUM;
+            config.enable_adagrad = UnifiedBenchmarkConfig::MOMENTUM_BP_ENABLE_ADAGRAD;
 
             auto engine_result = momentum_bp::create_momentum_bp_engine(config);
             if (!engine_result.is_ok()) {
@@ -244,8 +258,9 @@ class UnifiedBenchmarkSuite {
 
         try {
             circular_bp::CircularBPConfig config;
-            config.max_iterations = 100;
-            config.convergence_threshold = 1e-6;
+            config.max_iterations = UnifiedBenchmarkConfig::CIRCULAR_BP_MAX_ITERATIONS;
+            config.convergence_threshold =
+                UnifiedBenchmarkConfig::CIRCULAR_BP_CONVERGENCE_THRESHOLD;
             config.enable_cycle_penalties = true;
             config.enable_correlation_cancellation = true;
 
@@ -294,9 +309,9 @@ class UnifiedBenchmarkSuite {
 
         try {
             mamba_ssm::MambaSSMConfig config;
-            config.d_state = 16;
+            config.d_state = UnifiedBenchmarkConfig::MAMBA_SSM_D_STATE;
             config.max_seq_len = dataset.num_nodes * 10;
-            config.d_model = 128;
+            config.d_model = UnifiedBenchmarkConfig::MAMBA_SSM_D_MODEL;
 
             auto engine_result = mamba_ssm::create_mamba_ssm_engine(config);
             if (!engine_result.is_ok()) {
@@ -323,8 +338,9 @@ class UnifiedBenchmarkSuite {
             if (result.is_ok()) {
                 auto ssm_metrics = engine->get_metrics();
                 metrics.converged = ssm_metrics.converged;
-                metrics.convergence_iterations = 1;  // SSM is single-pass
-                metrics.final_accuracy = 0.95;       // Default accuracy for SSM
+                metrics.convergence_iterations =
+                    UnifiedBenchmarkConfig::DEFAULT_SSM_CONVERGENCE_ITERATIONS;
+                metrics.final_accuracy = UnifiedBenchmarkConfig::DEFAULT_SSM_ACCURACY;
                 metrics.memory_usage_mb =
                     static_cast<double>(ssm_metrics.memory_usage_bytes) / (1024.0 * 1024.0);
             }
@@ -428,7 +444,7 @@ class UnifiedBenchmarkSuite {
         static size_t baseline_mb = 0;
         if (baseline_mb == 0) {
             // Get baseline memory usage at startup (approximate)
-            baseline_mb = 5;  // Assume ~5MB baseline for the process
+            baseline_mb = UnifiedBenchmarkConfig::DEFAULT_BASELINE_MEMORY_MB;
         }
         return static_cast<double>(baseline_mb);
     }
