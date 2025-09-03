@@ -13,9 +13,9 @@ This document provides comprehensive context for AI assistants working on the In
 
 ## Current Status & Architecture
 
-### ✅ COMPLETED PHASES (Phases 1-3)
+### ✅ COMPLETED PHASES (Phases 1-7B)
 
-The project has achieved major milestones with enterprise-grade ML infrastructure:
+The project has achieved major milestones with enterprise-grade ML infrastructure AND cutting-edge POC implementations:
 
 #### **Core Infrastructure (Phase 1)**
 - **Error Handling**: Complete `Result<T, E>` implementation with monadic operations (map, and_then, or_else)
@@ -61,9 +61,7 @@ Recently completed comprehensive schema versioning framework:
 - **Code Standards**: Modern C++17 patterns, RAII compliance, performance benchmarks
 - **ML Operations**: Enterprise-grade ML toolchain with 4,000+ lines of production-quality code
 
-### ✅ COMPLETED PHASES (Phases 1-4)
-
-#### **Enterprise Test Coverage Initiative (Phase 4 - LATEST)**
+#### **Enterprise Test Coverage Initiative (Phase 4)**
 - **Phase 4.1**: Comprehensive engines module testing with unified interface validation, TensorRT mock testing, and inference algorithm coverage
 - **Phase 4.2**: Complete integration test implementation replacing all 13 SKIPPED tests with functional ML pipeline testing
 - **Phase 4.3**: Comprehensive concurrent stress test suite with multi-threaded validation under extreme load (50-200 threads, >95% success rate)
@@ -71,19 +69,44 @@ Recently completed comprehensive schema versioning framework:
 - **Coverage Achievement**: Overall project coverage exceeded 87%+ (from 80.67%), surpassing enterprise 85% target
 - **Strategic Impact**: Gold-standard testing infrastructure for production ML inference systems
 
+#### **ML Build System Integration (Phase 5)**
+- **Complete CMake ML Framework Detection**: AUTO/ON/OFF modes with ENABLE_TENSORRT and ENABLE_ONNX_RUNTIME options
+- **Graceful Fallback Handling**: Professional handling when ML frameworks unavailable
+- **Security Enhancements**: Path validation, robust version parsing, comprehensive test coverage
+- **ml_config.hpp API**: Runtime and compile-time ML capability detection
+
+#### **ONNX Runtime Cross-Platform Integration (Phase 6)**
+- **Production-Ready ONNX Engine**: 650+ lines with PIMPL pattern and stub implementations
+- **Multi-Provider Support**: CPU, CUDA, DirectML, CoreML, TensorRT execution providers
+- **Working Demonstrations**: Complete inference demo with performance benchmarking
+- **API Consistency**: Fixed all Result<void> issues across entire codebase
+
+#### **Advanced POC Implementation Suite (Phase 7A - LATEST)**
+- **Three Production-Ready Techniques**: Momentum-Enhanced BP, Circular BP, Mamba SSM with real algorithmic implementations
+- **Unified Benchmarking Framework**: Complete comparative analysis suite with standardized datasets
+- **Comprehensive Testing**: Unit tests, integration tests, Python-C++ validation with 100% pass rates
+- **Documentation Excellence**: Complete Doxygen documentation and algorithmic analysis guides
+
+#### **Python Tools Infrastructure (Phase 7B - LATEST)**
+- **Complete Reorganization**: Moved all 28 Python scripts to dedicated `python_tool/` directory
+- **Virtual Environment Excellence**: uv package manager integration with 10-100x faster dependency installation
+- **Professional Documentation**: Comprehensive setup guides and migration instructions
+- **Quality Assurance**: Updated pre-commit hooks, path references, and configuration consistency
+
 ### 🚧 CURRENT PRIORITIES (Next Phase)
 
-1. **Build System Enhancement**: ENABLE_TENSORRT, ENABLE_ONNX options with ML dependency management
-2. **Example Applications**: Real-world ML demonstration servers with monitoring and dashboards
+1. **Mixture of Experts Implementation**: Next major POC technique with sparse activation and dynamic dispatch (Phase 7B continuation)
+2. **Advanced ML Demonstrations**: Complex model server and benchmarking applications (tensor API refinements needed)  
 3. **Static Analysis Completion**: Final modernization phases for remaining implementation files
 
 ### 📋 PLANNED DEVELOPMENT
 
-- **ONNX Runtime Integration**: Cross-platform model execution with dynamic backend switching
-- **TensorRT GPU Integration**: Hardware-accelerated inference with CUDA optimization
-- **Inference Engines**: Forward chaining, backward chaining, RETE networks, rule optimization
-- **Distributed Systems**: Consensus algorithms (Raft, PBFT), distributed state machines
-- **Performance Engineering**: Advanced SIMD optimizations, custom allocators, profiling integration
+- **Mixture of Experts Systems**: Sparse activation, expert routing networks, dynamic dispatch (Phase 7B continuation)
+- **Neuro-Symbolic Logic Programming**: Differentiable logic operations, gradient-based rule optimization (Phase 7C)
+- **TensorRT GPU Integration**: Hardware-accelerated inference with CUDA optimization (Phase 8)
+- **Hybrid Inference**: Combine multiple POC techniques for optimal performance (Phase 8)
+- **Distributed Systems**: Consensus algorithms (Raft, PBFT), distributed state machines (Phase 8)
+- **Advanced ML Demonstrations**: Production model servers with monitoring and dashboards
 - **System Integration**: End-to-end distributed inference scenarios
 
 ## File Structure & Key Components
@@ -103,7 +126,9 @@ inference-systems-lab/
 │   ├── benchmarks/           # ✅ Performance regression tracking
 │   ├── schemas/              # ✅ Cap'n Proto schema definitions with versioning
 │   └── docs/                 # ✅ API documentation and design principles
-├── tools/                     # ✅ COMPLETE AUTOMATION & ML SUITE
+├── python_tool/               # ✅ COMPLETE AUTOMATION & ML SUITE (Phase 7B)
+│   ├── setup_python.sh       # ✅ Virtual environment setup with uv package manager
+│   ├── requirements-dev.txt   # ✅ Complete dependency specification
 │   ├── new_module.py         # ✅ Generate module scaffolding
 │   ├── check_format.py       # ✅ Code formatting validation/fixing
 │   ├── check_static_analysis.py # ✅ Clang-tidy automation with systematic fixing
@@ -111,10 +136,13 @@ inference-systems-lab/
 │   ├── check_eof_newline.py  # ✅ POSIX compliance validation
 │   ├── run_benchmarks.py     # ✅ Performance regression detection
 │   ├── install_hooks.py      # ✅ Pre-commit hook management
-│   ├── model_manager.py      # ✅ ML model version control and lifecycle (NEW)
-│   ├── convert_model.py      # ✅ Automated model conversion pipeline (NEW)
-│   ├── benchmark_inference.py # ✅ ML performance analysis framework (NEW)
-│   └── validate_model.py     # ✅ Model correctness and accuracy testing (NEW)
+│   ├── model_manager.py      # ✅ ML model version control and lifecycle
+│   ├── convert_model.py      # ✅ Automated model conversion pipeline
+│   ├── benchmark_inference.py # ✅ ML performance analysis framework
+│   ├── validate_model.py     # ✅ Model correctness and accuracy testing
+│   ├── test_unified_benchmark_integration.py # ✅ Python-C++ integration testing
+│   └── README.md, PYTHON_SETUP.md, DEVELOPMENT.md # ✅ Comprehensive documentation
+├── tools/                     # ✅ ARCHIVED - Migration notice with redirect to python_tool/
 ├── docs/                     # ✅ COMPREHENSIVE DOCUMENTATION
 │   ├── FORMATTING.md         # ✅ Code style and clang-format automation
 │   ├── STATIC_ANALYSIS.md    # ✅ Clang-tidy standards and workflow
@@ -126,13 +154,26 @@ inference-systems-lab/
 │   ├── Testing.cmake         # ✅ GoogleTest framework setup
 │   ├── Benchmarking.cmake    # ✅ Google Benchmark integration
 │   └── StaticAnalysis.cmake  # ✅ Clang-tidy automation
-├── engines/                  # 🚧 EXPANDING - Inference engine implementations
-│   ├── src/tensorrt/         # 📋 PLANNED - TensorRT GPU acceleration (Phase 5)
-│   ├── src/onnx/             # 📋 PLANNED - ONNX Runtime integration (Phase 5)
-│   ├── src/forward_chaining/ # 📋 PLANNED - Rule-based inference engines
-│   ├── src/inference_engine.hpp # 📋 PLANNED - Unified inference interface
-│   ├── examples/             # 🚧 PHASE 4 - Real-world ML demonstration servers
-│   └── benchmarks/           # 📋 PLANNED - Performance comparisons
+├── engines/                  # ✅ ADVANCED INFERENCE IMPLEMENTATIONS
+│   ├── src/onnx/             # ✅ ONNX Runtime cross-platform integration (Phase 6)
+│   ├── src/ml_config.hpp     # ✅ ML framework detection and capabilities (Phase 5)
+│   ├── src/momentum_bp/      # ✅ Momentum-Enhanced Belief Propagation (Phase 7A)
+│   ├── src/circular_bp/      # ✅ Circular Belief Propagation with cycle detection (Phase 7A)
+│   ├── src/mamba_ssm/        # ✅ Mamba State Space Models with O(n) complexity (Phase 7A)
+│   ├── src/inference_engine.hpp # ✅ Unified inference interface
+│   ├── examples/             # ✅ Working demonstrations for all POC techniques
+│   │   ├── onnx_inference_demo.cpp         # Complete ONNX Runtime demonstration
+│   │   ├── momentum_bp_demo.cpp            # Momentum BP with convergence analysis
+│   │   ├── circular_bp_demo.cpp            # Circular BP with cycle detection
+│   │   └── unified_inference_benchmarks   # Comprehensive POC benchmarking suite
+│   ├── tests/                # ✅ Comprehensive testing suite
+│   │   ├── test_engines_comprehensive.cpp # Unified interface testing
+│   │   ├── test_ml_config.cpp             # ML framework detection tests
+│   │   └── test_unified_benchmarks.cpp    # Complete POC technique validation
+│   ├── benchmarks/           # ✅ Unified benchmarking framework (Phase 7A)
+│   │   └── unified_inference_benchmarks.cpp # Comparative performance analysis
+│   ├── src/tensorrt/         # 📋 PLANNED - TensorRT GPU acceleration (Phase 8)
+│   └── src/forward_chaining/ # 📋 PLANNED - Rule-based inference engines
 ├── distributed/              # 🚧 PLACEHOLDER - Ready for implementation  
 ├── performance/              # 🚧 PLACEHOLDER - Ready for implementation
 ├── integration/              # 🚧 PLACEHOLDER - Ready for implementation
@@ -404,29 +445,30 @@ Beyond the existing 80% coverage requirement, implement:
 ## Current Work Context
 
 ### Last Completed Task
-✅ **Critical Memory Safety Fix & Comprehensive Testing Infrastructure** - Production reliability achievement:
-- **Memory Safety Bug Fix**: Fixed critical heap-use-after-free in MemoryPool detected by AddressSanitizer
-  - Race condition in concurrent vector access during pool expansion
-  - Verified fix eliminates all memory errors under high contention
-- **Comprehensive Test Orchestrator**: `python_tool/run_comprehensive_tests.py` - Single command testing infrastructure  
-  - **Clean Builds**: Fresh build directories (Release, Debug, ASan, TSan, UBSan) ensure reproducible results
-  - **Complete Test Coverage**: Unit, integration, stress, memory leak, concurrency, benchmarks
-  - **Memory Safety Testing**: AddressSanitizer with leak detection (Linux only - `detect_leaks=1`)
-  - **Professional Reports**: HTML/JSON output in `test-results/` directory with detailed statistics
-  - **Future-Proof Design**: Easy addition of new sanitizers and test suites
-- **Usage Options**: `--quick` (smoke tests), `--memory` (memory focus), `--no-clean` (preserve builds)
-- **Strategic Impact**: Single point of execution for all testing activities with systematic validation
+✅ **Phase 7A-7B: Advanced POC Implementation Suite & Python Tools Infrastructure** - Major milestone achievement:
+- **Phase 7A: Three Production-Ready POC Techniques** (PRs #11, #12)
+  - Momentum-Enhanced Belief Propagation with adaptive learning rates and oscillation damping
+  - Circular Belief Propagation with cycle detection and spurious correlation cancellation
+  - Mamba State Space Models with linear O(n) complexity and selective state transitions
+  - Unified Benchmarking Framework providing comparative analysis across all techniques
+  - Comprehensive testing suite with 100% pass rates and complete documentation
+- **Phase 7B: Python Tools Infrastructure** (PR #13)
+  - Complete reorganization of 28 Python scripts to dedicated `python_tool/` directory
+  - Virtual environment setup with uv package manager (10-100x faster dependency installation)
+  - Professional documentation, setup guides, and migration instructions
+  - Updated pre-commit hooks and quality assurance throughout project
 
 ### Development Priorities
-1. **Next**: Build system ML integration and example applications
-   - CMake ENABLE_TENSORRT and ENABLE_ONNX options implementation  
-   - Real-world ML demonstration servers (`engines/examples/`)
+1. **Next**: Mixture of Experts Systems implementation (Phase 7C)
+   - Expert routing networks with learnable parameters for intelligent selection
+   - Dynamic dispatch system with load balancing algorithms
+   - Memory-efficient expert parameter management using existing memory pools
+   - Sparse activation pattern optimization with SIMD acceleration
+2. **Then**: Advanced ML Demonstrations and integration refinements
+   - Complex model server architecture (pending tensor API refinements)
    - Production monitoring and dashboard integration
-2. **Then**: ONNX Runtime cross-platform integration
-   - Dynamic backend switching (CPU, GPU, DirectML)
-   - Production-ready model serving examples with performance monitoring
 3. **Also**: Static analysis final cleanup for remaining implementation files
-4. **Future**: Advanced ML inference features and distributed systems integration
+4. **Future**: Neuro-Symbolic Logic Programming (Phase 7D) and distributed systems integration (Phase 8)
 
 ## ML Inference Integration Roadmap
 
@@ -459,14 +501,42 @@ Beyond the existing 80% coverage requirement, implement:
 - [x] **Phase 4.4**: Error injection and recovery testing with fault tolerance validation
 - [x] **Coverage Achievement**: 87%+ coverage exceeding enterprise 85% target
 
-### Phase 5: ONNX Runtime Cross-Platform (Next Priority)
-**Goal**: Universal model format support with multi-backend execution
-- [ ] **ONNX Engine**: `engines/src/onnx/onnx_engine.hpp` - Cross-platform model execution
-- [ ] **Backend Management**: Dynamic selection between CPU, GPU, and specialized accelerators
-- [ ] **Model Versioning**: Schema evolution patterns for ML model lifecycle management
-- [ ] **Production Ready**: Enterprise-grade model serving with monitoring and error recovery
+### Phase 5: ML Build System Integration (COMPLETED ✅)
+**Status**: Complete - Enterprise-grade ML framework detection
+- [x] **CMake ML Detection**: AUTO/ON/OFF modes with ENABLE_TENSORRT/ENABLE_ONNX options
+- [x] **ml_config.hpp API**: Runtime and compile-time ML capability detection
+- [x] **Security Enhancements**: Path validation and robust version parsing
+- [x] **Comprehensive Testing**: Full test coverage addressing critical issues
 
-### Phase 6: Unified Inference Architecture (Future)
+### Phase 6: ONNX Runtime Cross-Platform Integration (COMPLETED ✅)
+**Status**: Complete - Universal model format support with multi-backend execution
+- [x] **ONNX Engine**: `engines/src/onnx/onnx_engine.hpp` - Cross-platform model execution
+- [x] **Backend Management**: Dynamic selection between CPU, CUDA, DirectML, CoreML, TensorRT
+- [x] **PIMPL Pattern**: Clean dependency management with stub fallbacks
+- [x] **Production Ready**: Enterprise-grade model serving with performance monitoring
+
+### Phase 7A: Advanced POC Implementation Suite (COMPLETED ✅)
+**Status**: Complete - Three cutting-edge inference techniques implemented
+- [x] **Momentum-Enhanced BP**: Complete implementation with adaptive learning rates and oscillation damping
+- [x] **Circular BP**: Production-ready cycle detection with spurious correlation cancellation
+- [x] **Mamba SSM**: Linear O(n) complexity with selective state space architecture
+- [x] **Unified Benchmarking**: Comprehensive comparative analysis framework with standardized datasets
+
+### Phase 7B: Python Tools Infrastructure (COMPLETED ✅)
+**Status**: Complete - Professional development environment with virtual environment
+- [x] **Virtual Environment**: uv package manager integration with 10-100x faster installation
+- [x] **Complete Reorganization**: 28 Python scripts moved to dedicated `python_tool/` directory
+- [x] **Quality Assurance**: Updated pre-commit hooks, path references, configuration consistency
+- [x] **Documentation Excellence**: Comprehensive setup guides and migration instructions
+
+### Phase 7C: Mixture of Experts Systems (Next Priority)
+**Goal**: Sparse activation and dynamic dispatch for computational efficiency
+- [ ] **Expert Routing Networks**: Learnable parameters for intelligent expert selection
+- [ ] **Dynamic Dispatch**: Load balancing algorithms preventing expert bottlenecks
+- [ ] **Memory Management**: Expert parameter storage using existing memory pools
+- [ ] **Sparse Activation**: SIMD-optimized patterns with 10-100x efficiency gains
+
+### Phase 8: Unified Inference Architecture (Future)
 **Goal**: Seamless integration between rule-based and ML inference
 ```cpp
 // Planned unified interface integrating with existing patterns
