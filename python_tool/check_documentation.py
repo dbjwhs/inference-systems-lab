@@ -14,10 +14,10 @@ Key Features:
 - Performance optimized for large codebases
 
 Usage Examples:
-    python3 tools/check_documentation.py --generate          # Generate docs only
-    python3 tools/check_documentation.py --check            # Validate coverage
-    python3 tools/check_documentation.py --generate --check  # Full workflow
-    python3 tools/check_documentation.py --clean            # Clean generated docs
+    python3 python_tool/check_documentation.py --generate          # Generate docs only
+    python3 python_tool/check_documentation.py --check            # Validate coverage
+    python3 python_tool/check_documentation.py --generate --check  # Full workflow
+    python3 python_tool/check_documentation.py --clean            # Clean generated docs
 """
 
 import argparse

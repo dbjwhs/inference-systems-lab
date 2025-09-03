@@ -17,13 +17,13 @@ Features:
 - Configurable thresholds and filters
 
 Usage:
-    python tools/run_benchmarks.py [options]
+    python python_tool/run_benchmarks.py [options]
     
 Examples:
-    python tools/run_benchmarks.py --save-baseline
-    python tools/run_benchmarks.py --compare-against baseline_v1.0.0
-    python tools/run_benchmarks.py --filter "*Result*" --threshold 10.0
-    python tools/run_benchmarks.py --output-json results.json
+    python python_tool/run_benchmarks.py --save-baseline
+    python python_tool/run_benchmarks.py --compare-against baseline_v1.0.0
+    python python_tool/run_benchmarks.py --filter "*Result*" --threshold 10.0
+    python python_tool/run_benchmarks.py --output-json results.json
 """
 
 import argparse
@@ -464,7 +464,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Determine project root (script is in tools/ subdirectory)
+    # Determine project root (script is in python_tool/ subdirectory)
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     

@@ -18,13 +18,13 @@ Features:
 - CI/CD integration with exit codes
 
 Usage:
-    python tools/check_coverage.py [options]
+    python python_tool/check_coverage.py [options]
     
 Examples:
-    python tools/check_coverage.py --threshold 70.0
-    python tools/check_coverage.py --filter "*common*" --html-output coverage.html
-    python tools/check_coverage.py --build-dir custom_build --exclude-dirs "tests,examples"
-    python tools/check_coverage.py --json-output coverage.json
+    python python_tool/check_coverage.py --threshold 70.0
+    python python_tool/check_coverage.py --filter "*common*" --html-output coverage.html
+    python python_tool/check_coverage.py --build-dir custom_build --exclude-dirs "tests,examples"
+    python python_tool/check_coverage.py --json-output coverage.json
 """
 
 import argparse
@@ -573,7 +573,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Determine project root (script is in tools/ subdirectory)
+    # Determine project root (script is in python_tool/ subdirectory)
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     

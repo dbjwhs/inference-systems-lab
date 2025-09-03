@@ -7,7 +7,7 @@ This script provides comprehensive performance comparison across all implemented
 - Circular Belief Propagation  
 - Mamba State Space Models
 
-Integrates with existing tools/run_benchmarks.py infrastructure while providing
+Integrates with existing python_tool/run_benchmarks.py infrastructure while providing
 specialized analysis for inference technique comparison.
 """
 
@@ -657,10 +657,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 tools/run_unified_benchmarks.py --comprehensive
-  python3 tools/run_unified_benchmarks.py --save-baseline v1_0
-  python3 tools/run_unified_benchmarks.py --compare-against v1_0
-  python3 tools/run_unified_benchmarks.py --output-format html
+  python3 python_tool/run_unified_benchmarks.py --comprehensive
+  python3 python_tool/run_unified_benchmarks.py --save-baseline v1_0
+  python3 python_tool/run_unified_benchmarks.py --compare-against v1_0
+  python3 python_tool/run_unified_benchmarks.py --output-format html
         """
     )
     

@@ -8,10 +8,10 @@ This script helps tackle static analysis issues systematically by focusing on on
 at a time, starting with quick wins and building momentum toward larger files.
 
 Usage:
-    python tools/fix_static_analysis_by_file.py --list-files              # Show files by complexity
-    python tools/fix_static_analysis_by_file.py --fix-file <filename>     # Fix specific file
-    python tools/fix_static_analysis_by_file.py --next-easy               # Fix next easiest file
-    python tools/fix_static_analysis_by_file.py --phase 1                 # Show phase 1 files
+    python python_tool/fix_static_analysis_by_file.py --list-files              # Show files by complexity
+    python python_tool/fix_static_analysis_by_file.py --fix-file <filename>     # Fix specific file
+    python python_tool/fix_static_analysis_by_file.py --next-easy               # Fix next easiest file
+    python python_tool/fix_static_analysis_by_file.py --phase 1                 # Show phase 1 files
 """
 
 import argparse
@@ -80,7 +80,7 @@ class StaticAnalysisFileFixer:
         """Load the static analysis JSON report."""
         if not self.report_file.exists():
             print(f"Error: Report file {self.report_file} not found.")
-            print("Run: python tools/check_static_analysis.py --check --output-json static_analysis_report.json")
+            print("Run: python python_tool/check_static_analysis.py --check --output-json static_analysis_report.json")
             sys.exit(1)
             
         with open(self.report_file) as f:
@@ -192,7 +192,7 @@ class StaticAnalysisFileFixer:
         
         # Run static analysis fix on specific file
         cmd = [
-            'python3', 'tools/check_static_analysis.py',
+            'python3', 'python_tool/check_static_analysis.py',
             '--fix',
             '--filter', str(rel_path),
             '--quiet'
@@ -223,7 +223,7 @@ class StaticAnalysisFileFixer:
                 
                 # Show remaining issues
                 check_cmd = [
-                    'python3', 'tools/check_static_analysis.py',
+                    'python3', 'python_tool/check_static_analysis.py',
                     '--check',
                     '--filter', str(rel_path),
                     '--quiet'
