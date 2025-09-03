@@ -18,13 +18,13 @@ Features:
 - Backup and restoration of existing hooks
 
 Usage:
-    python tools/install_hooks.py [options]
+    python python_tool/install_hooks.py [options]
     
 Examples:
-    python tools/install_hooks.py --install           # Install pre-commit hooks
-    python tools/install_hooks.py --uninstall         # Remove pre-commit hooks
-    python tools/install_hooks.py --status            # Check hook status
-    python tools/install_hooks.py --test              # Test hooks on current changes
+    python python_tool/install_hooks.py --install           # Install pre-commit hooks
+    python python_tool/install_hooks.py --uninstall         # Remove pre-commit hooks
+    python python_tool/install_hooks.py --status            # Check hook status
+    python python_tool/install_hooks.py --test              # Test hooks on current changes
 """
 
 import argparse
@@ -204,7 +204,7 @@ check_formatting() {{
     else
         log_error "Code formatting check failed"
         log_info "To fix formatting issues automatically, run:"
-        log_info "  python3 tools/check_format.py --fix"
+        log_info "  python3 python_tool/check_format.py --fix"
         log_info "Then stage the changes and commit again."
         log_info "To bypass this check (not recommended): git commit --no-verify"
         rm -f "$temp_filter_file"
@@ -235,9 +235,9 @@ check_static_analysis() {{
     else
         log_error "Static analysis found critical issues"
         log_info "To see all issues, run:"
-        log_info "  python3 tools/check_static_analysis.py --check"
+        log_info "  python3 python_tool/check_static_analysis.py --check"
         log_info "To fix issues automatically, run:"
-        log_info "  python3 tools/check_static_analysis.py --fix --backup"
+        log_info "  python3 python_tool/check_static_analysis.py --fix --backup"
         log_info "To bypass this check (not recommended): git commit --no-verify"
         rm -f "$temp_filter_file"
         return 1
@@ -268,7 +268,7 @@ check_eof_newlines() {{
     else
         log_error "Found files missing EOF newlines"
         log_info "To fix automatically, run:"
-        log_info "  python3 tools/check_eof_newline.py --fix --backup"
+        log_info "  python3 python_tool/check_eof_newline.py --fix --backup"
         log_info "Then stage the changes and commit again."
         log_info "To bypass this check (not recommended): git commit --no-verify"
         rm -f "$temp_filter_file"
@@ -301,9 +301,9 @@ check_commented_code() {{
         log_error "Found commented-out code in staged files"
         log_info "Commented code violates project coding standards"
         log_info "To review violations, run:"
-        log_info "  python3 tools/check_commented_code.py --staged"
+        log_info "  python3 python_tool/check_commented_code.py --staged"
         log_info "To fix interactively, run:"
-        log_info "  python3 tools/check_commented_code.py --staged --fix"
+        log_info "  python3 python_tool/check_commented_code.py --staged --fix"
         log_info "See CLAUDE.md 'Code Cleanliness Standards' for policy"
         log_info "To bypass this check (not recommended): git commit --no-verify"
         return 1
@@ -683,7 +683,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Determine project root (script is in tools/ subdirectory)
+    # Determine project root (script is in python_tool/ subdirectory)
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     

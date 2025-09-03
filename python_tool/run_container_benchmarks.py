@@ -13,9 +13,9 @@ against standard library implementations. It saves results to JSON for analysis 
 generates performance reports.
 
 Usage:
-    python3 tools/run_container_benchmarks.py [--save-baseline NAME] [--compare-against NAME]
-    python3 tools/run_container_benchmarks.py --quick  # Run quick benchmarks
-    python3 tools/run_container_benchmarks.py --report # Generate markdown report
+    python3 python_tool/run_container_benchmarks.py [--save-baseline NAME] [--compare-against NAME]
+    python3 python_tool/run_container_benchmarks.py --quick  # Run quick benchmarks
+    python3 python_tool/run_container_benchmarks.py --report # Generate markdown report
 """
 
 import argparse

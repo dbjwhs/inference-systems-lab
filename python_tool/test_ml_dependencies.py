@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script to verify all ML dependencies are working correctly in the Nix environment.
-Run with: nix develop -c python3 tools/test_ml_dependencies.py
+Run with: nix develop -c python3 python_tool/test_ml_dependencies.py
 """
 
 import sys

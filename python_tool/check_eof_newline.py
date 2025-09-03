@@ -17,13 +17,13 @@ Features:
 - Performance optimized for large codebases
 
 Usage:
-    python tools/check_eof_newline.py [options]
+    python python_tool/check_eof_newline.py [options]
     
 Examples:
-    python tools/check_eof_newline.py --check              # Check all files
-    python tools/check_eof_newline.py --fix --backup      # Fix with backup
-    python tools/check_eof_newline.py --check --filter "*.py"  # Check Python files only
-    python tools/check_eof_newline.py --check --filter-from-file staged_files.txt
+    python python_tool/check_eof_newline.py --check              # Check all files
+    python python_tool/check_eof_newline.py --fix --backup      # Fix with backup
+    python python_tool/check_eof_newline.py --check --filter "*.py"  # Check Python files only
+    python python_tool/check_eof_newline.py --check --filter-from-file staged_files.txt
 """
 
 import argparse
@@ -261,7 +261,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Determine project root (script is in tools/ subdirectory)
+    # Determine project root (script is in python_tool/ subdirectory)
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     
@@ -329,7 +329,7 @@ Examples:
                 if len(non_compliant_files) > 10:
                     print(f"  ... and {len(non_compliant_files) - 10} more")
             
-            print(f"\nTo fix all files: python tools/check_eof_newline.py --fix")
+            print(f"\nTo fix all files: python python_tool/check_eof_newline.py --fix")
             if not args.backup:
                 print("Add --backup to create backup files before fixing")
             

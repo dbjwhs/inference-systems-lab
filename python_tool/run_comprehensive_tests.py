@@ -10,10 +10,10 @@ This script provides a single point of execution for all testing activities:
 - Future-proof design for easy extension
 
 Usage:
-    python tools/run_comprehensive_tests.py              # Run all tests
-    python tools/run_comprehensive_tests.py --quick      # Quick smoke tests only
-    python tools/run_comprehensive_tests.py --memory     # Focus on memory testing
-    python tools/run_comprehensive_tests.py --parallel   # Run builds in parallel
+    python python_tool/run_comprehensive_tests.py              # Run all tests
+    python python_tool/run_comprehensive_tests.py --quick      # Quick smoke tests only
+    python python_tool/run_comprehensive_tests.py --memory     # Focus on memory testing
+    python python_tool/run_comprehensive_tests.py --parallel   # Run builds in parallel
 """
 
 import argparse
@@ -509,7 +509,7 @@ class TestOrchestrator:
         if (self.root_dir / "build-debug").exists():
             print("  📊 Generating coverage report...")
             subprocess.run(
-                ["python3", "tools/check_coverage.py", "--html"],
+                ["python3", "python_tool/check_coverage.py", "--html"],
                 cwd=self.root_dir,
                 capture_output=True
             )

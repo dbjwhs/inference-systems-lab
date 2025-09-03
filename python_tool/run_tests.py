@@ -8,11 +8,11 @@ A comprehensive test runner that manages CTest execution across all project modu
 Provides unified test execution, reporting, and filtering capabilities.
 
 Usage:
-    python3 tools/run_tests.py                    # Run all tests
-    python3 tools/run_tests.py --module common    # Run specific module tests  
-    python3 tools/run_tests.py --list             # List available tests
-    python3 tools/run_tests.py --verbose          # Verbose output
-    python3 tools/run_tests.py --filter Result    # Run tests matching pattern
+    python3 python_tool/run_tests.py                    # Run all tests
+    python3 python_tool/run_tests.py --module common    # Run specific module tests  
+    python3 python_tool/run_tests.py --list             # List available tests
+    python3 python_tool/run_tests.py --verbose          # Verbose output
+    python3 python_tool/run_tests.py --filter Result    # Run tests matching pattern
 """
 
 import argparse

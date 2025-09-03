@@ -17,13 +17,13 @@ Features:
 - Integration with git for tracking changes
 
 Usage:
-    python tools/check_format.py [options]
+    python python_tool/check_format.py [options]
     
 Examples:
-    python tools/check_format.py --check
-    python tools/check_format.py --fix --backup
-    python tools/check_format.py --check --filter "common/src/*"
-    python tools/check_format.py --fix --exclude "build,cmake-build-debug"
+    python python_tool/check_format.py --check
+    python python_tool/check_format.py --fix --backup
+    python python_tool/check_format.py --check --filter "common/src/*"
+    python python_tool/check_format.py --fix --exclude "build,cmake-build-debug"
 """
 
 import argparse
@@ -342,7 +342,7 @@ Examples:
     
     args = parser.parse_args()
     
-    # Determine project root (script is in tools/ subdirectory)
+    # Determine project root (script is in python_tool/ subdirectory)
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     
@@ -445,7 +445,7 @@ Examples:
             if len(violations) > 20:
                 print(f"  ... and {len(violations) - 20} more violations")
             
-            print(f"\nTo fix these issues, run: python tools/check_format.py --fix")
+            print(f"\nTo fix these issues, run: python python_tool/check_format.py --fix")
             if not args.backup:
                 print("Add --backup to create backup files before formatting")
             
@@ -469,7 +469,7 @@ Examples:
                 
                 print("\nRecommended next steps:")
                 print("1. Review the changes: git diff")
-                print("2. Run tests to ensure functionality: python tools/run_tests.py")
+                print("2. Run tests to ensure functionality: python python_tool/run_tests.py")
                 print("3. Commit the formatting changes: git add -A && git commit -m 'Apply clang-format'")
             else:
                 print("✅ All files are already properly formatted")
