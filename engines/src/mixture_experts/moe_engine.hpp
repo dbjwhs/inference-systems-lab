@@ -1,15 +1,17 @@
 #pragma once
 
-#include <vector>
-#include <memory>
+#include <atomic>
 #include <cstdint>
+#include <memory>
+#include <mutex>
 #include <variant>
+#include <vector>
 
 #include "../../../common/src/result.hpp"
-#include "expert_router.hpp"
 #include "expert_parameters.hpp"
-#include "sparse_activation.hpp"
+#include "expert_router.hpp"
 #include "load_balancer.hpp"
+#include "sparse_activation.hpp"
 
 namespace engines::mixture_experts {
 
@@ -46,6 +48,8 @@ struct MoEInput {
     std::vector<float> features;
     std::size_t batch_size = 1;
     bool enable_load_balancing = true;
+    std::size_t request_id = 0;
+    float priority = 1.0f;
 };
 
 /**
@@ -62,14 +66,14 @@ struct MoEResponse {
 
 /**
  * @brief Main Mixture of Experts inference engine
- * 
+ *
  * This class implements a production-ready Mixture of Experts system with:
  * - Dynamic expert routing with learnable parameters
  * - Load balancing across expert networks
  * - Sparse activation patterns for computational efficiency
  * - Memory-efficient parameter management using existing infrastructure
  * - Integration with existing Result<T,E> error handling patterns
- * 
+ *
  * Performance targets:
  * - 15-25x computational efficiency improvement over single-expert baselines
  * - <5ms expert selection latency per request
@@ -77,21 +81,29 @@ struct MoEResponse {
  * - Support for 100+ concurrent inference requests
  */
 class MoEEngine {
-public:
+  public:
     /**
      * @brief Create MoE engine with specified configuration
      * @param config MoE system configuration parameters
      * @return Result containing initialized engine or error
      */
-    static auto create(const MoEConfig& config) 
+    static auto create(const MoEConfig& config)
         -> inference_lab::common::Result<std::unique_ptr<MoEEngine>, MoEError>;
+
+    // Delete copy and move operations (due to atomic members and complexity)
+    MoEEngine(const MoEEngine&) = delete;
+    MoEEngine& operator=(const MoEEngine&) = delete;
+    MoEEngine(MoEEngine&&) = delete;
+    MoEEngine& operator=(MoEEngine&&) = delete;
+    // Destructor
+    ~MoEEngine() = default;
 
     /**
      * @brief Run inference using mixture of experts
      * @param input Input features and configuration
      * @return Result containing inference response or error
      */
-    auto run_inference(const MoEInput& input) 
+    auto run_inference(const MoEInput& input)
         -> inference_lab::common::Result<MoEResponse, MoEError>;
 
     /**
@@ -112,7 +124,7 @@ public:
      */
     auto validate_system_health() const -> inference_lab::common::Result<std::monostate, MoEError>;
 
-private:
+  private:
     MoEEngine(const MoEConfig& config);
 
     // Core components
@@ -133,20 +145,21 @@ private:
     std::vector<std::size_t> recent_expert_selections_;
 
     // Helper methods
-    auto select_experts(const std::vector<float>& features) 
+    auto select_experts(const std::vector<float>& features)
         -> inference_lab::common::Result<std::vector<std::size_t>, MoEError>;
-    
+
     auto compute_expert_weights(const std::vector<float>& features,
-                               const std::vector<std::size_t>& selected_experts)
+                                const std::vector<std::size_t>& selected_experts)
         -> inference_lab::common::Result<std::vector<float>, MoEError>;
-    
+
     auto execute_expert_inference(const MoEInput& input,
-                                 const std::vector<std::size_t>& selected_experts,
-                                 const std::vector<float>& expert_weights)
+                                  const std::vector<std::size_t>& selected_experts,
+                                  const std::vector<float>& expert_weights)
         -> inference_lab::common::Result<std::vector<float>, MoEError>;
-    
-    auto update_performance_metrics(float routing_latency, float inference_latency,
-                                   const std::vector<std::size_t>& selected_experts) -> void;
+
+    auto update_performance_metrics(float routing_latency,
+                                    float inference_latency,
+                                    const std::vector<std::size_t>& selected_experts) -> void;
 };
 
-} // namespace engines::mixture_experts
+}  // namespace engines::mixture_experts

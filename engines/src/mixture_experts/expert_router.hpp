@@ -1,11 +1,11 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-#include <cstdint>
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <variant>
+#include <vector>
 
 #include "../../../common/src/result.hpp"
 
@@ -39,27 +39,27 @@ struct RoutingStats {
 
 /**
  * @brief Expert routing network with learnable parameters
- * 
+ *
  * Implements intelligent expert selection using gradient-based optimization:
  * - Learnable routing parameters with gradient computation
  * - Entropy-based load balancing to prevent expert collapse
  * - Adaptive routing algorithms with real-time performance monitoring
  * - O(log n) routing complexity scaling with number of experts
- * 
+ *
  * Performance targets:
- * - <5ms routing decision time per inference request  
+ * - <5ms routing decision time per inference request
  * - Expert utilization variance <20% under balanced workloads
  * - Routing algorithm convergence under various input distributions
  * - Graceful degradation when experts become unavailable
  */
 class ExpertRouter {
-public:
+  public:
     /**
      * @brief Create expert router with specified configuration
      * @param config Router network configuration parameters
      * @return Result containing initialized router or error
      */
-    static auto create(const RouterConfig& config) 
+    static auto create(const RouterConfig& config)
         -> inference_lab::common::Result<std::unique_ptr<ExpertRouter>, MoEError>;
 
     /**
@@ -67,17 +67,17 @@ public:
      * @param features Input feature vector
      * @return Result containing selected expert indices or error
      */
-    auto select_experts(const std::vector<float>& features) 
+    auto select_experts(const std::vector<float>& features)
         -> inference_lab::common::Result<std::vector<std::size_t>, MoEError>;
 
     /**
      * @brief Compute expert selection weights using routing network
-     * @param features Input feature vector  
+     * @param features Input feature vector
      * @param selected_experts Previously selected expert indices
      * @return Result containing expert weights or error
      */
     auto compute_expert_weights(const std::vector<float>& features,
-                               const std::vector<std::size_t>& selected_experts)
+                                const std::vector<std::size_t>& selected_experts)
         -> inference_lab::common::Result<std::vector<float>, MoEError>;
 
     /**
@@ -88,8 +88,8 @@ public:
      * @return Result indicating update success or error
      */
     auto update_routing_parameters(const std::vector<float>& features,
-                                  const std::vector<std::size_t>& selected_experts,
-                                  float performance_score)
+                                   const std::vector<std::size_t>& selected_experts,
+                                   float performance_score)
         -> inference_lab::common::Result<std::monostate, MoEError>;
 
     /**
@@ -109,14 +109,14 @@ public:
      */
     auto reset_statistics() -> void;
 
-private:
+  private:
     explicit ExpertRouter(const RouterConfig& config);
 
     // Routing network parameters (learnable)
-    std::vector<std::vector<float>> routing_weights_;      // [hidden_dim x input_dim]
-    std::vector<float> routing_biases_;                    // [hidden_dim]
-    std::vector<std::vector<float>> expert_weights_;       // [num_experts x hidden_dim]
-    std::vector<float> expert_biases_;                     // [num_experts]
+    std::vector<std::vector<float>> routing_weights_;  // [hidden_dim x input_dim]
+    std::vector<float> routing_biases_;                // [hidden_dim]
+    std::vector<std::vector<float>> expert_weights_;   // [num_experts x hidden_dim]
+    std::vector<float> expert_biases_;                 // [num_experts]
 
     // Configuration and state
     RouterConfig config_;
@@ -134,21 +134,19 @@ private:
     float load_balance_weight_;
 
     // Helper methods
-    auto forward_pass(const std::vector<float>& features) 
+    auto forward_pass(const std::vector<float>& features)
         -> inference_lab::common::Result<std::vector<float>, MoEError>;
-    
-    auto apply_top_k_selection(const std::vector<float>& logits) 
+
+    auto apply_top_k_selection(const std::vector<float>& logits)
         -> inference_lab::common::Result<std::vector<std::size_t>, MoEError>;
-    
-    auto compute_entropy_regularization(const std::vector<float>& probabilities) 
-        -> float;
-    
-    auto update_load_balancing(const std::vector<std::size_t>& selected_experts) 
-        -> void;
-    
+
+    auto compute_entropy_regularization(const std::vector<float>& probabilities) -> float;
+
+    auto update_load_balancing(const std::vector<std::size_t>& selected_experts) -> void;
+
     auto compute_gradients(const std::vector<float>& features,
-                          const std::vector<std::size_t>& selected_experts,
-                          float performance_score)
+                           const std::vector<std::size_t>& selected_experts,
+                           float performance_score)
         -> inference_lab::common::Result<std::monostate, MoEError>;
 
     // Mathematical operations
@@ -157,4 +155,4 @@ private:
     auto sigmoid(float x) -> float { return 1.0f / (1.0f + std::exp(-x)); }
 };
 
-} // namespace engines::mixture_experts
+}  // namespace engines::mixture_experts

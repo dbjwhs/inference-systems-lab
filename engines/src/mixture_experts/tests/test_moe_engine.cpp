@@ -57,6 +57,8 @@ TEST_F(MoEEngineTest, RunInferenceWithValidInput) {
     // Create test input
     MoEInput input;
     input.features = std::vector<float>(256, 1.0f);  // 256-dim input with all 1s
+    input.request_id = 1;
+    input.priority = 1.0f;
 
     auto response_result = engine->run_inference(input);
     ASSERT_TRUE(response_result.is_ok()) << "Inference should succeed with valid input";
@@ -77,6 +79,7 @@ TEST_F(MoEEngineTest, RunInferenceWithEmptyInput) {
     // Create invalid input with empty features
     MoEInput input;
     input.features = std::vector<float>();  // Empty features
+    input.request_id = 1;
 
     auto response_result = engine->run_inference(input);
     ASSERT_TRUE(response_result.is_err()) << "Should fail with empty input features";
@@ -91,7 +94,7 @@ TEST_F(MoEEngineTest, PerformanceMetricsTracking) {
     for (int i = 0; i < 10; ++i) {
         MoEInput input;
         input.features = std::vector<float>(256, static_cast<float>(i));
-        // No request_id field in MoEInput
+        input.request_id = static_cast<std::size_t>(i);
 
         auto response_result = engine->run_inference(input);
         ASSERT_TRUE(response_result.is_ok());
@@ -155,6 +158,7 @@ TEST_F(MoEEngineTest, ConcurrentInferenceRequests) {
             for (int i = 0; i < requests_per_thread; ++i) {
                 MoEInput input;
                 input.features = std::vector<float>(256, static_cast<float>(t * 100 + i));
+                input.request_id = static_cast<std::size_t>(t * 1000 + i);
 
                 auto response_result = engine->run_inference(input);
                 if (response_result.is_ok()) {
@@ -184,7 +188,7 @@ TEST_F(MoEEngineTest, PerformanceLatencyTargets) {
     for (int i = 0; i < 5; ++i) {
         MoEInput input;
         input.features = std::vector<float>(256, 1.0f);
-        // No request_id field in MoEInput
+        input.request_id = static_cast<std::size_t>(i);
         engine->run_inference(input);
     }
 
@@ -195,6 +199,7 @@ TEST_F(MoEEngineTest, PerformanceLatencyTargets) {
     for (int i = 0; i < 20; ++i) {
         MoEInput input;
         input.features = std::vector<float>(256, static_cast<float>(i));
+        input.request_id = static_cast<std::size_t>(i + 100);
 
         auto start = std::chrono::high_resolution_clock::now();
         auto response_result = engine->run_inference(input);

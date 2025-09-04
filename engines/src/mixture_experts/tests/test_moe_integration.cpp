@@ -37,6 +37,8 @@ TEST_F(MoEIntegrationTest, EndToEndInferencePipeline) {
     // Test complete inference pipeline
     MoEInput input;
     input.features = std::vector<float>(512, 1.0f);  // Larger feature vector
+    input.request_id = 1;
+    input.priority = 1.0f;
 
     auto response_result = engine->run_inference(input);
     ASSERT_TRUE(response_result.is_ok()) << "End-to-end inference should succeed";
@@ -84,6 +86,9 @@ TEST_F(MoEIntegrationTest, MultipleRequestsConsistency) {
         for (std::size_t j = 0; j < input.features.size(); ++j) {
             input.features[j] = std::sin(static_cast<float>(i * j)) * 0.5f + 0.5f;
         }
+
+        input.request_id = static_cast<std::size_t>(i);
+        input.priority = 1.0f;
 
         auto response_result = engine->run_inference(input);
         ASSERT_TRUE(response_result.is_ok()) << "Request " << i << " should succeed";
@@ -142,6 +147,9 @@ TEST_F(MoEIntegrationTest, ConcurrentRequestProcessing) {
                     input.features[j] = std::cos(static_cast<float>(t * 100 + i * j)) * 0.3f + 0.7f;
                 }
 
+                input.request_id = static_cast<std::size_t>(t * 1000 + i);
+                input.priority = 1.0f + static_cast<float>(t) * 0.1f;
+
                 auto response_result = engine->run_inference(input);
                 if (response_result.is_ok()) {
                     thread_responses[t].push_back(std::move(response_result).unwrap());
@@ -194,6 +202,9 @@ TEST_F(MoEIntegrationTest, ExpertUtilizationBalancing) {
                 std::sin(pattern_phase + static_cast<float>(j) * 0.01f) * 0.4f + 0.5f;
         }
 
+        input.request_id = static_cast<std::size_t>(i);
+        input.priority = 1.0f;
+
         auto response_result = engine->run_inference(input);
         ASSERT_TRUE(response_result.is_ok()) << "Request " << i << " should succeed";
     }
@@ -243,6 +254,7 @@ TEST_F(MoEIntegrationTest, MemoryUsageTracking) {
     for (int i = 0; i < 20; ++i) {
         MoEInput input;
         input.features = std::vector<float>(512, static_cast<float>(i) * 0.1f);
+        input.request_id = static_cast<std::size_t>(i + 100);
 
         auto response_result = engine->run_inference(input);
         ASSERT_TRUE(response_result.is_ok());
@@ -282,6 +294,7 @@ TEST_F(MoEIntegrationTest, SystemHealthMonitoring) {
     for (int i = 0; i < 30; ++i) {
         MoEInput input;
         input.features = std::vector<float>(512, static_cast<float>(i % 10) * 0.1f + 0.1f);
+        input.request_id = static_cast<std::size_t>(i + 200);
 
         auto response_result = engine->run_inference(input);
         ASSERT_TRUE(response_result.is_ok()) << "Request " << i << " should succeed";
@@ -310,6 +323,7 @@ TEST_F(MoEIntegrationTest, PerformanceTargetsValidation) {
     for (int i = 0; i < 10; ++i) {
         MoEInput input;
         input.features = std::vector<float>(512, 1.0f);
+        input.request_id = static_cast<std::size_t>(i);
         engine->run_inference(input);
     }
 
@@ -323,6 +337,8 @@ TEST_F(MoEIntegrationTest, PerformanceTargetsValidation) {
         for (std::size_t j = 0; j < input.features.size(); ++j) {
             input.features[j] = std::sin(static_cast<float>(i + j) * 0.1f) * 0.5f + 0.5f;
         }
+
+        input.request_id = static_cast<std::size_t>(i + 300);
 
         auto start_time = std::chrono::high_resolution_clock::now();
         auto response_result = engine->run_inference(input);
@@ -392,6 +408,8 @@ TEST_F(MoEIntegrationTest, ErrorRecoveryAndRobustness) {
     for (std::size_t i = 0; i < edge_case_inputs.size(); ++i) {
         MoEInput input;
         input.features = edge_case_inputs[i];
+        input.request_id = static_cast<std::size_t>(i + 400);
+        input.priority = 1.0f;
 
         auto response_result = engine->run_inference(input);
         if (response_result.is_ok()) {

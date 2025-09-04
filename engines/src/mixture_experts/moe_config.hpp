@@ -154,20 +154,10 @@ class MoEConfigValidator {
      */
     static auto recommend_optimizations(const MoESystemConfig& config) -> MoESystemConfig;
 
-    /**
-     * @brief Estimate memory requirements for configuration
-     * @param config Configuration to estimate memory for
-     * @return Estimated memory requirements in bytes
-     */
     static auto estimate_memory_requirements(const MoESystemConfig& config) -> std::size_t;
 
-    /**
-     * @brief Estimate performance characteristics for configuration
-     * @param config Configuration to estimate performance for
-     * @return Pair of (expected_latency_ms, expected_throughput)
-     */
     static auto estimate_performance_characteristics(const MoESystemConfig& config)
-        -> std::pair<float, float>;
+        -> std::pair<float, float>;  // Returns (expected_latency_ms, expected_throughput)
 
   private:
     static auto validate_expert_configuration(const MoESystemConfig& config,
