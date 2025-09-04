@@ -1,14 +1,14 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-#include <cstdint>
 #include <atomic>
-#include <mutex>
 #include <chrono>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include "../../../common/src/result.hpp"
 
@@ -22,11 +22,11 @@ enum class MoEError : std::uint8_t;
 struct LoadBalancerConfig {
     std::size_t num_experts = 8;
     float load_balance_weight = 0.1f;
-    std::size_t monitoring_window_ms = 1000;    // Performance monitoring window
-    std::size_t max_queue_size_per_expert = 50; // Maximum requests queued per expert
-    float overload_threshold = 0.8f;            // Expert utilization threshold for overload
+    std::size_t monitoring_window_ms = 1000;     // Performance monitoring window
+    std::size_t max_queue_size_per_expert = 50;  // Maximum requests queued per expert
+    float overload_threshold = 0.8f;             // Expert utilization threshold for overload
     bool enable_adaptive_routing = true;         // Dynamically adjust routing based on load
-    float expert_capacity_factor = 1.2f;        // Safety factor for expert capacity planning
+    float expert_capacity_factor = 1.2f;         // Safety factor for expert capacity planning
 };
 
 /**
@@ -69,13 +69,13 @@ struct QueuedRequest {
 
 /**
  * @brief Dynamic load balancing and dispatch system
- * 
+ *
  * Implements intelligent work distribution across expert networks:
  * - Real-time load monitoring with performance metrics
  * - Adaptive routing algorithms preventing computational bottlenecks
  * - Queue management with priority scheduling
  * - Automatic expert rebalancing based on utilization patterns
- * 
+ *
  * Performance targets:
  * - Expert utilization variance <20% under balanced workloads
  * - <1 second recovery from individual expert failures
@@ -83,13 +83,13 @@ struct QueuedRequest {
  * - Intelligent work distribution preventing expert bottlenecks
  */
 class LoadBalancer {
-public:
+  public:
     /**
      * @brief Create load balancer with specified configuration
      * @param config Load balancing configuration
      * @return Result containing initialized load balancer or error
      */
-    static auto create(const LoadBalancerConfig& config) 
+    static auto create(const LoadBalancerConfig& config)
         -> inference_lab::common::Result<std::unique_ptr<LoadBalancer>, MoEError>;
 
     /**
@@ -99,7 +99,7 @@ public:
      * @return Result containing selected expert ID or error
      */
     auto select_optimal_expert(const std::vector<std::size_t>& candidate_experts,
-                              const std::vector<float>& expert_weights)
+                               const std::vector<float>& expert_weights)
         -> inference_lab::common::Result<std::size_t, MoEError>;
 
     /**
@@ -114,13 +114,13 @@ public:
     /**
      * @brief Register completion of request processing for expert
      * @param expert_id Expert that handled the request
-     * @param request_id Unique request identifier  
+     * @param request_id Unique request identifier
      * @param processing_time_ms Time taken to process request
      * @return Result indicating completion success or error
      */
-    auto register_request_completion(std::size_t expert_id, 
-                                    std::size_t request_id,
-                                    float processing_time_ms)
+    auto register_request_completion(std::size_t expert_id,
+                                     std::size_t request_id,
+                                     float processing_time_ms)
         -> inference_lab::common::Result<std::monostate, MoEError>;
 
     /**
@@ -153,9 +153,10 @@ public:
      * @brief Validate load balancing system health
      * @return Result indicating system health status
      */
-    auto validate_load_balancing_health() const -> inference_lab::common::Result<std::monostate, MoEError>;
+    auto validate_load_balancing_health() const
+        -> inference_lab::common::Result<std::monostate, MoEError>;
 
-private:
+  private:
     explicit LoadBalancer(const LoadBalancerConfig& config);
 
     // Configuration
@@ -185,67 +186,62 @@ private:
 
     // Helper methods
     auto update_expert_load(std::size_t expert_id, float processing_time_ms) -> void;
-    
+
     auto calculate_utilization_variance() -> float;
-    
-    auto compute_expert_score(std::size_t expert_id, 
-                             const std::vector<float>& expert_weights) -> float;
-    
-    auto select_least_loaded_expert(const std::vector<std::size_t>& candidates) 
-        -> std::size_t;
-    
+
+    auto compute_expert_score(std::size_t expert_id, const std::vector<float>& expert_weights)
+        -> float;
+
+    auto select_least_loaded_expert(const std::vector<std::size_t>& candidates) -> std::size_t;
+
     auto select_weighted_expert(const std::vector<std::size_t>& candidates,
-                               const std::vector<float>& weights) -> std::size_t;
-    
+                                const std::vector<float>& weights) -> std::size_t;
+
     auto is_expert_overloaded(std::size_t expert_id) const -> bool;
-    
+
     auto get_expert_capacity(std::size_t expert_id) const -> float;
-    
+
     auto redistribute_queued_requests(std::size_t failed_expert_id) -> void;
-    
+
     auto update_routing_adjustments() -> void;
 
     // Performance monitoring helpers
     auto update_performance_window() -> void;
-    
+
     auto calculate_load_balance_coefficient() const -> float;
-    
+
     auto detect_load_imbalance() const -> bool;
 
     // Queue management
     auto enqueue_request(const QueuedRequest& request) -> bool;
-    
-    auto dequeue_next_request(std::size_t expert_id) 
+
+    auto dequeue_next_request(std::size_t expert_id)
         -> inference_lab::common::Result<QueuedRequest, MoEError>;
-    
+
     auto get_queue_depth(std::size_t expert_id) const -> std::size_t;
-    
+
     auto cleanup_stale_requests() -> void;
 
     // Adaptive algorithms
     auto compute_adaptive_weights(const std::vector<std::size_t>& candidates,
-                                 const std::vector<float>& routing_weights) 
-        -> std::vector<float>;
-    
-    auto apply_load_balancing_penalty(std::size_t expert_id, float base_weight) 
-        -> float;
+                                  const std::vector<float>& routing_weights) -> std::vector<float>;
+
+    auto apply_load_balancing_penalty(std::size_t expert_id, float base_weight) -> float;
 };
 
 /**
  * @brief RAII request tracker for automatic load balancing
  */
 class RequestTracker {
-public:
-    RequestTracker(LoadBalancer& load_balancer, 
-                   std::size_t expert_id, 
-                   std::size_t request_id);
-    
+  public:
+    RequestTracker(LoadBalancer& load_balancer, std::size_t expert_id, std::size_t request_id);
+
     ~RequestTracker();
 
     // Non-copyable, movable
     RequestTracker(const RequestTracker&) = delete;
     RequestTracker& operator=(const RequestTracker&) = delete;
-    
+
     RequestTracker(RequestTracker&& other) noexcept;
     RequestTracker& operator=(RequestTracker&& other) noexcept;
 
@@ -254,7 +250,7 @@ public:
      */
     auto complete() -> void;
 
-private:
+  private:
     LoadBalancer* load_balancer_;
     std::size_t expert_id_;
     std::size_t request_id_;
@@ -262,4 +258,4 @@ private:
     bool completed_{false};
 };
 
-} // namespace engines::mixture_experts
+}  // namespace engines::mixture_experts
