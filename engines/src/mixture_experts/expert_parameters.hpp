@@ -52,7 +52,7 @@ class ExpertParameterHandle {
      * @brief Get parameter data (may trigger loading from storage)
      * @return Result containing parameter vector or error
      */
-    auto get_parameters() -> inference_lab::common::Result<std::vector<float>&, MoEError>;
+    auto get_parameters() -> inference_lab::common::Result<std::vector<float>, MoEError>;
 
     /**
      * @brief Check if parameters are currently loaded in memory
@@ -70,11 +70,11 @@ class ExpertParameterHandle {
     auto get_parameter_count() const -> std::size_t { return parameter_count_; }
 
   private:
-    std::size_t expert_id_;
-    std::size_t parameter_count_;
-    std::vector<float> parameters_;
+    std::size_t expert_id_{};
+    std::size_t parameter_count_{};
+    std::vector<float> parameters_{};
     std::atomic<bool> loaded_{false};
-    mutable std::mutex parameter_mutex_;
+    mutable std::mutex parameter_mutex_{};
 };
 
 /**
@@ -172,22 +172,21 @@ class ExpertParameters {
         std::size_t expert_id;
         std::shared_ptr<ExpertParameterHandle> handle;
         std::chrono::steady_clock::time_point last_access;
-        std::atomic<std::size_t> access_count{0};
+        std::size_t access_count{0};  // Protected by cache_mutex_
     };
-    std::vector<CacheEntry> parameter_cache_;
-    mutable std::mutex cache_mutex_;
+    std::vector<CacheEntry> parameter_cache_{};
+    mutable std::mutex cache_mutex_{};
 
     // Memory pool integration (will use existing MemoryPool<T>)
-    std::shared_ptr<void> memory_pool_;  // Will be cast to MemoryPool<float>
-
+    std::shared_ptr<void> memory_pool_{};  // Will be cast to MemoryPool<float>
     // Performance monitoring
     mutable std::atomic<std::size_t> total_cache_hits_{0};
     mutable std::atomic<std::size_t> total_cache_misses_{0};
     mutable std::atomic<float> total_memory_usage_mb_{0.0f};
 
     // Compression state
-    std::unordered_map<std::size_t, float> compression_ratios_;
-    mutable std::mutex compression_mutex_;
+    std::unordered_map<std::size_t, float> compression_ratios_{};
+    mutable std::mutex compression_mutex_{};
 
     // Helper methods
     auto load_expert_from_storage(std::size_t expert_id)

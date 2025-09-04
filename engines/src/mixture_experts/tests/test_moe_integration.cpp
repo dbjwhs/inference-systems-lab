@@ -43,7 +43,7 @@ TEST_F(MoEIntegrationTest, EndToEndInferencePipeline) {
     auto response_result = engine->run_inference(input);
     ASSERT_TRUE(response_result.is_ok()) << "End-to-end inference should succeed";
 
-    auto response = response_result.unwrap();
+    auto response = std::move(response_result).unwrap();
 
     // Validate complete response structure
     EXPECT_FALSE(response.outputs.empty()) << "Should produce outputs";
@@ -92,7 +92,7 @@ TEST_F(MoEIntegrationTest, MultipleRequestsConsistency) {
 
         auto response_result = engine->run_inference(input);
         ASSERT_TRUE(response_result.is_ok()) << "Request " << i << " should succeed";
-        responses.push_back(response_result.unwrap());
+        responses.push_back(std::move(response_result).unwrap());
     }
 
     // Validate consistency across all responses
@@ -152,7 +152,7 @@ TEST_F(MoEIntegrationTest, ConcurrentRequestProcessing) {
 
                 auto response_result = engine->run_inference(input);
                 if (response_result.is_ok()) {
-                    thread_responses[t].push_back(response_result.unwrap());
+                    thread_responses[t].push_back(std::move(response_result).unwrap());
                     successful_requests.fetch_add(1);
                 } else {
                     failed_requests.fetch_add(1);
@@ -346,7 +346,7 @@ TEST_F(MoEIntegrationTest, PerformanceTargetsValidation) {
 
         ASSERT_TRUE(response_result.is_ok()) << "Performance measurement request should succeed";
 
-        auto response = response_result.unwrap();
+        auto response = std::move(response_result).unwrap();
         float total_latency =
             std::chrono::duration<float, std::milli>(end_time - start_time).count();
 
@@ -416,7 +416,7 @@ TEST_F(MoEIntegrationTest, ErrorRecoveryAndRobustness) {
             successful_edge_cases++;
 
             // Validate response quality even for edge cases
-            auto response = response_result.unwrap();
+            auto response = std::move(response_result).unwrap();
             EXPECT_FALSE(response.outputs.empty())
                 << "Edge case " << i << " should produce outputs";
             EXPECT_EQ(response.selected_experts.size(), config_.expert_capacity)

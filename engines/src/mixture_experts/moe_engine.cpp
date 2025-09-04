@@ -84,8 +84,6 @@ auto MoEEngine::create(const MoEConfig& config)
 
 auto MoEEngine::run_inference(const MoEInput& input)
     -> inference_lab::common::Result<MoEResponse, MoEError> {
-    auto start_time = std::chrono::high_resolution_clock::now();
-
     // Step 1: Select experts using routing network
     auto routing_start = std::chrono::high_resolution_clock::now();
     auto expert_selection = select_experts(input.features);
@@ -122,7 +120,7 @@ auto MoEEngine::run_inference(const MoEInput& input)
 
     // Calculate active parameters (for sparse activation)
     std::size_t active_parameters = 0;
-    for (auto expert_id : selected_experts) {
+    for (std::size_t i = 0; i < selected_experts.size(); ++i) {
         // Each expert has parameters_per_expert parameters, but only a fraction are active
         // This would be calculated based on sparse activation patterns
         active_parameters += static_cast<std::size_t>(1024 * 0.7f);  // Assuming 70% sparsity

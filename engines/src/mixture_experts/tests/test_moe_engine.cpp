@@ -63,7 +63,7 @@ TEST_F(MoEEngineTest, RunInferenceWithValidInput) {
     auto response_result = engine->run_inference(input);
     ASSERT_TRUE(response_result.is_ok()) << "Inference should succeed with valid input";
 
-    auto response = response_result.unwrap();
+    auto response = std::move(response_result).unwrap();
     EXPECT_FALSE(response.outputs.empty()) << "Should produce non-empty outputs";
     EXPECT_EQ(response.selected_experts.size(), config_.expert_capacity)
         << "Should select exactly expert_capacity experts";
@@ -99,7 +99,7 @@ TEST_F(MoEEngineTest, PerformanceMetricsTracking) {
         auto response_result = engine->run_inference(input);
         ASSERT_TRUE(response_result.is_ok());
 
-        auto response = response_result.unwrap();
+        auto response = std::move(response_result).unwrap();
         EXPECT_GT(response.routing_latency_ms, 0.0f) << "Should track routing latency";
         EXPECT_GT(response.inference_latency_ms, 0.0f) << "Should track inference latency";
         EXPECT_GT(response.active_parameters, 0u) << "Should track active parameters";
@@ -206,7 +206,7 @@ TEST_F(MoEEngineTest, PerformanceLatencyTargets) {
         auto end = std::chrono::high_resolution_clock::now();
 
         ASSERT_TRUE(response_result.is_ok());
-        auto response = response_result.unwrap();
+        auto response = std::move(response_result).unwrap();
 
         float total_latency = std::chrono::duration<float, std::milli>(end - start).count();
         total_latencies.push_back(total_latency);

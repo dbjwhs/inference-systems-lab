@@ -92,6 +92,7 @@ class SparsePattern {
     auto get_indices() const -> const std::vector<std::size_t>& { return indices_; }
 
   private:
+    friend class SparseActivation;
     std::vector<float> values_;         // Non-zero values
     std::vector<std::size_t> indices_;  // Indices of non-zero values
     float sparsity_ratio_;
@@ -230,7 +231,8 @@ class SparseActivation {
     // Dynamic sparsity adaptation
     auto adapt_sparsity_threshold(const std::vector<float>& input_distribution) -> float;
 
-    auto estimate_computational_savings(float sparsity_ratio, std::size_t vector_size) -> float;
+    auto estimate_computational_savings(float sparsity_ratio, std::size_t vector_size) const
+        -> float;
 };
 
 /**

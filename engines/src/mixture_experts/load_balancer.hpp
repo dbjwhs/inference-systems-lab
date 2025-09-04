@@ -34,10 +34,10 @@ struct LoadBalancerConfig {
  */
 struct ExpertLoad {
     std::size_t expert_id;
-    std::atomic<std::size_t> active_requests{0};
-    std::atomic<std::size_t> queued_requests{0};
-    std::atomic<float> average_processing_time_ms{0.0f};
-    std::atomic<float> current_utilization{0.0f};
+    std::size_t active_requests{0};          // Protected by load_tracking_mutex_
+    std::size_t queued_requests{0};          // Protected by load_tracking_mutex_
+    float average_processing_time_ms{0.0f};  // Protected by load_tracking_mutex_
+    float current_utilization{0.0f};         // Protected by load_tracking_mutex_
     std::chrono::steady_clock::time_point last_update;
     bool is_overloaded{false};
 };
@@ -171,9 +171,9 @@ class LoadBalancer {
     std::mutex queue_mutex_;
 
     // Performance monitoring
-    std::atomic<std::size_t> total_requests_processed_{0};
-    std::atomic<std::size_t> total_requests_rejected_{0};
-    std::atomic<float> overall_utilization_variance_{0.0f};
+    std::size_t total_requests_processed_{0};   // Protected by load_tracking_mutex_
+    std::size_t total_requests_rejected_{0};    // Protected by load_tracking_mutex_
+    float overall_utilization_variance_{0.0f};  // Protected by load_tracking_mutex_
 
     // Load balancing algorithms
     std::vector<float> expert_load_history_;

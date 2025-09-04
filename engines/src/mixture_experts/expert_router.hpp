@@ -125,7 +125,7 @@ class ExpertRouter {
 
     // Performance monitoring (thread-safe)
     mutable std::mutex stats_mutex_;
-    std::vector<std::atomic<std::size_t>> expert_selection_counts_;
+    std::vector<std::size_t> expert_selection_counts_;  // Protected by stats_mutex_
     std::vector<float> recent_routing_times_;
     std::vector<float> recent_entropy_scores_;
 

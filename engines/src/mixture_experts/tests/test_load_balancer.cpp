@@ -52,7 +52,7 @@ TEST_F(LoadBalancerTest, SelectOptimalExpertBasicSelection) {
     auto expert_result = load_balancer->select_optimal_expert(candidates, weights);
     ASSERT_TRUE(expert_result.is_ok()) << "Expert selection should succeed";
 
-    auto selected_expert = expert_result.unwrap();
+    auto selected_expert = std::move(expert_result).unwrap();
     EXPECT_TRUE(std::find(candidates.begin(), candidates.end(), selected_expert) !=
                 candidates.end())
         << "Selected expert should be from candidates list";
@@ -149,9 +149,9 @@ TEST_F(LoadBalancerTest, ExpertLoadTracking) {
 
     for (const auto& load : expert_loads) {
         EXPECT_LT(load.expert_id, config_.num_experts);
-        EXPECT_EQ(load.active_requests.load(), 0u);
-        EXPECT_EQ(load.queued_requests.load(), 0u);
-        EXPECT_EQ(load.average_processing_time_ms.load(), 0.0f);
+        EXPECT_EQ(load.active_requests, 0u);
+        EXPECT_EQ(load.queued_requests, 0u);
+        EXPECT_EQ(load.average_processing_time_ms, 0.0f);
         EXPECT_FALSE(load.is_overloaded);
     }
 }
@@ -213,7 +213,7 @@ TEST_F(LoadBalancerTest, ExpertFailureHandling) {
     int failed_expert_selections = 0;
     for (int i = 0; i < 20; ++i) {
         auto expert_result = load_balancer->select_optimal_expert(candidates, weights);
-        if (expert_result.is_ok() && expert_result.unwrap() == failed_expert) {
+        if (expert_result.is_ok() && std::move(expert_result).unwrap() == failed_expert) {
             failed_expert_selections++;
         }
     }
@@ -263,7 +263,7 @@ TEST_F(LoadBalancerTest, AdaptiveRoutingAdjustments) {
     int light_expert_selections = 0;
     for (int i = 0; i < 20; ++i) {
         auto expert_result = load_balancer->select_optimal_expert(candidates, weights);
-        if (expert_result.is_ok() && expert_result.unwrap() == light_expert) {
+        if (expert_result.is_ok() && std::move(expert_result).unwrap() == light_expert) {
             light_expert_selections++;
         }
     }

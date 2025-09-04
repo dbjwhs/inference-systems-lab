@@ -57,7 +57,7 @@ TEST_F(ExpertRouterTest, SelectExpertsWithValidInput) {
     auto experts_result = router->select_experts(features);
     ASSERT_TRUE(experts_result.is_ok()) << "Expert selection should succeed";
 
-    auto selected_experts = experts_result.unwrap();
+    auto selected_experts = std::move(experts_result).unwrap();
     EXPECT_EQ(selected_experts.size(), config_.top_k_experts)
         << "Should select exactly top_k experts";
 
@@ -96,13 +96,13 @@ TEST_F(ExpertRouterTest, ComputeExpertWeightsWithValidInput) {
     // First select experts
     auto experts_result = router->select_experts(features);
     ASSERT_TRUE(experts_result.is_ok());
-    auto selected_experts = experts_result.unwrap();
+    auto selected_experts = std::move(experts_result).unwrap();
 
     // Then compute weights
     auto weights_result = router->compute_expert_weights(features, selected_experts);
     ASSERT_TRUE(weights_result.is_ok()) << "Weight computation should succeed";
 
-    auto weights = weights_result.unwrap();
+    auto weights = std::move(weights_result).unwrap();
     EXPECT_EQ(weights.size(), selected_experts.size())
         << "Should have one weight per selected expert";
 
@@ -144,11 +144,11 @@ TEST_F(ExpertRouterTest, RoutingConsistencyWithSameInput) {
     for (int i = 0; i < 5; ++i) {
         auto experts_result = router->select_experts(features);
         ASSERT_TRUE(experts_result.is_ok());
-        auto selected_experts = experts_result.unwrap();
+        auto selected_experts = std::move(experts_result).unwrap();
 
         auto weights_result = router->compute_expert_weights(features, selected_experts);
         ASSERT_TRUE(weights_result.is_ok());
-        auto weights = weights_result.unwrap();
+        auto weights = std::move(weights_result).unwrap();
 
         all_selections.push_back(selected_experts);
         all_weights.push_back(weights);
@@ -182,7 +182,7 @@ TEST_F(ExpertRouterTest, RoutingDiversityWithDifferentInputs) {
 
         auto experts_result = router->select_experts(features);
         ASSERT_TRUE(experts_result.is_ok());
-        all_selections.push_back(experts_result.unwrap());
+        all_selections.push_back(std::move(experts_result).unwrap());
     }
 
     // Count unique expert selections to verify diversity
@@ -216,7 +216,7 @@ TEST_F(ExpertRouterTest, LoadBalancingBehavior) {
 
         auto experts_result = router->select_experts(features);
         ASSERT_TRUE(experts_result.is_ok());
-        auto selected_experts = experts_result.unwrap();
+        auto selected_experts = std::move(experts_result).unwrap();
 
         // Count selections for each expert
         for (auto expert_id : selected_experts) {
@@ -266,12 +266,11 @@ TEST_F(ExpertRouterTest, UpdateRoutingParametersWithValidGradients) {
     auto router = std::move(router_result).unwrap();
 
     std::vector<float> features(256, 1.0f);
-    std::vector<std::size_t> selected_experts = {0, 1};
-    float performance_score = 0.9f;
+    std::vector<float> gradients(config_.hidden_dimension, 0.1f);
 
-    auto update_result =
-        router->update_routing_parameters(features, selected_experts, performance_score);
-    EXPECT_TRUE(update_result.is_ok()) << "Parameter update should succeed with valid parameters";
+    std::vector<std::size_t> selected_experts = {0, 1};
+    auto update_result = router->update_routing_parameters(features, selected_experts, 0.8f);
+    EXPECT_TRUE(update_result.is_ok()) << "Parameter update should succeed with valid gradients";
 }
 
 TEST_F(ExpertRouterTest, UpdateRoutingParametersWithGradientsDisabled) {
@@ -283,11 +282,10 @@ TEST_F(ExpertRouterTest, UpdateRoutingParametersWithGradientsDisabled) {
     auto router = std::move(router_result).unwrap();
 
     std::vector<float> features(256, 1.0f);
-    std::vector<std::size_t> selected_experts = {0, 1};
-    float performance_score = 0.9f;
+    std::vector<float> gradients(config_.hidden_dimension, 0.1f);
 
-    auto update_result =
-        router->update_routing_parameters(features, selected_experts, performance_score);
+    std::vector<std::size_t> selected_experts = {0, 1};
+    auto update_result = router->update_routing_parameters(features, selected_experts, 0.8f);
     EXPECT_TRUE(update_result.is_err()) << "Parameter update should fail when gradients disabled";
 }
 
