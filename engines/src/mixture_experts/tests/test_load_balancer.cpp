@@ -149,9 +149,9 @@ TEST_F(LoadBalancerTest, ExpertLoadTracking) {
 
     for (const auto& load : expert_loads) {
         EXPECT_LT(load.expert_id, config_.num_experts);
-        EXPECT_EQ(load.active_requests.load(), 0u);
-        EXPECT_EQ(load.queued_requests.load(), 0u);
-        EXPECT_EQ(load.average_processing_time_ms.load(), 0.0f);
+        EXPECT_EQ(load.active_requests, 0u);
+        EXPECT_EQ(load.queued_requests, 0u);
+        EXPECT_EQ(load.average_processing_time_ms, 0.0f);
         EXPECT_FALSE(load.is_overloaded);
     }
 }

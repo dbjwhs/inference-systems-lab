@@ -10,18 +10,23 @@ add_library(mixture_experts
     moe_engine.hpp
     
     # Expert routing with learnable parameters  
+    expert_router.cpp
     expert_router.hpp
     
     # Memory-efficient parameter management
+    expert_parameters.cpp
     expert_parameters.hpp
     
     # SIMD-optimized sparse activation
+    sparse_activation.cpp
     sparse_activation.hpp
     
     # Dynamic load balancing and dispatch
+    load_balancer.cpp
     load_balancer.hpp
     
     # Configuration and hyperparameter management
+    moe_config.cpp
     moe_config.hpp
 )
 
