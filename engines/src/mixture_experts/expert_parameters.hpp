@@ -1,12 +1,12 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-#include <cstdint>
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include "../../../common/src/result.hpp"
 
@@ -45,31 +45,31 @@ struct ParameterStats {
  * @brief Handle to expert parameters with lazy loading
  */
 class ExpertParameterHandle {
-public:
+  public:
     explicit ExpertParameterHandle(std::size_t expert_id, std::size_t parameter_count);
-    
+
     /**
      * @brief Get parameter data (may trigger loading from storage)
      * @return Result containing parameter vector or error
      */
     auto get_parameters() -> inference_lab::common::Result<std::vector<float>&, MoEError>;
-    
+
     /**
      * @brief Check if parameters are currently loaded in memory
      */
     auto is_loaded() const -> bool;
-    
+
     /**
      * @brief Get expert identifier
      */
     auto get_expert_id() const -> std::size_t { return expert_id_; }
-    
+
     /**
      * @brief Get parameter count for this expert
      */
     auto get_parameter_count() const -> std::size_t { return parameter_count_; }
 
-private:
+  private:
     std::size_t expert_id_;
     std::size_t parameter_count_;
     std::vector<float> parameters_;
@@ -79,13 +79,13 @@ private:
 
 /**
  * @brief Memory-efficient expert parameter management system
- * 
+ *
  * Implements optimized parameter storage using existing infrastructure:
  * - Memory pool integration with existing MemoryPool<T> for O(1) allocation
  * - Parameter compression using SIMD optimizations
  * - Lazy loading and streaming for large expert networks
  * - Lock-free concurrent access patterns for thread safety
- * 
+ *
  * Performance targets:
  * - <500MB memory usage per expert with compression
  * - O(1) parameter allocation and deallocation
@@ -94,13 +94,13 @@ private:
  * - Linear memory scaling with number of experts
  */
 class ExpertParameters {
-public:
+  public:
     /**
      * @brief Create expert parameter manager with specified configuration
      * @param config Parameter management configuration
      * @return Result containing initialized manager or error
      */
-    static auto create(const ParameterConfig& config) 
+    static auto create(const ParameterConfig& config)
         -> inference_lab::common::Result<std::unique_ptr<ExpertParameters>, MoEError>;
 
     /**
@@ -108,7 +108,7 @@ public:
      * @param expert_id Expert identifier
      * @return Result containing parameter handle or error
      */
-    auto get_expert_handle(std::size_t expert_id) 
+    auto get_expert_handle(std::size_t expert_id)
         -> inference_lab::common::Result<std::shared_ptr<ExpertParameterHandle>, MoEError>;
 
     /**
@@ -125,8 +125,7 @@ public:
      * @param new_parameters New parameter values
      * @return Result indicating update success or error
      */
-    auto update_expert_parameters(std::size_t expert_id, 
-                                 const std::vector<float>& new_parameters)
+    auto update_expert_parameters(std::size_t expert_id, const std::vector<float>& new_parameters)
         -> inference_lab::common::Result<std::monostate, MoEError>;
 
     /**
@@ -139,7 +138,8 @@ public:
      * @brief Validate parameter storage integrity
      * @return Result indicating storage health status
      */
-    auto validate_storage_integrity() const -> inference_lab::common::Result<std::monostate, MoEError>;
+    auto validate_storage_integrity() const
+        -> inference_lab::common::Result<std::monostate, MoEError>;
 
     /**
      * @brief Compress parameters for specified experts
@@ -157,7 +157,7 @@ public:
     auto cleanup_unused_experts(std::size_t keep_count = 4)
         -> inference_lab::common::Result<std::monostate, MoEError>;
 
-private:
+  private:
     explicit ExpertParameters(const ParameterConfig& config);
 
     // Configuration
@@ -166,7 +166,7 @@ private:
     // Expert parameter storage
     std::vector<std::shared_ptr<ExpertParameterHandle>> expert_handles_;
     std::unordered_map<std::size_t, std::vector<float>> compressed_parameters_;
-    
+
     // Fast cache for frequently accessed experts
     struct CacheEntry {
         std::size_t expert_id;
@@ -178,8 +178,8 @@ private:
     mutable std::mutex cache_mutex_;
 
     // Memory pool integration (will use existing MemoryPool<T>)
-    std::unique_ptr<void> memory_pool_;  // Will be cast to MemoryPool<float>
-    
+    std::shared_ptr<void> memory_pool_;  // Will be cast to MemoryPool<float>
+
     // Performance monitoring
     mutable std::atomic<std::size_t> total_cache_hits_{0};
     mutable std::atomic<std::size_t> total_cache_misses_{0};
@@ -192,22 +192,21 @@ private:
     // Helper methods
     auto load_expert_from_storage(std::size_t expert_id)
         -> inference_lab::common::Result<std::vector<float>, MoEError>;
-    
-    auto store_expert_to_storage(std::size_t expert_id, 
-                                const std::vector<float>& parameters)
+
+    auto store_expert_to_storage(std::size_t expert_id, const std::vector<float>& parameters)
         -> inference_lab::common::Result<std::monostate, MoEError>;
-    
+
     auto compress_parameter_vector(const std::vector<float>& parameters, float ratio)
         -> inference_lab::common::Result<std::vector<float>, MoEError>;
-    
+
     auto decompress_parameter_vector(const std::vector<float>& compressed_params)
         -> inference_lab::common::Result<std::vector<float>, MoEError>;
-    
-    auto update_cache_entry(std::size_t expert_id, 
-                           std::shared_ptr<ExpertParameterHandle> handle) -> void;
-    
+
+    auto update_cache_entry(std::size_t expert_id, std::shared_ptr<ExpertParameterHandle> handle)
+        -> void;
+
     auto find_cache_entry(std::size_t expert_id) -> std::shared_ptr<ExpertParameterHandle>;
-    
+
     auto evict_least_recently_used() -> void;
 
     // Memory management
@@ -216,4 +215,4 @@ private:
     auto calculate_memory_usage() const -> float;
 };
 
-} // namespace engines::mixture_experts
+}  // namespace engines::mixture_experts
