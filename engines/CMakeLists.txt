@@ -24,6 +24,9 @@ if(NOT SQLITE3_FOUND)
     endif()
 endif()
 
+# Add MoE subdirectory - Phase 7C implementation
+add_subdirectory(src/mixture_experts)
+
 # Create engines library
 add_library(engines STATIC
     src/placeholder.cpp
