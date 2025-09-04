@@ -178,7 +178,7 @@ private:
     mutable std::mutex cache_mutex_;
 
     // Memory pool integration (will use existing MemoryPool<T>)
-    std::unique_ptr<void> memory_pool_;  // Will be cast to MemoryPool<float>
+    void* memory_pool_;  // Will be cast to MemoryPool<float> when integrated
     
     // Performance monitoring
     mutable std::atomic<std::size_t> total_cache_hits_{0};

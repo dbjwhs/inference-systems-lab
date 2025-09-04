@@ -42,7 +42,7 @@ auto MoEEngine::create(const MoEConfig& config)
     if (!router_result.is_ok()) {
         return Err(MoEError::ROUTING_NETWORK_FAILURE);
     }
-    engine->expert_router_ = std::move(router_result.unwrap());
+    engine->expert_router_ = std::move(router_result).unwrap();
 
     // Initialize expert parameters
     ParameterConfig param_config{};
@@ -53,7 +53,7 @@ auto MoEEngine::create(const MoEConfig& config)
     if (!param_result.is_ok()) {
         return Err(MoEError::PARAMETER_STORAGE_ERROR);
     }
-    engine->expert_parameters_ = std::move(param_result.unwrap());
+    engine->expert_parameters_ = std::move(param_result).unwrap();
 
     // Initialize sparse activation system
     SparseConfig sparse_config{};
@@ -63,7 +63,7 @@ auto MoEEngine::create(const MoEConfig& config)
     if (!sparse_result.is_ok()) {
         return Err(MoEError::SPARSE_ACTIVATION_ERROR);
     }
-    engine->sparse_activation_ = std::move(sparse_result.unwrap());
+    engine->sparse_activation_ = std::move(sparse_result).unwrap();
 
     // Initialize load balancer
     LoadBalancerConfig lb_config{};
@@ -74,7 +74,7 @@ auto MoEEngine::create(const MoEConfig& config)
     if (!lb_result.is_ok()) {
         return Err(MoEError::LOAD_BALANCING_ERROR);
     }
-    engine->load_balancer_ = std::move(lb_result.unwrap());
+    engine->load_balancer_ = std::move(lb_result).unwrap();
 
     // Initialize expert utilization tracking
     engine->expert_utilization_history_.resize(config.num_experts, 0.0f);
