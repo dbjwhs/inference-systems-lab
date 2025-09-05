@@ -288,7 +288,7 @@ TEST_F(InferenceEngineTest, MockEnginePerformance) {
     EXPECT_LT(avg_time_us, 100.0) << true;
 
     std::ostringstream oss;
-    oss << "Mock engine average inference time: " << std::fixed << std::setprecision(2) 
+    oss << "Mock engine average inference time: " << std::fixed << std::setprecision(2)
         << avg_time_us << " microseconds";
     LOG_INFO_PRINT("{}", oss.str());
 }

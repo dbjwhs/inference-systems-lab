@@ -8,8 +8,8 @@
 #include <variant>
 #include <vector>
 
-#include "../../../common/src/result.hpp"
 #include "../../../common/src/containers.hpp"
+#include "../../../common/src/result.hpp"
 
 namespace engines::mixture_experts {
 

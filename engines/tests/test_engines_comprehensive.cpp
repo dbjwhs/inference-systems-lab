@@ -475,9 +475,8 @@ TEST_F(EnginesComprehensiveTest, PerformanceUnderLoad) {
     EXPECT_EQ(mock_engine->get_inference_count(), NUM_ITERATIONS);
 
     std::ostringstream oss;
-    oss << "Performance test: " << std::fixed << std::setprecision(2) << avg_time_us 
-        << "μs avg, " << std::setprecision(1) << throughput_inferences_per_sec 
-        << " inferences/sec";
+    oss << "Performance test: " << std::fixed << std::setprecision(2) << avg_time_us << "μs avg, "
+        << std::setprecision(1) << throughput_inferences_per_sec << " inferences/sec";
     LOG_INFO_PRINT("{}", oss.str());
 }
 
