@@ -14,6 +14,58 @@
 
 namespace engines::mixture_experts {
 
+// Constants for sparse computation
+namespace {
+constexpr std::size_t DEFAULT_CACHE_LINE_SIZE = 64;
+constexpr std::size_t MIN_SIMD_VECTOR_SIZE_AVX2 = 8;
+constexpr std::size_t MIN_SIMD_VECTOR_SIZE_NEON = 4;
+constexpr std::size_t SIMD_ALIGNMENT_BYTES_AVX2 = 32;
+constexpr std::size_t SIMD_ALIGNMENT_BYTES_NEON = 16;
+constexpr std::size_t FLOAT_SIZE_BYTES = 4;
+constexpr float MICROSECONDS_TO_MILLISECONDS = 1000.0f;
+constexpr float DEFAULT_WEIGHT_FACTOR = 1.0f;
+constexpr float ZERO_THRESHOLD = 0.0f;
+constexpr float UNITY_THRESHOLD = 1.0f;
+constexpr float SPARSITY_ESTIMATE_FACTOR = 0.7f;  // 70% sparsity assumption
+constexpr std::size_t DEFAULT_EXPERT_PARAM_SIZE = 1024;
+constexpr std::size_t DEFAULT_OUTPUT_DIMENSION = 256;
+constexpr std::size_t PERF_WINDOW_SIZE = 1000;
+constexpr float ADAPTIVE_STATS_SMOOTHING_ALPHA = 0.1f;
+constexpr float OVERHEAD_COMPENSATION_FACTOR = 1.1f;
+constexpr float ADAPTIVE_THRESHOLD_MULTIPLIER = 0.5f;
+constexpr float ADAPTIVE_THRESHOLD_MIN_FACTOR = 0.1f;
+constexpr float ADAPTIVE_THRESHOLD_MAX_FACTOR = 10.0f;
+constexpr int BENCHMARK_ITERATIONS = 100;
+constexpr std::size_t BENCHMARK_MATRIX_ROWS = 256;
+}  // anonymous namespace
+
+// Helper function for scalar sparse dot product - shared by all SIMD fallback paths
+static inline float scalar_sparse_dot_product(const float* sparse_values,
+                                              const std::size_t* sparse_indices,
+                                              std::size_t nnz,
+                                              const float* dense_vector) noexcept {
+    float sum = 0.0f;
+    for (std::size_t i = 0; i < nnz; ++i) {
+        sum += sparse_values[i] * dense_vector[sparse_indices[i]];
+    }
+    return sum;
+}
+
+// Helper function for scalar sparse multiply-accumulate with bounds checking
+static inline float scalar_sparse_dot_product_safe(const float* sparse_values,
+                                                   const std::size_t* sparse_indices,
+                                                   std::size_t nnz,
+                                                   const float* dense_vector,
+                                                   std::size_t max_index) noexcept {
+    float sum = 0.0f;
+    for (std::size_t i = 0; i < nnz; ++i) {
+        if (sparse_indices[i] < max_index) {
+            sum += sparse_values[i] * dense_vector[sparse_indices[i]];
+        }
+    }
+    return sum;
+}
+
 // SparsePattern implementation
 
 auto SparsePattern::from_dense(const std::vector<float>& dense_data, float threshold)
@@ -33,7 +85,7 @@ auto SparsePattern::from_dense(const std::vector<float>& dense_data, float thres
     }
 
     pattern.sparsity_ratio_ =
-        1.0f - (static_cast<float>(nnz_count) / static_cast<float>(dense_data.size()));
+        UNITY_THRESHOLD - (static_cast<float>(nnz_count) / static_cast<float>(dense_data.size()));
     return pattern;
 }
 
@@ -56,16 +108,22 @@ auto SparsePattern::get_sparsity_ratio() const -> float {
 // SparseActivation implementation
 
 SparseActivation::SparseActivation(const SparseConfig& config)
-    : config_(config), cache_line_size_(64) {
+    : config_(config), cache_line_size_(DEFAULT_CACHE_LINE_SIZE) {
+    // Static assertions for SIMD alignment requirements
+    static_assert(alignof(float) <= SIMD_ALIGNMENT_BYTES_AVX2,
+                  "Float alignment must be compatible with AVX2/NEON");
+    static_assert(sizeof(float) == FLOAT_SIZE_BYTES, "Float must be 32-bit for SIMD operations");
+
     detect_simd_capabilities();
 
     // Pre-allocate aligned buffer for SIMD operations
-    aligned_buffer_.resize(config_.block_size, 0.0f);
+    aligned_buffer_.resize(config_.block_size, ZERO_THRESHOLD);
 }
 
 auto SparseActivation::create(const SparseConfig& config)
     -> inference_lab::common::Result<std::unique_ptr<SparseActivation>, MoEError> {
-    if (config.sparsity_threshold <= 0.0f || config.sparsity_threshold >= 1.0f) {
+    if (config.sparsity_threshold <= ZERO_THRESHOLD ||
+        config.sparsity_threshold >= UNITY_THRESHOLD) {
         return inference_lab::common::Err(MoEError::SPARSE_ACTIVATION_ERROR);
     }
 
@@ -97,8 +155,8 @@ auto SparseActivation::apply_sparse_activation(const std::vector<float>& input,
         // Apply expert weights with broadcasting if needed
         float weight_factor =
             expert_weights.empty()
-                ? 1.0f
-                : std::accumulate(expert_weights.begin(), expert_weights.end(), 0.0f) /
+                ? DEFAULT_WEIGHT_FACTOR
+                : std::accumulate(expert_weights.begin(), expert_weights.end(), ZERO_THRESHOLD) /
                       static_cast<float>(expert_weights.size());
 
         for (float value : input) {
@@ -118,7 +176,7 @@ auto SparseActivation::apply_sparse_activation(const std::vector<float>& input,
     // Update performance statistics
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    float computation_time = static_cast<float>(duration.count()) / 1000.0f;
+    float computation_time = static_cast<float>(duration.count()) / MICROSECONDS_TO_MILLISECONDS;
 
     update_performance_stats(computation_time, pattern.get_sparsity_ratio(), input.size());
 
@@ -134,7 +192,7 @@ auto SparseActivation::sparse_matrix_vector_multiply(const SparsePattern& sparse
         return inference_lab::common::Err(MoEError::SPARSE_ACTIVATION_ERROR);
     }
 
-    std::vector<float> output(rows, 0.0f);
+    std::vector<float> output(rows, ZERO_THRESHOLD);
 
     const auto& values = sparse_input.get_values();
     const auto& indices = sparse_input.get_indices();
@@ -145,25 +203,20 @@ auto SparseActivation::sparse_matrix_vector_multiply(const SparsePattern& sparse
 
         const float* weight_row = weight_matrix.data() + row * cols;
 
-        if (config_.enable_simd_optimization && avx2_available_ && values.size() >= 8) {
+        if (config_.enable_simd_optimization && avx2_available_ &&
+            values.size() >= MIN_SIMD_VECTOR_SIZE_AVX2) {
             // Use SIMD optimized version
 #ifdef MOE_HAS_X86_SIMD
             sum = sparse_dot_product_avx2(values.data(), indices.data(), values.size(), weight_row);
 #else
             // Fallback to scalar version
-            for (std::size_t i = 0; i < values.size(); ++i) {
-                if (indices[i] < cols) {
-                    sum += values[i] * weight_row[indices[i]];
-                }
-            }
+            sum = scalar_sparse_dot_product_safe(
+                values.data(), indices.data(), values.size(), weight_row, cols);
 #endif
         } else {
             // Scalar version
-            for (std::size_t i = 0; i < values.size(); ++i) {
-                if (indices[i] < cols) {
-                    sum += values[i] * weight_row[indices[i]];
-                }
-            }
+            sum = scalar_sparse_dot_product_safe(
+                values.data(), indices.data(), values.size(), weight_row, cols);
         }
 
         output[row] = sum;
@@ -210,10 +263,10 @@ auto SparseActivation::sparse_elementwise_multiply(const SparsePattern& lhs,
     // Calculate sparsity ratio (approximate)
     std::size_t max_possible_nnz = std::max(lhs_indices.size(), rhs_indices.size());
     if (max_possible_nnz > 0) {
-        result.sparsity_ratio_ = 1.0f - (static_cast<float>(result.values_.size()) /
-                                         static_cast<float>(max_possible_nnz));
+        result.sparsity_ratio_ = UNITY_THRESHOLD - (static_cast<float>(result.values_.size()) /
+                                                    static_cast<float>(max_possible_nnz));
     } else {
-        result.sparsity_ratio_ = 1.0f;
+        result.sparsity_ratio_ = UNITY_THRESHOLD;
     }
 
     return inference_lab::common::Ok(std::move(result));
@@ -258,9 +311,9 @@ auto SparseActivation::sparse_dot_product_avx2(const float* sparse_values,
                                                const float* dense_vector) -> float {
     // Process 8 elements at a time with AVX2
     __m256 sum_vec = _mm256_setzero_ps();
-    std::size_t simd_end = (nnz / 8) * 8;
+    std::size_t simd_end = (nnz / MIN_SIMD_VECTOR_SIZE_AVX2) * MIN_SIMD_VECTOR_SIZE_AVX2;
 
-    for (std::size_t i = 0; i < simd_end; i += 8) {
+    for (std::size_t i = 0; i < simd_end; i += MIN_SIMD_VECTOR_SIZE_AVX2) {
         // Load sparse values
         __m256 sparse_vals = _mm256_load_ps(&sparse_values[i]);
 
@@ -285,10 +338,9 @@ auto SparseActivation::sparse_dot_product_avx2(const float* sparse_values,
 
     float result = _mm_cvtss_f32(sum32);
 
-    // Handle remaining elements
-    for (std::size_t i = simd_end; i < nnz; ++i) {
-        result += sparse_values[i] * dense_vector[sparse_indices[i]];
-    }
+    // Handle remaining elements using scalar helper
+    result += scalar_sparse_dot_product(
+        sparse_values + simd_end, sparse_indices + simd_end, nnz - simd_end, dense_vector);
 
     return result;
 }
@@ -298,11 +350,7 @@ auto SparseActivation::sparse_dot_product_avx2(const float* sparse_values,
                                                std::size_t nnz,
                                                const float* dense_vector) -> float {
     // Fallback scalar implementation
-    float sum = 0.0f;
-    for (std::size_t i = 0; i < nnz; ++i) {
-        sum += sparse_values[i] * dense_vector[sparse_indices[i]];
-    }
-    return sum;
+    return scalar_sparse_dot_product(sparse_values, sparse_indices, nnz, dense_vector);
 }
 #endif
 
@@ -315,7 +363,7 @@ auto SparseActivation::sparse_dot_product_avx512(const float* sparse_values,
 }
 
 #if defined(__ARM_NEON__) || defined(__ARM_NEON)
-#include <arm_neon.h>
+    #include <arm_neon.h>
 
 auto SparseActivation::sparse_dot_product_neon(const float* sparse_values,
                                                const std::size_t* sparse_indices,
@@ -323,9 +371,9 @@ auto SparseActivation::sparse_dot_product_neon(const float* sparse_values,
                                                const float* dense_vector) -> float {
     // Process 4 elements at a time with NEON
     float32x4_t sum_vec = vdupq_n_f32(0.0f);
-    std::size_t simd_end = (nnz / 4) * 4;
+    std::size_t simd_end = (nnz / MIN_SIMD_VECTOR_SIZE_NEON) * MIN_SIMD_VECTOR_SIZE_NEON;
 
-    for (std::size_t i = 0; i < simd_end; i += 4) {
+    for (std::size_t i = 0; i < simd_end; i += MIN_SIMD_VECTOR_SIZE_NEON) {
         // Load sparse values
         float32x4_t sparse_vals = vld1q_f32(&sparse_values[i]);
 
@@ -344,10 +392,9 @@ auto SparseActivation::sparse_dot_product_neon(const float* sparse_values,
     float32x2_t sum_pair = vadd_f32(vget_low_f32(sum_vec), vget_high_f32(sum_vec));
     float result = vget_lane_f32(vpadd_f32(sum_pair, sum_pair), 0);
 
-    // Handle remaining elements
-    for (std::size_t i = simd_end; i < nnz; ++i) {
-        result += sparse_values[i] * dense_vector[sparse_indices[i]];
-    }
+    // Handle remaining elements using scalar helper
+    result += scalar_sparse_dot_product(
+        sparse_values + simd_end, sparse_indices + simd_end, nnz - simd_end, dense_vector);
 
     return result;
 }
@@ -357,11 +404,7 @@ auto SparseActivation::sparse_dot_product_neon(const float* sparse_values,
                                                std::size_t nnz,
                                                const float* dense_vector) -> float {
     // Fallback scalar implementation
-    float sum = 0.0f;
-    for (std::size_t i = 0; i < nnz; ++i) {
-        sum += sparse_values[i] * dense_vector[sparse_indices[i]];
-    }
-    return sum;
+    return scalar_sparse_dot_product(sparse_values, sparse_indices, nnz, dense_vector);
 }
 #endif
 
@@ -386,11 +429,13 @@ auto SparseActivation::adapt_sparsity_threshold(const std::vector<float>& input_
 
     // Adaptive threshold based on input statistics
     // Target the configured sparsity ratio
-    float adaptive_threshold = std::abs(mean) + std_dev * 0.5f;
+    float adaptive_threshold = std::abs(mean) + std_dev * ADAPTIVE_THRESHOLD_MULTIPLIER;
 
     // Clamp to reasonable bounds
-    adaptive_threshold = std::max(adaptive_threshold, config_.sparsity_threshold * 0.1f);
-    adaptive_threshold = std::min(adaptive_threshold, config_.sparsity_threshold * 10.0f);
+    adaptive_threshold =
+        std::max(adaptive_threshold, config_.sparsity_threshold * ADAPTIVE_THRESHOLD_MIN_FACTOR);
+    adaptive_threshold =
+        std::min(adaptive_threshold, config_.sparsity_threshold * ADAPTIVE_THRESHOLD_MAX_FACTOR);
 
     return adaptive_threshold;
 }
@@ -406,8 +451,8 @@ auto SparseActivation::update_performance_stats(float computation_time_ms,
     total_computation_time_ms_.store(new_time);
 
     float current_sparsity = cumulative_sparsity_ratio_.load();
-    float alpha = 0.1f;  // Smoothing factor
-    float new_sparsity = alpha * sparsity_ratio + (1.0f - alpha) * current_sparsity;
+    float alpha = ADAPTIVE_STATS_SMOOTHING_ALPHA;  // Smoothing factor
+    float new_sparsity = alpha * sparsity_ratio + (UNITY_THRESHOLD - alpha) * current_sparsity;
     cumulative_sparsity_ratio_.store(new_sparsity);
 }
 
@@ -442,10 +487,10 @@ auto SparseActivation::estimate_computational_savings(float sparsity_ratio,
                                                       std::size_t vector_size) const -> float {
     // Estimate FLOPS savings from sparse computation
     float dense_flops = static_cast<float>(vector_size);
-    float sparse_flops = dense_flops * (1.0f - sparsity_ratio);
+    float sparse_flops = dense_flops * (UNITY_THRESHOLD - sparsity_ratio);
 
     // Account for sparse overhead (indexing, etc.)
-    float overhead_factor = 1.1f;
+    float overhead_factor = OVERHEAD_COMPENSATION_FACTOR;
     sparse_flops *= overhead_factor;
 
     if (dense_flops > 0.0f) {
@@ -471,7 +516,7 @@ auto SparseActivation::benchmark_sparse_performance(std::size_t vector_size, flo
     -> inference_lab::common::Result<float, MoEError> {
     // Create test vectors
     std::vector<float> test_vector(vector_size);
-    std::iota(test_vector.begin(), test_vector.end(), 1.0f);
+    std::iota(test_vector.begin(), test_vector.end(), DEFAULT_WEIGHT_FACTOR);
 
     // Create sparse pattern with target sparsity
     SparsePattern sparse_pattern =
@@ -479,13 +524,13 @@ auto SparseActivation::benchmark_sparse_performance(std::size_t vector_size, flo
                                   sparsity_ratio * 10.0f);  // Adjust threshold
 
     // Create test weight matrix
-    std::size_t matrix_rows = 256;
-    std::vector<float> weight_matrix(matrix_rows * vector_size, 1.0f);
+    std::size_t matrix_rows = BENCHMARK_MATRIX_ROWS;
+    std::vector<float> weight_matrix(matrix_rows * vector_size, DEFAULT_WEIGHT_FACTOR);
 
     // Benchmark sparse matrix-vector multiplication
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    constexpr int num_iterations = 100;
+    constexpr int num_iterations = BENCHMARK_ITERATIONS;
     for (int i = 0; i < num_iterations; ++i) {
         auto result =
             sparse_matrix_vector_multiply(sparse_pattern, weight_matrix, matrix_rows, vector_size);

@@ -195,8 +195,11 @@ auto LoadBalancer::select_least_loaded_expert(const std::vector<std::size_t>& ca
 auto LoadBalancer::select_weighted_expert(const std::vector<std::size_t>& candidates,
                                           const std::vector<float>& weights) -> std::size_t {
     // Weighted random selection - use thread-local static for performance
-    thread_local std::random_device rd;
-    thread_local std::mt19937 gen(rd());
+    // Seed only once per thread using random_device, then reuse generator
+    thread_local std::mt19937 gen([]() {
+        std::random_device rd;
+        return rd();
+    }());
 
     float total_weight = std::accumulate(weights.begin(), weights.end(), 0.0f);
     if (total_weight <= 1e-10f) {
@@ -447,20 +450,20 @@ auto LoadBalancer::validate_load_balancing_health() const
 
 // RequestTracker implementation
 
-auto RequestTracker::create(LoadBalancer& load_balancer, 
-                           std::size_t expert_id, 
-                           std::size_t request_id) 
+auto RequestTracker::create(LoadBalancer& load_balancer,
+                            std::size_t expert_id,
+                            std::size_t request_id)
     -> inference_lab::common::Result<RequestTracker, MoEError> {
     // Validate inputs
     if (expert_id >= load_balancer.config_.num_experts) {
         return inference_lab::common::Err(MoEError::EXPERT_INITIALIZATION_FAILED);
     }
-    
+
     // Check if load balancer is in valid state
     if (load_balancer.expert_loads_.size() != load_balancer.config_.num_experts) {
         return inference_lab::common::Err(MoEError::LOAD_BALANCING_ERROR);
     }
-    
+
     // Create tracker (constructor can now assume valid state)
     RequestTracker tracker(load_balancer, expert_id, request_id);
     return inference_lab::common::Ok(std::move(tracker));

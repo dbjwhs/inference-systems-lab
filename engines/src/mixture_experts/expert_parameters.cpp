@@ -46,6 +46,9 @@ auto ExpertParameterHandle::is_loaded() const -> bool {
 // ExpertParameters implementation
 
 ExpertParameters::ExpertParameters(const ParameterConfig& config) : config_(config) {
+    // Static assertions for memory alignment requirements
+    static_assert(alignof(float) <= 64, "Float alignment must be compatible with SIMD alignment");
+    static_assert(sizeof(float) == 4, "Float must be 32-bit for SIMD operations");
     // Initialize expert handles
     expert_handles_.reserve(config_.num_experts);
     for (std::size_t i = 0; i < config_.num_experts; ++i) {
@@ -58,13 +61,13 @@ ExpertParameters::ExpertParameters(const ParameterConfig& config) : config_(conf
 
     // Initialize memory pool with existing MemoryPool<T>
     std::size_t total_parameters = config_.num_experts * config_.parameters_per_expert;
-    std::size_t pool_capacity = static_cast<std::size_t>(
-        static_cast<float>(total_parameters) * 1.2f);  // 20% overhead for fragmentation
-    
-    memory_pool_ = std::make_unique<inference_lab::common::MemoryPool<float>>(
-        pool_capacity, 
-        64  // SIMD-friendly alignment
-    );
+    std::size_t pool_capacity = static_cast<std::size_t>(static_cast<float>(total_parameters) *
+                                                         1.2f);  // 20% overhead for fragmentation
+
+    memory_pool_ =
+        std::make_unique<inference_lab::common::MemoryPool<float>>(pool_capacity,
+                                                                   64  // SIMD-friendly alignment
+        );
 }
 
 auto ExpertParameters::create(const ParameterConfig& config)
@@ -260,8 +263,11 @@ auto ExpertParameters::load_expert_from_storage(std::size_t expert_id)
     }
 
     // Load uncompressed (simulated with random values) - use thread-local static for performance
-    thread_local std::random_device rd;
-    thread_local std::mt19937 gen(rd());
+    // Seed only once per thread using random_device, then reuse generator
+    thread_local std::mt19937 gen([]() {
+        std::random_device rd;
+        return rd();
+    }());
     std::normal_distribution<float> dist(0.0f, 0.1f);
 
     for (auto& param : parameters) {
