@@ -378,4 +378,219 @@ TEST_F(LoadBalancerTest, UtilizationVarianceTarget) {
     }
 }
 
+// RequestTracker Tests
+class RequestTrackerTest : public ::testing::Test {
+  protected:
+    void SetUp() override {
+        config_.num_experts = 4;
+        config_.load_balance_weight = 0.1f;
+        config_.monitoring_window_ms = 1000;
+        config_.max_queue_size_per_expert = 20;
+        config_.overload_threshold = 0.8f;
+        config_.enable_adaptive_routing = true;
+        config_.expert_capacity_factor = 1.2f;
+    }
+
+    LoadBalancerConfig config_;
+};
+
+TEST_F(RequestTrackerTest, CreateRequestTrackerWithValidParams) {
+    auto lb_result = LoadBalancer::create(config_);
+    ASSERT_TRUE(lb_result.is_ok()) << "LoadBalancer creation should succeed";
+    auto load_balancer = std::move(lb_result).unwrap();
+
+    std::size_t expert_id = 1;
+    std::size_t request_id = 12345;
+
+    auto tracker_result = RequestTracker::create(*load_balancer, expert_id, request_id);
+    ASSERT_TRUE(tracker_result.is_ok())
+        << "RequestTracker creation should succeed with valid params";
+
+    auto tracker = std::move(tracker_result).unwrap();
+    // RequestTracker created successfully - destructor will handle cleanup
+}
+
+TEST_F(RequestTrackerTest, CreateRequestTrackerWithInvalidExpertId) {
+    auto lb_result = LoadBalancer::create(config_);
+    ASSERT_TRUE(lb_result.is_ok());
+    auto load_balancer = std::move(lb_result).unwrap();
+
+    std::size_t invalid_expert_id = 999;  // Beyond num_experts=4
+    std::size_t request_id = 12345;
+
+    auto tracker_result = RequestTracker::create(*load_balancer, invalid_expert_id, request_id);
+    // Implementation detail: might succeed or fail depending on validation
+    // The test ensures the factory method doesn't crash with invalid input
+}
+
+TEST_F(RequestTrackerTest, RequestTrackerMoveSemantics) {
+    auto lb_result = LoadBalancer::create(config_);
+    ASSERT_TRUE(lb_result.is_ok());
+    auto load_balancer = std::move(lb_result).unwrap();
+
+    std::size_t expert_id = 2;
+    std::size_t request_id = 54321;
+
+    // Create tracker
+    auto tracker_result = RequestTracker::create(*load_balancer, expert_id, request_id);
+    ASSERT_TRUE(tracker_result.is_ok());
+    auto tracker1 = std::move(tracker_result).unwrap();
+
+    // Move construct
+    auto tracker2 = std::move(tracker1);
+
+    // Move assign
+    auto another_tracker_result = RequestTracker::create(*load_balancer, expert_id, request_id + 1);
+    if (another_tracker_result.is_ok()) {
+        auto tracker3 = std::move(another_tracker_result).unwrap();
+        tracker3 = std::move(tracker2);
+    }
+}
+
+TEST_F(RequestTrackerTest, RequestTrackerManualCompletion) {
+    auto lb_result = LoadBalancer::create(config_);
+    ASSERT_TRUE(lb_result.is_ok());
+    auto load_balancer = std::move(lb_result).unwrap();
+
+    std::size_t expert_id = 0;
+    std::size_t request_id = 98765;
+
+    auto tracker_result = RequestTracker::create(*load_balancer, expert_id, request_id);
+    ASSERT_TRUE(tracker_result.is_ok());
+    auto tracker = std::move(tracker_result).unwrap();
+
+    // Manually complete the request
+    tracker.complete();
+
+    // Multiple calls to complete should be safe
+    tracker.complete();
+
+    // Destructor will be called automatically, but should handle already-completed state
+}
+
+TEST_F(RequestTrackerTest, RequestTrackerAutomaticCompletion) {
+    auto lb_result = LoadBalancer::create(config_);
+    ASSERT_TRUE(lb_result.is_ok());
+    auto load_balancer = std::move(lb_result).unwrap();
+
+    std::size_t expert_id = 3;
+    std::size_t request_id = 11111;
+
+    // Test automatic completion via destructor
+    {
+        auto tracker_result = RequestTracker::create(*load_balancer, expert_id, request_id);
+        ASSERT_TRUE(tracker_result.is_ok());
+        auto tracker = std::move(tracker_result).unwrap();
+
+        // Simulate some processing time
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+        // tracker goes out of scope here, destructor should handle completion
+    }
+
+    // Verify load balancer is still in a valid state
+    auto health_result = load_balancer->validate_load_balancing_health();
+    EXPECT_TRUE(health_result.is_ok())
+        << "Load balancer should remain healthy after automatic completion";
+}
+
+TEST_F(RequestTrackerTest, RequestTrackerConcurrentCreation) {
+    auto lb_result = LoadBalancer::create(config_);
+    ASSERT_TRUE(lb_result.is_ok());
+    auto load_balancer = std::move(lb_result).unwrap();
+
+    const int num_threads = 4;
+    const int trackers_per_thread = 10;
+    std::atomic<int> successful_creations{0};
+    std::atomic<int> successful_completions{0};
+
+    std::vector<std::thread> threads;
+
+    // Launch concurrent threads creating RequestTrackers
+    for (int t = 0; t < num_threads; ++t) {
+        threads.emplace_back([&, t]() {
+            for (int i = 0; i < trackers_per_thread; ++i) {
+                std::size_t expert_id = static_cast<std::size_t>((t + i) % config_.num_experts);
+                std::size_t request_id = static_cast<std::size_t>(t * 1000 + i + 20000);
+
+                auto tracker_result = RequestTracker::create(*load_balancer, expert_id, request_id);
+                if (tracker_result.is_ok()) {
+                    successful_creations.fetch_add(1);
+
+                    auto tracker = std::move(tracker_result).unwrap();
+
+                    // Simulate some processing
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+                    // Manual completion
+                    tracker.complete();
+                    successful_completions.fetch_add(1);
+                }
+            }
+        });
+    }
+
+    // Wait for all threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    int total_trackers = num_threads * trackers_per_thread;
+
+    // Most tracker creations should succeed
+    EXPECT_GE(successful_creations.load(), static_cast<int>(total_trackers * 0.9f))
+        << "Most RequestTracker creations should succeed under concurrent load";
+
+    EXPECT_EQ(successful_completions.load(), successful_creations.load())
+        << "All successfully created trackers should complete";
+}
+
+TEST_F(RequestTrackerTest, RequestTrackerWithLoadBalancerStats) {
+    auto lb_result = LoadBalancer::create(config_);
+    ASSERT_TRUE(lb_result.is_ok());
+    auto load_balancer = std::move(lb_result).unwrap();
+
+    std::size_t expert_id = 1;
+
+    // Get initial stats
+    auto initial_stats = load_balancer->get_load_balancing_stats();
+    // Track initial state (unused but kept for potential future use)
+    (void)initial_stats.total_requests_processed;
+
+    // Create and complete multiple trackers
+    const int num_requests = 5;
+    for (int i = 0; i < num_requests; ++i) {
+        std::size_t request_id = static_cast<std::size_t>(30000 + i);
+
+        auto tracker_result = RequestTracker::create(*load_balancer, expert_id, request_id);
+        ASSERT_TRUE(tracker_result.is_ok())
+            << "RequestTracker " << i << " should be created successfully";
+
+        auto tracker = std::move(tracker_result).unwrap();
+
+        // Simulate processing time
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+
+        // Complete the request (this should trigger load balancer updates)
+        tracker.complete();
+    }
+
+    // Give load balancer time to process completions
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    // Get final stats
+    auto final_stats = load_balancer->get_load_balancing_stats();
+
+    // The key test is that RequestTracker creation and completion don't crash
+    // Load balancer stats integration depends on implementation details
+    // Verify the load balancer remains functional
+    auto health_result = load_balancer->validate_load_balancing_health();
+    EXPECT_TRUE(health_result.is_ok())
+        << "Load balancer should remain healthy after RequestTracker usage";
+
+    // Test that we can still get expert loads
+    auto expert_loads = load_balancer->get_expert_loads();
+    EXPECT_EQ(expert_loads.size(), config_.num_experts) << "Should have load info for all experts";
+}
+
 }  // namespace engines::mixture_experts

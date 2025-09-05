@@ -150,6 +150,7 @@ if(BUILD_TESTING)
         tests/test_load_balancer.cpp
         tests/test_moe_config.cpp
         tests/test_moe_integration.cpp
+        tests/test_sparse_activation.cpp
     )
 
     target_link_libraries(moe_tests
@@ -163,6 +164,8 @@ if(BUILD_TESTING)
     add_test(NAME LoadBalancerTests COMMAND moe_tests --gtest_filter="LoadBalancerTest.*")
     add_test(NAME MoEConfigTests COMMAND moe_tests --gtest_filter="MoEConfigTest.*")
     add_test(NAME MoEIntegrationTests COMMAND moe_tests --gtest_filter="MoEIntegrationTest.*")
+    add_test(NAME SparseActivationTests COMMAND moe_tests --gtest_filter="SparseActivationTest.*")
+    add_test(NAME RequestTrackerTests COMMAND moe_tests --gtest_filter="RequestTrackerTest.*")
 endif()
 
 # === Benchmark Suite ===
