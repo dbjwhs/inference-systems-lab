@@ -552,6 +552,11 @@ xdg-open docs/index.html  # Linux - uses committed docs
 - **[LockFreeQueue<T>](docs/html/classinference__lab_1_1common_1_1_lock_free_queue.html)** - Multi-producer/consumer queue
 - **[SchemaEvolutionManager](docs/html/classinference__lab_1_1common_1_1_schema_evolution_manager.html)** - Version-aware serialization
 
+## Documentation
+- Project documentation is organized in the `docs/` directory
+- See `docs/reports/` for project status and achievements
+- See `docs/guides/` for setup and troubleshooting guides
+
 ### **📋 Technical Deep Dive**
 - **[TECHNICAL_DIVE.md](docs/TECHNICAL_DIVE.md)** - Comprehensive system architecture analysis with cross-module interactions
 
