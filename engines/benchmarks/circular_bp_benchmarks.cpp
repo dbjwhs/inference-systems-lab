@@ -214,6 +214,10 @@ BENCHMARK_F(CircularBPFixture, MessageHistoryOverhead)(::benchmark::State& state
     no_history_config.track_message_history = false;
 
     auto no_history_engine_result = create_circular_bp_engine(no_history_config);
+    if (no_history_engine_result.is_err()) {
+        state.SkipWithError("Failed to create CircularBP engine without message history");
+        return;
+    }
     auto no_history_engine = std::move(no_history_engine_result).unwrap();
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
