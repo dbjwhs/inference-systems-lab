@@ -332,7 +332,7 @@ static UnifiedMetrics benchmark_new_technique(const TestDataset& dataset) {
 
 ## 📚 Related Documentation
 
-- [POCS_ROAD_MAP.md](../../POCS_ROAD_MAP.md) - Overall POC implementation strategy
+- [POCS_ROAD_MAP.md](../../docs/reports/POCS_ROAD_MAP.md) - Overall POC implementation strategy
 - [CLAUDE.md](../../CLAUDE.md) - Project context and development standards
 - [tools/run_benchmarks.py](../../tools/run_benchmarks.py) - Core benchmarking infrastructure
 - Individual technique documentation in respective `src/` directories
