@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <limits>
 #include <numeric>
 #include <sstream>
@@ -212,14 +213,17 @@ auto CircularBPEngine::run_circular_bp(const GraphicalModel& model)
     metrics_.converged = check_convergence(residual);
 
     if (metrics_.converged) {
-        LOG_INFO_PRINT("Circular-BP converged after {} iterations with residual {:.2e}",
-                       metrics_.iterations_to_convergence,
-                       metrics_.final_residual);
+        std::ostringstream oss;
+        oss << "Circular-BP converged after " << metrics_.iterations_to_convergence 
+            << " iterations with residual " << std::scientific << std::setprecision(2)
+            << metrics_.final_residual;
+        LOG_INFO_PRINT("{}", oss.str());
     } else {
-        LOG_WARNING_PRINT(
-            "Circular-BP failed to converge after {} iterations, final residual: {:.2e}",
-            metrics_.iterations_to_convergence,
-            metrics_.final_residual);
+        std::ostringstream oss;
+        oss << "Circular-BP failed to converge after " << metrics_.iterations_to_convergence 
+            << " iterations, final residual: " << std::scientific << std::setprecision(2)
+            << metrics_.final_residual;
+        LOG_WARNING_PRINT("{}", oss.str());
     }
     LOG_DEBUG_PRINT(
         "Inference completed in {}ms with {} cycles detected, {} correlations cancelled",
@@ -555,8 +559,10 @@ auto CircularBPEngine::cancel_spurious_correlations(GraphicalModel& model)
                 }
 
                 cancelled_count++;
-                LOG_DEBUG_PRINT(
-                    "Cancelled spurious correlation {:.3f} on edge {}", correlation, edge_id);
+                std::ostringstream oss;
+                oss << "Cancelled spurious correlation " << std::fixed << std::setprecision(3) 
+                    << correlation << " on edge " << edge_id;
+                LOG_DEBUG_PRINT("{}", oss.str());
             }
         }
     }

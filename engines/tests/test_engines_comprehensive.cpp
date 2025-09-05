@@ -27,7 +27,9 @@
  */
 
 #include <chrono>
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -472,9 +474,11 @@ TEST_F(EnginesComprehensiveTest, PerformanceUnderLoad) {
     ASSERT_NE(mock_engine, nullptr);
     EXPECT_EQ(mock_engine->get_inference_count(), NUM_ITERATIONS);
 
-    LOG_INFO_PRINT("Performance test: {:.2f}μs avg, {:.1f} inferences/sec",
-                   avg_time_us,
-                   throughput_inferences_per_sec);
+    std::ostringstream oss;
+    oss << "Performance test: " << std::fixed << std::setprecision(2) << avg_time_us 
+        << "μs avg, " << std::setprecision(1) << throughput_inferences_per_sec 
+        << " inferences/sec";
+    LOG_INFO_PRINT("{}", oss.str());
 }
 
 /**

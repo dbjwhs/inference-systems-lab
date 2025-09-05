@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 // Platform-specific SIMD includes
 #if defined(__x86_64__) || defined(_M_X64)
     #include <immintrin.h>  // For AVX2 SIMD operations on x86_64
@@ -458,9 +459,11 @@ auto MambaSSMEngine::run_mamba_ssm(const FloatTensor& input_sequence)
     metrics_.throughput_tokens_per_sec =
         static_cast<double>(seq_len) / (metrics_.inference_time_ms.count() / 1000000.0);
 
-    LOG_INFO_PRINT("Mamba SSM inference completed in {}μs with throughput {:.1f} tokens/sec",
-                   metrics_.inference_time_ms.count(),
-                   metrics_.throughput_tokens_per_sec);
+    std::ostringstream oss;
+    oss << "Mamba SSM inference completed in " << metrics_.inference_time_ms.count() 
+        << "μs with throughput " << std::fixed << std::setprecision(1) 
+        << metrics_.throughput_tokens_per_sec << " tokens/sec";
+    LOG_INFO_PRINT("{}", oss.str());
 
     return Ok(std::move(output));
 }

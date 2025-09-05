@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <numeric>
 #include <sstream>
 
@@ -168,14 +169,17 @@ auto MomentumBPEngine::run_momentum_bp(const GraphicalModel& model)
     metrics_.converged = check_convergence(residual);
 
     if (metrics_.converged) {
-        LOG_INFO_PRINT("Momentum-BP converged after {} iterations with residual {:.2e}",
-                       metrics_.iterations_to_convergence,
-                       metrics_.final_residual);
+        std::ostringstream oss;
+        oss << "Momentum-BP converged after " << metrics_.iterations_to_convergence 
+            << " iterations with residual " << std::scientific << std::setprecision(2)
+            << metrics_.final_residual;
+        LOG_INFO_PRINT("{}", oss.str());
     } else {
-        LOG_WARNING_PRINT(
-            "Momentum-BP failed to converge after {} iterations, final residual: {:.2e}",
-            metrics_.iterations_to_convergence,
-            metrics_.final_residual);
+        std::ostringstream oss;
+        oss << "Momentum-BP failed to converge after " << metrics_.iterations_to_convergence 
+            << " iterations, final residual: " << std::scientific << std::setprecision(2)
+            << metrics_.final_residual;
+        LOG_WARNING_PRINT("{}", oss.str());
     }
     LOG_DEBUG_PRINT("Inference completed in {}ms with {} message updates",
                     metrics_.inference_time_ms.count(),
