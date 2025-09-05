@@ -83,6 +83,7 @@ struct QueuedRequest {
  * - Intelligent work distribution preventing expert bottlenecks
  */
 class LoadBalancer {
+    friend class RequestTracker;  // Allow access to private members for validation
   public:
     /**
      * @brief Create load balancer with specified configuration
@@ -234,7 +235,15 @@ class LoadBalancer {
  */
 class RequestTracker {
   public:
-    RequestTracker(LoadBalancer& load_balancer, std::size_t expert_id, std::size_t request_id);
+    /**
+     * @brief Create a RequestTracker with error handling
+     * @param load_balancer Reference to the load balancer
+     * @param expert_id ID of the expert being tracked
+     * @param request_id Unique request identifier
+     * @return Result containing RequestTracker or error
+     */
+    static auto create(LoadBalancer& load_balancer, std::size_t expert_id, std::size_t request_id)
+        -> inference_lab::common::Result<RequestTracker, MoEError>;
 
     ~RequestTracker();
 
@@ -251,6 +260,8 @@ class RequestTracker {
     auto complete() -> void;
 
   private:
+    // Private constructor - use create() factory method
+    RequestTracker(LoadBalancer& load_balancer, std::size_t expert_id, std::size_t request_id);
     LoadBalancer* load_balancer_;
     std::size_t expert_id_;
     std::size_t request_id_;

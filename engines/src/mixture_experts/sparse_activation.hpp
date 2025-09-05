@@ -188,6 +188,7 @@ class SparseActivation {
     bool avx2_available_;
     bool avx512_available_;
     bool fma_available_;
+    bool neon_available_;
 
     // Performance monitoring
     mutable std::atomic<std::size_t> total_operations_{0};
@@ -210,6 +211,11 @@ class SparseActivation {
                                    const std::size_t* sparse_indices,
                                    std::size_t nnz,
                                    const float* dense_vector) -> float;
+
+    auto sparse_dot_product_neon(const float* sparse_values,
+                                 const std::size_t* sparse_indices,
+                                 std::size_t nnz,
+                                 const float* dense_vector) -> float;
 
     auto apply_threshold_simd(const float* input, float* output, std::size_t size, float threshold)
         -> std::size_t;

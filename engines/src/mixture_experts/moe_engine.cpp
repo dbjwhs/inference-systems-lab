@@ -90,7 +90,7 @@ auto MoEEngine::run_inference(const MoEInput& input)
     if (!expert_selection.is_ok()) {
         return Err(expert_selection.unwrap_err());
     }
-    auto selected_experts = expert_selection.unwrap();
+    auto selected_experts = std::move(expert_selection).unwrap();
     auto routing_end = std::chrono::high_resolution_clock::now();
 
     float routing_latency =
@@ -101,7 +101,7 @@ auto MoEEngine::run_inference(const MoEInput& input)
     if (!weights_result.is_ok()) {
         return Err(weights_result.unwrap_err());
     }
-    auto expert_weights = weights_result.unwrap();
+    auto expert_weights = std::move(weights_result).unwrap();
 
     // Step 3: Execute inference using selected experts
     auto inference_start = std::chrono::high_resolution_clock::now();
@@ -109,7 +109,7 @@ auto MoEEngine::run_inference(const MoEInput& input)
     if (!inference_result.is_ok()) {
         return Err(inference_result.unwrap_err());
     }
-    auto outputs = inference_result.unwrap();
+    auto outputs = std::move(inference_result).unwrap();
     auto inference_end = std::chrono::high_resolution_clock::now();
 
     float inference_latency =

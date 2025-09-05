@@ -223,6 +223,7 @@ auto SparseActivation::detect_simd_capabilities() -> void {
     avx2_available_ = false;
     avx512_available_ = false;
     fma_available_ = false;
+    neon_available_ = false;
 
 #ifdef MOE_HAS_X86_SIMD
     // Check CPUID for SIMD support
@@ -244,9 +245,9 @@ auto SparseActivation::detect_simd_capabilities() -> void {
     }
 #endif
 
-#ifdef MOE_HAS_ARM_NEON
-    // ARM NEON is available by compilation target
-    avx2_available_ = true;  // Use as general SIMD available flag
+#if defined(__ARM_NEON__) || defined(__ARM_NEON)
+    // ARM NEON is available - use neon_available_ flag specifically
+    neon_available_ = true;
 #endif
 }
 
@@ -312,6 +313,57 @@ auto SparseActivation::sparse_dot_product_avx512(const float* sparse_values,
     // Simplified implementation - in practice would use AVX512 intrinsics
     return sparse_dot_product_avx2(sparse_values, sparse_indices, nnz, dense_vector);
 }
+
+#if defined(__ARM_NEON__) || defined(__ARM_NEON)
+#include <arm_neon.h>
+
+auto SparseActivation::sparse_dot_product_neon(const float* sparse_values,
+                                               const std::size_t* sparse_indices,
+                                               std::size_t nnz,
+                                               const float* dense_vector) -> float {
+    // Process 4 elements at a time with NEON
+    float32x4_t sum_vec = vdupq_n_f32(0.0f);
+    std::size_t simd_end = (nnz / 4) * 4;
+
+    for (std::size_t i = 0; i < simd_end; i += 4) {
+        // Load sparse values
+        float32x4_t sparse_vals = vld1q_f32(&sparse_values[i]);
+
+        // Gather corresponding dense values
+        float gathered_values[4];
+        for (int j = 0; j < 4; ++j) {
+            gathered_values[j] = dense_vector[sparse_indices[i + j]];
+        }
+        float32x4_t dense_vals = vld1q_f32(gathered_values);
+
+        // Multiply and accumulate
+        sum_vec = vmlaq_f32(sum_vec, sparse_vals, dense_vals);
+    }
+
+    // Horizontal sum of the vector
+    float32x2_t sum_pair = vadd_f32(vget_low_f32(sum_vec), vget_high_f32(sum_vec));
+    float result = vget_lane_f32(vpadd_f32(sum_pair, sum_pair), 0);
+
+    // Handle remaining elements
+    for (std::size_t i = simd_end; i < nnz; ++i) {
+        result += sparse_values[i] * dense_vector[sparse_indices[i]];
+    }
+
+    return result;
+}
+#else
+auto SparseActivation::sparse_dot_product_neon(const float* sparse_values,
+                                               const std::size_t* sparse_indices,
+                                               std::size_t nnz,
+                                               const float* dense_vector) -> float {
+    // Fallback scalar implementation
+    float sum = 0.0f;
+    for (std::size_t i = 0; i < nnz; ++i) {
+        sum += sparse_values[i] * dense_vector[sparse_indices[i]];
+    }
+    return sum;
+}
+#endif
 
 auto SparseActivation::adapt_sparsity_threshold(const std::vector<float>& input_distribution)
     -> float {

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "../../../common/src/result.hpp"
+#include "../../../common/src/containers.hpp"
 
 namespace engines::mixture_experts {
 
@@ -177,8 +178,8 @@ class ExpertParameters {
     std::vector<CacheEntry> parameter_cache_{};
     mutable std::mutex cache_mutex_{};
 
-    // Memory pool integration (will use existing MemoryPool<T>)
-    std::shared_ptr<void> memory_pool_{};  // Will be cast to MemoryPool<float>
+    // Memory pool integration with existing MemoryPool<T>
+    std::unique_ptr<inference_lab::common::MemoryPool<float>> memory_pool_;
     // Performance monitoring
     mutable std::atomic<std::size_t> total_cache_hits_{0};
     mutable std::atomic<std::size_t> total_cache_misses_{0};
@@ -208,9 +209,9 @@ class ExpertParameters {
 
     auto evict_least_recently_used() -> void;
 
-    // Memory management
-    auto allocate_parameter_memory(std::size_t size) -> void*;
-    auto deallocate_parameter_memory(void* ptr) -> void;
+    // Memory management using MemoryPool<T>
+    auto allocate_parameter_memory(std::size_t count) -> float*;
+    auto deallocate_parameter_memory(float* ptr, std::size_t count) -> void;
     auto calculate_memory_usage() const -> float;
 };
 

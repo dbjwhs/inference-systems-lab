@@ -468,7 +468,7 @@ static void BM_MoE_ConfigurationComparison(benchmark::State& state) {
             auto latency = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
             state.SetIterationTime(latency.count() / 1e9);
 
-            auto response = result.unwrap();
+            auto response = std::move(result).unwrap();
             state.counters["routing_latency_ms"] += response.routing_latency_ms;
             state.counters["inference_latency_ms"] += response.inference_latency_ms;
         } else {
