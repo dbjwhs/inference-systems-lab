@@ -20,7 +20,9 @@
  * - Memory safety validation with sanitizers
  */
 
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -285,5 +287,8 @@ TEST_F(InferenceEngineTest, MockEnginePerformance) {
     // Mock engine should be very fast (< 100 microseconds per inference)
     EXPECT_LT(avg_time_us, 100.0) << true;
 
-    LOG_INFO_PRINT("Mock engine average inference time: {:.2f} microseconds", avg_time_us);
+    std::ostringstream oss;
+    oss << "Mock engine average inference time: " << std::fixed << std::setprecision(2) 
+        << avg_time_us << " microseconds";
+    LOG_INFO_PRINT("{}", oss.str());
 }

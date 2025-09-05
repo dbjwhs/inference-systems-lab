@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <memory>
 #include <random>
@@ -152,14 +153,14 @@ struct UnifiedMetrics {
     bool converged;
 
     void print_summary() const {
-        LOG_INFO_PRINT("{} on {}: {:.2f}ms, {:.1f}MB, {} iters, {:.3f} acc, converged={}",
-                       technique_name,
-                       dataset_name,
-                       inference_time_ms,
-                       memory_usage_mb,
-                       convergence_iterations,
-                       final_accuracy,
-                       converged);
+        std::ostringstream oss;
+        oss << technique_name << " on " << dataset_name << ": "
+            << std::fixed << std::setprecision(2) << inference_time_ms << "ms, "
+            << std::setprecision(1) << memory_usage_mb << "MB, "
+            << static_cast<int>(convergence_iterations) << " iters, "
+            << std::setprecision(3) << final_accuracy << " acc, converged="
+            << std::boolalpha << converged;
+        LOG_INFO_PRINT("{}", oss.str());
     }
 };
 
