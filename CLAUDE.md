@@ -281,6 +281,18 @@ auto parse_config() -> Result<Config, ParseError> {
         .and_then([](Config cfg) { return cfg.validate(); })
         .map_err([](ParseError err) { return err.add_context("config load"); });
 }
+
+// ❌ NEVER do this - unsafe unwrap
+auto result = risky_operation();
+auto value = std::move(result).unwrap();  // Segfault if result.is_err()
+
+// ✅ ALWAYS check first
+auto result = risky_operation();
+if (result.is_err()) {
+    // Handle error appropriately for context
+    return; // or throw, or skip, etc.
+}
+auto value = std::move(result).unwrap();
 ```
 
 ### Schema Evolution System (NEW)
