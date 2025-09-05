@@ -371,13 +371,18 @@ class UnifiedBenchmarkSuite {
                 "------------------------|-----------|-------------|-------|----------|----------");
 
             for (const auto& metric : dataset_metrics) {
-                LOG_INFO_PRINT("{:23} | {:9.2f} | {:11.1f} | {:5.0f} | {:8.3f} | {:9}",
-                               metric.technique_name,
-                               metric.inference_time_ms,
-                               metric.memory_usage_mb,
-                               metric.convergence_iterations,
-                               metric.final_accuracy,
-                               metric.converged ? "Yes" : "No");
+                // Format the data manually since logging system only supports simple {} replacement
+                std::ostringstream formatted_line;
+                formatted_line << std::left << std::setw(23) << metric.technique_name << " | "
+                               << std::right << std::setw(9) << std::fixed << std::setprecision(2)
+                               << metric.inference_time_ms << " | " << std::right << std::setw(11)
+                               << std::fixed << std::setprecision(1) << metric.memory_usage_mb
+                               << " | " << std::right << std::setw(5) << std::fixed
+                               << std::setprecision(0) << metric.convergence_iterations << " | "
+                               << std::right << std::setw(8) << std::fixed << std::setprecision(3)
+                               << metric.final_accuracy << " | " << std::right << std::setw(9)
+                               << (metric.converged ? "Yes" : "No");
+                LOG_INFO_PRINT("{}", formatted_line.str());
             }
         }
 
@@ -407,7 +412,13 @@ class UnifiedBenchmarkSuite {
             double convergence_rate =
                 static_cast<double>(convergence_counts[technique]) / times.size();
 
-            LOG_INFO_PRINT("{:23} | {:13.2f} | {:16.1%}", technique, avg_time, convergence_rate);
+            // Format the summary statistics manually
+            std::ostringstream summary_line;
+            summary_line << std::left << std::setw(23) << technique << " | " << std::right
+                         << std::setw(13) << std::fixed << std::setprecision(2) << avg_time << " | "
+                         << std::right << std::setw(15) << std::fixed << std::setprecision(1)
+                         << (convergence_rate * 100.0) << "%";
+            LOG_INFO_PRINT("{}", summary_line.str());
         }
     }
 
