@@ -56,9 +56,15 @@ ExpertParameters::ExpertParameters(const ParameterConfig& config) : config_(conf
     // Initialize cache
     parameter_cache_.reserve(config_.cache_size_experts);
 
-    // Initialize memory pool (simplified - in practice would use existing MemoryPool<T>)
-    // For now, we'll use nullptr to indicate we'd integrate with existing memory pool
-    memory_pool_ = nullptr;
+    // Initialize memory pool with existing MemoryPool<T>
+    std::size_t total_parameters = config_.num_experts * config_.parameters_per_expert;
+    std::size_t pool_capacity = static_cast<std::size_t>(
+        static_cast<float>(total_parameters) * 1.2f);  // 20% overhead for fragmentation
+    
+    memory_pool_ = std::make_unique<inference_lab::common::MemoryPool<float>>(
+        pool_capacity, 
+        64  // SIMD-friendly alignment
+    );
 }
 
 auto ExpertParameters::create(const ParameterConfig& config)
@@ -253,9 +259,9 @@ auto ExpertParameters::load_expert_from_storage(std::size_t expert_id)
         }
     }
 
-    // Load uncompressed (simulated with random values)
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    // Load uncompressed (simulated with random values) - use thread-local static for performance
+    thread_local std::random_device rd;
+    thread_local std::mt19937 gen(rd());
     std::normal_distribution<float> dist(0.0f, 0.1f);
 
     for (auto& param : parameters) {
@@ -543,14 +549,17 @@ auto ExpertParameters::validate_storage_integrity() const
     return inference_lab::common::Ok(std::monostate{});
 }
 
-auto ExpertParameters::allocate_parameter_memory(std::size_t size) -> void* {
-    // In practice, this would use the existing MemoryPool<T>
-    return std::malloc(size);
+auto ExpertParameters::allocate_parameter_memory(std::size_t count) -> float* {
+    if (!memory_pool_) {
+        return nullptr;
+    }
+    return memory_pool_->allocate(count);
 }
 
-auto ExpertParameters::deallocate_parameter_memory(void* ptr) -> void {
-    // In practice, this would use the existing MemoryPool<T>
-    std::free(ptr);
+auto ExpertParameters::deallocate_parameter_memory(float* ptr, std::size_t count) -> void {
+    if (memory_pool_ && ptr) {
+        memory_pool_->deallocate(ptr, count);
+    }
 }
 
 }  // namespace engines::mixture_experts
