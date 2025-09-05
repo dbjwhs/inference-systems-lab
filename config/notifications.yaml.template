@@ -3,9 +3,7 @@
 # 
 # IMPORTANT SECURITY NOTICE:
 # DO NOT put API keys or passwords in notifications.yaml!
-# Instead, use environment variables in .env file:
-#   PUSHOVER_API_TOKEN=your_api_token_here
-#   PUSHOVER_USER_KEY=your_user_key_here
+# Instead, use environment variables in .env file for any external services
 #
 # The .env file is gitignored and will never be committed
 
@@ -17,20 +15,6 @@ notifications:
     sound_name: "Glass"  # Glass, Ping, Pop, Bottle, etc.
     show_progress: true
     
-  # Pushover push notifications (requires account + $5 app)
-  pushover:
-    enabled: true  # Enable after setting up .env file
-    # DO NOT PUT CREDENTIALS HERE! Use .env file instead:
-    # api_token: ""  # Set PUSHOVER_API_TOKEN in .env
-    # user_key: ""   # Set PUSHOVER_USER_KEY in .env
-    device: ""      # Optional: specific device name
-    priority_normal: 0      # -2=silent, -1=quiet, 0=normal
-    priority_success: 0     # For successful test runs
-    priority_failure: 1     # For test failures (high priority)
-    priority_critical: 2    # For build breakage (emergency)
-    sound_success: "intermission"
-    sound_failure: "siren"
-    sound_progress: "mechanical"
     
   # Email notifications (Phase 2)
   email:
