@@ -19,9 +19,10 @@ class CircularBPFixture : public ::benchmark::Fixture {
         config_.enable_cycle_penalties = true;
 
         auto engine_result = create_circular_bp_engine(config_);
-        if (engine_result.is_ok()) {
-            engine_ = std::move(engine_result).unwrap();
+        if (engine_result.is_err()) {
+            throw std::runtime_error("Failed to create CircularBP engine in benchmark setup");
         }
+        engine_ = std::move(engine_result).unwrap();
 
         // Create test models
         triangle_model_ = create_triangle_model();
@@ -157,6 +158,10 @@ BENCHMARK_F(CircularBPFixture, CorrelationCancellationOverhead)(::benchmark::Sta
     no_cancel_config.enable_correlation_cancellation = false;
 
     auto no_cancel_engine_result = create_circular_bp_engine(no_cancel_config);
+    if (no_cancel_engine_result.is_err()) {
+        state.SkipWithError("Failed to create CircularBP engine without correlation cancellation");
+        return;
+    }
     auto no_cancel_engine = std::move(no_cancel_engine_result).unwrap();
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
@@ -209,6 +214,10 @@ BENCHMARK_F(CircularBPFixture, MessageHistoryOverhead)(::benchmark::State& state
     no_history_config.track_message_history = false;
 
     auto no_history_engine_result = create_circular_bp_engine(no_history_config);
+    if (no_history_engine_result.is_err()) {
+        state.SkipWithError("Failed to create CircularBP engine without message history");
+        return;
+    }
     auto no_history_engine = std::move(no_history_engine_result).unwrap();
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
