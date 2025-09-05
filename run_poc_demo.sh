@@ -76,7 +76,7 @@ echo ""
 
 echo "Comprehensive POC Technique Comparison:"
 echo "Running unified benchmarks across all three techniques..."
-./build/engines/unified_inference_benchmarks
+./run_benchmarks_clean.sh ./build/engines/unified_inference_benchmarks
 echo ""
 
 # Enterprise Quality Assurance
