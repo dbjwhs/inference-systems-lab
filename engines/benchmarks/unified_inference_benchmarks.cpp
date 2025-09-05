@@ -154,12 +154,11 @@ struct UnifiedMetrics {
 
     void print_summary() const {
         std::ostringstream oss;
-        oss << technique_name << " on " << dataset_name << ": "
-            << std::fixed << std::setprecision(2) << inference_time_ms << "ms, "
-            << std::setprecision(1) << memory_usage_mb << "MB, "
-            << static_cast<int>(convergence_iterations) << " iters, "
-            << std::setprecision(3) << final_accuracy << " acc, converged="
-            << std::boolalpha << converged;
+        oss << technique_name << " on " << dataset_name << ": " << std::fixed
+            << std::setprecision(2) << inference_time_ms << "ms, " << std::setprecision(1)
+            << memory_usage_mb << "MB, " << static_cast<int>(convergence_iterations) << " iters, "
+            << std::setprecision(3) << final_accuracy << " acc, converged=" << std::boolalpha
+            << converged;
         LOG_INFO_PRINT("{}", oss.str());
     }
 };
@@ -473,7 +472,9 @@ static void BM_MomentumBP_SmallBinary(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto small_dataset = datasets[0];  // "small_binary"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern  // NOLINT(bugprone-infinite-loop) - Google
+                            // Benchmark pattern
         auto momentum_metrics = UnifiedBenchmarkSuite::benchmark_momentum_bp(small_dataset);
         benchmark::DoNotOptimize(momentum_metrics);
     }
@@ -483,7 +484,9 @@ static void BM_CircularBP_SmallBinary(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto small_dataset = datasets[0];  // "small_binary"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern  // NOLINT(bugprone-infinite-loop) - Google
+                            // Benchmark pattern
         auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(small_dataset);
         benchmark::DoNotOptimize(circular_metrics);
     }
@@ -493,7 +496,9 @@ static void BM_MambaSSM_SmallBinary(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto small_dataset = datasets[0];  // "small_binary"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern  // NOLINT(bugprone-infinite-loop) - Google
+                            // Benchmark pattern
         auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(small_dataset);
         benchmark::DoNotOptimize(mamba_metrics);
     }
@@ -503,7 +508,8 @@ static void BM_MomentumBP_MediumChain(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto medium_dataset = datasets[1];  // "medium_chain"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern
         auto momentum_metrics = UnifiedBenchmarkSuite::benchmark_momentum_bp(medium_dataset);
         benchmark::DoNotOptimize(momentum_metrics);
     }
@@ -513,7 +519,8 @@ static void BM_CircularBP_MediumChain(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto medium_dataset = datasets[1];  // "medium_chain"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern
         auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(medium_dataset);
         benchmark::DoNotOptimize(circular_metrics);
     }
@@ -523,7 +530,8 @@ static void BM_MambaSSM_MediumChain(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto medium_dataset = datasets[1];  // "medium_chain"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern
         auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(medium_dataset);
         benchmark::DoNotOptimize(mamba_metrics);
     }
@@ -533,7 +541,8 @@ static void BM_MomentumBP_LargeGrid(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto large_dataset = datasets[2];  // "large_grid"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern
         auto momentum_metrics = UnifiedBenchmarkSuite::benchmark_momentum_bp(large_dataset);
         benchmark::DoNotOptimize(momentum_metrics);
     }
@@ -543,7 +552,8 @@ static void BM_CircularBP_LargeGrid(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto large_dataset = datasets[2];  // "large_grid"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern
         auto circular_metrics = UnifiedBenchmarkSuite::benchmark_circular_bp(large_dataset);
         benchmark::DoNotOptimize(circular_metrics);
     }
@@ -553,7 +563,8 @@ static void BM_MambaSSM_LargeGrid(benchmark::State& state) {
     auto datasets = UnifiedDatasetGenerator::get_standard_datasets();
     auto large_dataset = datasets[2];  // "large_grid"
 
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern
         auto mamba_metrics = UnifiedBenchmarkSuite::benchmark_mamba_ssm(large_dataset);
         benchmark::DoNotOptimize(mamba_metrics);
     }
@@ -572,7 +583,8 @@ BENCHMARK(BM_MambaSSM_LargeGrid)->Unit(benchmark::kMillisecond);
 
 // Standalone performance comparison
 static void BM_StandaloneComparativeAnalysis(benchmark::State& state) {
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(bugprone-infinite-loop,clang-analyzer-deadcode.DeadStores) -
+                            // Google Benchmark pattern
         UnifiedBenchmarkSuite::run_comparative_analysis();
     }
 }
