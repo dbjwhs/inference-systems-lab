@@ -38,7 +38,8 @@ class MomentumBPFixture : public ::benchmark::Fixture {
         GraphicalModel model;
 
         // Create nodes with random potentials
-        for (size_t i = 1; i <= num_nodes; ++i) {
+        for (size_t i = 1; i <= num_nodes;
+             ++i) {  // NOLINT(bugprone-infinite-loop) - false positive, i is incremented
             Node node{i, {0.6, 0.4}, {}};
             if (i < num_nodes) {
                 node.neighbors.push_back(i + 1);

@@ -170,13 +170,13 @@ auto MomentumBPEngine::run_momentum_bp(const GraphicalModel& model)
 
     if (metrics_.converged) {
         std::ostringstream oss;
-        oss << "Momentum-BP converged after " << metrics_.iterations_to_convergence 
+        oss << "Momentum-BP converged after " << metrics_.iterations_to_convergence
             << " iterations with residual " << std::scientific << std::setprecision(2)
             << metrics_.final_residual;
         LOG_INFO_PRINT("{}", oss.str());
     } else {
         std::ostringstream oss;
-        oss << "Momentum-BP failed to converge after " << metrics_.iterations_to_convergence 
+        oss << "Momentum-BP failed to converge after " << metrics_.iterations_to_convergence
             << " iterations, final residual: " << std::scientific << std::setprecision(2)
             << metrics_.final_residual;
         LOG_WARNING_PRINT("{}", oss.str());

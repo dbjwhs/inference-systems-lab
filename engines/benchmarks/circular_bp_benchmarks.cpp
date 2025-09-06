@@ -62,7 +62,8 @@ class CircularBPFixture : public ::benchmark::Fixture {
         GraphicalModel model;
 
         // Create chain with cycle back to start
-        for (size_t i = 1; i <= chain_length; ++i) {
+        for (size_t i = 1; i <= chain_length;
+             ++i) {  // NOLINT(bugprone-infinite-loop) - false positive, i is incremented
             std::vector<NodeId> neighbors;
             if (i > 1)
                 neighbors.push_back(i - 1);
@@ -80,7 +81,8 @@ class CircularBPFixture : public ::benchmark::Fixture {
 
         // Create edges for chain + cycle closure
         EdgeId edge_id = 1;
-        for (size_t i = 1; i <= chain_length; ++i) {
+        for (size_t i = 1; i <= chain_length;
+             ++i) {  // NOLINT(bugprone-infinite-loop) - false positive, i is incremented
             NodeId next = (i == chain_length) ? 1 : i + 1;
             EdgePotential edge{edge_id++, i, next, {{1.2, 0.8}, {0.8, 1.2}}};
             model.edges.push_back(edge);

@@ -460,8 +460,8 @@ auto MambaSSMEngine::run_mamba_ssm(const FloatTensor& input_sequence)
         static_cast<double>(seq_len) / (metrics_.inference_time_ms.count() / 1000000.0);
 
     std::ostringstream oss;
-    oss << "Mamba SSM inference completed in " << metrics_.inference_time_ms.count() 
-        << "μs with throughput " << std::fixed << std::setprecision(1) 
+    oss << "Mamba SSM inference completed in " << metrics_.inference_time_ms.count()
+        << "μs with throughput " << std::fixed << std::setprecision(1)
         << metrics_.throughput_tokens_per_sec << " tokens/sec";
     LOG_INFO_PRINT("{}", oss.str());
 
