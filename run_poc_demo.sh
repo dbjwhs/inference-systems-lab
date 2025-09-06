@@ -76,7 +76,11 @@ echo ""
 
 echo "Comprehensive POC Technique Comparison:"
 echo "Running unified benchmarks across all three techniques..."
-./run_benchmarks_clean.sh ./build/engines/unified_inference_benchmarks
+# ✅ FIXED: JSON Benchmark Output Contamination Issue  
+# ✅ Root Cause: Logging output contaminated Google Benchmark JSON format
+# ✅ Solution: LOG_QUIET=1 suppresses console logging for clean JSON
+# ✅ Impact: Preserves original logging behavior while enabling clean benchmarks
+LOG_QUIET=1 ./run_benchmarks_clean.sh ./build/engines/unified_inference_benchmarks
 echo ""
 
 # Enterprise Quality Assurance

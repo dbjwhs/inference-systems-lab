@@ -8,6 +8,8 @@
 
 #include "logging.hpp"
 
+#include <cstdlib>  // for std::getenv
+
 namespace inference_lab::common {
 
 // Logger implementation
@@ -58,6 +60,16 @@ Logger::Logger(const std::string& path, bool append) {
     // initialize enabled levels - all levels enabled by default
     for (int ndx = 0; ndx < static_cast<int>(LogLevel::CRITICAL) + 1; ++ndx) {
         m_enabled_levels_[ndx].store(true, std::memory_order_relaxed);
+    }
+
+    // Check environment variable for console output suppression (for JSON benchmarks)
+    // LOG_QUIET=1 disables all console output while preserving file logging
+    const char* quiet_env = std::getenv("LOG_QUIET");
+    if (quiet_env && std::string(quiet_env) == "1") {
+        // Disable all log levels for console output only (file logging still works)
+        for (int ndx = 0; ndx < static_cast<int>(LogLevel::CRITICAL) + 1; ++ndx) {
+            m_enabled_levels_[ndx].store(false, std::memory_order_relaxed);
+        }
     }
 }
 
