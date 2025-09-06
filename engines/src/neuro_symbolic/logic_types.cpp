@@ -4,6 +4,7 @@
 #include "logic_types.hpp"
 
 #include <atomic>
+#include <cassert>
 #include <sstream>
 
 namespace inference_lab::engines::neuro_symbolic {
@@ -43,23 +44,35 @@ auto to_string(LogicError error) -> std::string {
 
 auto to_string(TruthValue truth) -> std::string {
     switch (truth) {
-        case TruthValue::FALSE_VAL: return "FALSE";
-        case TruthValue::UNKNOWN: return "UNKNOWN";  
-        case TruthValue::TRUE_VAL: return "TRUE";
-        default: return "INVALID_TRUTH_VALUE";
+        case TruthValue::FALSE_VAL:
+            return "FALSE";
+        case TruthValue::UNKNOWN:
+            return "UNKNOWN";
+        case TruthValue::TRUE_VAL:
+            return "TRUE";
+        default:
+            return "INVALID_TRUTH_VALUE";
     }
 }
 
 auto to_string(LogicOperator op) -> std::string {
     switch (op) {
-        case LogicOperator::NOT: return "¬";
-        case LogicOperator::AND: return "∧";
-        case LogicOperator::OR: return "∨";
-        case LogicOperator::IMPLIES: return "→";
-        case LogicOperator::IFF: return "↔";
-        case LogicOperator::FORALL: return "∀";
-        case LogicOperator::EXISTS: return "∃";
-        default: return "INVALID_OPERATOR";
+        case LogicOperator::NOT:
+            return "¬";
+        case LogicOperator::AND:
+            return "∧";
+        case LogicOperator::OR:
+            return "∨";
+        case LogicOperator::IMPLIES:
+            return "→";
+        case LogicOperator::IFF:
+            return "↔";
+        case LogicOperator::FORALL:
+            return "∀";
+        case LogicOperator::EXISTS:
+            return "∃";
+        default:
+            return "INVALID_OPERATOR";
     }
 }
 
@@ -67,9 +80,8 @@ auto to_string(LogicOperator op) -> std::string {
 // Term base class
 //=============================================================================
 
-Term::Term(TermType type, std::string name) 
-    : type_(type), name_(std::move(name)), id_(next_id_.fetch_add(1, std::memory_order_relaxed)) {
-}
+Term::Term(TermType type, std::string name)
+    : type_(type), name_(std::move(name)), id_(next_id_.fetch_add(1, std::memory_order_relaxed)) {}
 
 auto Term::to_string() const -> std::string {
     return name_.empty() ? std::to_string(id_) : name_;
@@ -77,6 +89,11 @@ auto Term::to_string() const -> std::string {
 
 auto Term::equals(const Term& other) const -> bool {
     return type_ == other.type_ && name_ == other.name_;
+}
+
+auto Term::collect_variables() const -> std::unordered_set<SymbolId> {
+    // Base implementation returns empty set (for constants)
+    return {};
 }
 
 //=============================================================================
@@ -88,20 +105,66 @@ Variable::Variable(std::string name) : Term(TermType::VARIABLE, std::move(name))
 auto Variable::clone() const -> std::unique_ptr<Term> {
     auto var = std::make_unique<Variable>(get_name());
     if (is_bound()) {
-        var->bind(bound_term_->clone());
+        // Note: In cloning, we assume no cycles exist in the original
+        // If binding fails during cloning, there's a logic error in the original
+        bool binding_successful = var->bind(bound_term_->clone());
+        (void)binding_successful;  // Suppress unused variable warning
+        assert(binding_successful &&
+               "Cycle detected during variable cloning - original had invalid state");
     }
     return var;
 }
 
 auto Variable::to_string() const -> std::string {
     if (is_bound()) {
-        return get_name() + "=" + bound_term_->to_string();
+        auto name_str = get_name().empty() ? std::to_string(get_id()) : get_name();
+        return name_str + "=" + bound_term_->to_string();
     }
-    return get_name();
+    // Use base class behavior for empty names
+    return Term::to_string();
 }
 
-void Variable::bind(std::unique_ptr<Term> term) {
+auto Variable::collect_variables() const -> std::unordered_set<SymbolId> {
+    return {get_id()};
+}
+
+auto Variable::bind(std::unique_ptr<Term> term) -> bool {
+    // Cycle detection: check if the term we're binding to contains this variable
+    if (contains_variable(*term, get_id())) {
+        return false;  // Cycle detected, binding rejected
+    }
+
     bound_term_ = std::move(term);
+    return true;  // Binding successful
+}
+
+auto Variable::contains_variable(const Term& term, SymbolId var_id) const -> bool {
+    // Check if this term is the variable we're looking for
+    if (term.get_id() == var_id) {
+        return true;
+    }
+
+    // Recursively check compound terms
+    if (term.get_type() == TermType::COMPOUND) {
+        const auto* compound = dynamic_cast<const CompoundTerm*>(&term);
+        if (compound) {
+            for (const auto& arg : compound->get_arguments()) {
+                if (contains_variable(*arg, var_id)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Check bound variables (follow the binding chain)
+    if (term.get_type() == TermType::VARIABLE) {
+        const auto* var = dynamic_cast<const Variable*>(&term);
+        if (var && var->is_bound()) {
+            return contains_variable(*var->get_binding(), var_id);
+        }
+    }
+
+    return false;
 }
 
 void Variable::unbind() {
@@ -109,7 +172,7 @@ void Variable::unbind() {
 }
 
 //=============================================================================
-// Constant implementation  
+// Constant implementation
 //=============================================================================
 
 Constant::Constant(std::string name) : Term(TermType::CONSTANT, std::move(name)) {}
@@ -119,7 +182,12 @@ auto Constant::clone() const -> std::unique_ptr<Term> {
 }
 
 auto Constant::to_string() const -> std::string {
-    return get_name();
+    // Use base class behavior for empty names
+    return Term::to_string();
+}
+
+auto Constant::collect_variables() const -> std::unordered_set<SymbolId> {
+    return {};  // Constants contain no variables
 }
 
 //=============================================================================
@@ -132,11 +200,11 @@ CompoundTerm::CompoundTerm(std::string functor, std::vector<std::unique_ptr<Term
 auto CompoundTerm::clone() const -> std::unique_ptr<Term> {
     std::vector<std::unique_ptr<Term>> cloned_args;
     cloned_args.reserve(arguments_.size());
-    
+
     for (const auto& arg : arguments_) {
         cloned_args.push_back(arg->clone());
     }
-    
+
     return std::make_unique<CompoundTerm>(get_name(), std::move(cloned_args));
 }
 
@@ -144,17 +212,27 @@ auto CompoundTerm::to_string() const -> std::string {
     if (arguments_.empty()) {
         return get_name();
     }
-    
+
     std::ostringstream oss;
     oss << get_name() << "(";
-    
+
     for (std::size_t i = 0; i < arguments_.size(); ++i) {
-        if (i > 0) oss << ", ";
+        if (i > 0)
+            oss << ", ";
         oss << arguments_[i]->to_string();
     }
-    
+
     oss << ")";
     return oss.str();
+}
+
+auto CompoundTerm::collect_variables() const -> std::unordered_set<SymbolId> {
+    std::unordered_set<SymbolId> variables;
+    for (const auto& arg : arguments_) {
+        auto arg_vars = arg->collect_variables();
+        variables.insert(arg_vars.begin(), arg_vars.end());
+    }
+    return variables;
 }
 
 //=============================================================================
@@ -168,15 +246,16 @@ auto Predicate::to_string() const -> std::string {
     if (arguments_.empty()) {
         return name_;
     }
-    
+
     std::ostringstream oss;
     oss << name_ << "(";
-    
+
     for (std::size_t i = 0; i < arguments_.size(); ++i) {
-        if (i > 0) oss << ", ";
+        if (i > 0)
+            oss << ", ";
         oss << arguments_[i]->to_string();
     }
-    
+
     oss << ")";
     return oss.str();
 }
@@ -184,12 +263,21 @@ auto Predicate::to_string() const -> std::string {
 auto Predicate::clone() const -> std::unique_ptr<Predicate> {
     std::vector<std::unique_ptr<Term>> cloned_args;
     cloned_args.reserve(arguments_.size());
-    
+
     for (const auto& arg : arguments_) {
         cloned_args.push_back(arg->clone());
     }
-    
+
     return std::make_unique<Predicate>(name_, std::move(cloned_args));
 }
 
-} // namespace inference_lab::engines::neuro_symbolic
+auto Predicate::collect_variables() const -> std::unordered_set<SymbolId> {
+    std::unordered_set<SymbolId> variables;
+    for (const auto& arg : arguments_) {
+        auto arg_vars = arg->collect_variables();
+        variables.insert(arg_vars.begin(), arg_vars.end());
+    }
+    return variables;
+}
+
+}  // namespace inference_lab::engines::neuro_symbolic

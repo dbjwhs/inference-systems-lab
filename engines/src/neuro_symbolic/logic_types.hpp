@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -13,13 +14,13 @@
 
 namespace inference_lab::engines::neuro_symbolic {
 
-using inference_lab::common::Result;
-using inference_lab::common::Ok;
 using inference_lab::common::Err;
+using inference_lab::common::Ok;
+using inference_lab::common::Result;
 
 /**
  * @brief Core type definitions for symbolic logic programming
- * 
+ *
  * This module defines the fundamental types and structures needed for
  * symbolic reasoning, including terms, variables, constants, and logic operations.
  */
@@ -58,24 +59,15 @@ auto to_string(LogicError error) -> std::string;
 /**
  * @brief Basic term types in first-order logic
  */
-enum class TermType : std::uint8_t {
-    VARIABLE = 0,
-    CONSTANT = 1,
-    FUNCTION = 2,
-    COMPOUND = 3
-};
+enum class TermType : std::uint8_t { VARIABLE = 0, CONSTANT = 1, FUNCTION = 2, COMPOUND = 3 };
 
 /**
  * @brief Truth values for symbolic logic
- * 
+ *
  * Supports three-valued logic: TRUE, FALSE, UNKNOWN
  * This will later be extended to fuzzy logic with continuous values
  */
-enum class TruthValue : std::uint8_t {
-    FALSE_VAL = 0,
-    UNKNOWN = 1, 
-    TRUE_VAL = 2
-};
+enum class TruthValue : std::uint8_t { FALSE_VAL = 0, UNKNOWN = 1, TRUE_VAL = 2 };
 
 /**
  * @brief Convert truth value to string
@@ -86,13 +78,13 @@ auto to_string(TruthValue truth) -> std::string;
  * @brief Logical operators for compound formulas
  */
 enum class LogicOperator : std::uint8_t {
-    NOT = 0,        // ¬
-    AND = 1,        // ∧
-    OR = 2,         // ∨
-    IMPLIES = 3,    // →
-    IFF = 4,        // ↔
-    FORALL = 5,     // ∀
-    EXISTS = 6      // ∃
+    NOT = 0,      // ¬
+    AND = 1,      // ∧
+    OR = 2,       // ∨
+    IMPLIES = 3,  // →
+    IFF = 4,      // ↔
+    FORALL = 5,   // ∀
+    EXISTS = 6    // ∃
 };
 
 /**
@@ -102,12 +94,12 @@ auto to_string(LogicOperator op) -> std::string;
 
 /**
  * @brief Base class for all terms in first-order logic
- * 
+ *
  * Terms can be variables (x, y, z), constants (john, 5, "hello"),
  * or compound terms (f(x, y), g(a, b, c))
  */
 class Term {
-public:
+  public:
     explicit Term(TermType type, std::string name = "");
     virtual ~Term() = default;
 
@@ -127,7 +119,10 @@ public:
     [[nodiscard]] virtual auto equals(const Term& other) const -> bool;
     [[nodiscard]] virtual auto get_arity() const -> std::size_t { return 0; }
 
-private:
+    // Collect all variables in this term
+    [[nodiscard]] virtual auto collect_variables() const -> std::unordered_set<SymbolId>;
+
+  private:
     TermType type_;
     std::string name_;
     SymbolId id_;
@@ -136,55 +131,63 @@ private:
 
 /**
  * @brief Variable term (e.g., X, Y, person, etc.)
- * 
+ *
  * Variables can be bound to other terms during unification
  */
 class Variable : public Term {
-public:
+  public:
     explicit Variable(std::string name);
 
     [[nodiscard]] auto clone() const -> std::unique_ptr<Term> override;
     [[nodiscard]] auto to_string() const -> std::string override;
-    
+    [[nodiscard]] auto collect_variables() const -> std::unordered_set<SymbolId> override;
+
     // Variable binding
-    void bind(std::unique_ptr<Term> term);
+    [[nodiscard]] auto bind(std::unique_ptr<Term> term) -> bool;  // Returns false if cycle detected
     void unbind();
     [[nodiscard]] auto is_bound() const -> bool { return bound_term_ != nullptr; }
     [[nodiscard]] auto get_binding() const -> const Term* { return bound_term_.get(); }
 
-private:
+  private:
     std::unique_ptr<Term> bound_term_;
+
+    // Helper method for cycle detection
+    [[nodiscard]] auto contains_variable(const Term& term, SymbolId var_id) const -> bool;
 };
 
 /**
  * @brief Constant term (e.g., john, 42, "hello")
  */
 class Constant : public Term {
-public:
+  public:
     explicit Constant(std::string name);
 
     [[nodiscard]] auto clone() const -> std::unique_ptr<Term> override;
     [[nodiscard]] auto to_string() const -> std::string override;
+    [[nodiscard]] auto collect_variables() const -> std::unordered_set<SymbolId> override;
 };
 
 /**
  * @brief Compound term with function symbol and arguments (e.g., f(x,y), likes(john, mary))
  */
 class CompoundTerm : public Term {
-public:
+  public:
     CompoundTerm(std::string functor, std::vector<std::unique_ptr<Term>> args);
 
     [[nodiscard]] auto clone() const -> std::unique_ptr<Term> override;
     [[nodiscard]] auto to_string() const -> std::string override;
     [[nodiscard]] auto get_arity() const -> std::size_t override { return arguments_.size(); }
-    
+    [[nodiscard]] auto collect_variables() const -> std::unordered_set<SymbolId> override;
+
     [[nodiscard]] auto get_functor() const -> const std::string& { return get_name(); }
-    [[nodiscard]] auto get_arguments() const -> const std::vector<std::unique_ptr<Term>>& { return arguments_; }
+    [[nodiscard]] auto get_arguments() const -> const std::vector<std::unique_ptr<Term>>& {
+        return arguments_;
+    }
     [[nodiscard]] auto get_argument(std::size_t index) const -> const Term* {
         return index < arguments_.size() ? arguments_[index].get() : nullptr;
     }
 
-private:
+  private:
     std::vector<std::unique_ptr<Term>> arguments_;
 };
 
@@ -192,7 +195,7 @@ private:
  * @brief Predicate with name and arguments (e.g., likes(john, mary), mortal(X))
  */
 class Predicate {
-public:
+  public:
     Predicate(std::string name, std::vector<std::unique_ptr<Term>> args);
 
     // Non-copyable but moveable
@@ -203,22 +206,25 @@ public:
 
     [[nodiscard]] auto get_name() const -> const std::string& { return name_; }
     [[nodiscard]] auto get_arity() const -> std::size_t { return arguments_.size(); }
-    [[nodiscard]] auto get_arguments() const -> const std::vector<std::unique_ptr<Term>>& { return arguments_; }
+    [[nodiscard]] auto get_arguments() const -> const std::vector<std::unique_ptr<Term>>& {
+        return arguments_;
+    }
     [[nodiscard]] auto get_argument(std::size_t index) const -> const Term* {
         return index < arguments_.size() ? arguments_[index].get() : nullptr;
     }
 
     [[nodiscard]] auto to_string() const -> std::string;
     [[nodiscard]] auto clone() const -> std::unique_ptr<Predicate>;
+    [[nodiscard]] auto collect_variables() const -> std::unordered_set<SymbolId>;
 
-private:
+  private:
     std::string name_;
     std::vector<std::unique_ptr<Term>> arguments_;
 };
 
 /**
  * @brief Variable substitution for unification
- * 
+ *
  * Maps variable IDs to their substituted terms
  */
 using Substitution = std::unordered_map<SymbolId, std::shared_ptr<Term>>;
@@ -229,10 +235,12 @@ using Substitution = std::unordered_map<SymbolId, std::shared_ptr<Term>>;
 struct UnificationResult {
     Substitution substitution;
     bool success;
-    
+
     UnificationResult() : success(false) {}
-    explicit UnificationResult(Substitution subst) : substitution(std::move(subst)), success(true) {}
-    UnificationResult(bool result, Substitution subst) : substitution(std::move(subst)), success(result) {}
+    explicit UnificationResult(Substitution subst)
+        : substitution(std::move(subst)), success(true) {}
+    UnificationResult(bool result, Substitution subst)
+        : substitution(std::move(subst)), success(result) {}
 };
 
-} // namespace inference_lab::engines::neuro_symbolic
+}  // namespace inference_lab::engines::neuro_symbolic
