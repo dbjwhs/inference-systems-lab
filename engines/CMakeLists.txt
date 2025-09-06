@@ -38,6 +38,9 @@ add_library(engines STATIC
     src/circular_bp/circular_bp.cpp
     src/mamba_ssm/mamba_ssm.cpp
     src/onnx/onnx_engine.cpp
+    src/neuro_symbolic/logic_types.cpp
+    src/neuro_symbolic/symbolic_logic.cpp
+    src/neuro_symbolic/predicate_system.cpp
 )
 
 target_include_directories(engines PUBLIC
@@ -62,7 +65,7 @@ if(TARGET ML::Frameworks)
     message(STATUS "Engines library linked with ML frameworks")
 endif()
 
-# Engines tests - Comprehensive Phase 4.1 test suite + ML Config + Momentum-BP + Circular-BP + Mamba-SSM tests
+# Engines tests - Comprehensive Phase 4.1 test suite + ML Config + Momentum-BP + Circular-BP + Mamba-SSM + Neuro-Symbolic tests
 add_executable(engines_tests
     tests/test_engines_comprehensive.cpp
     tests/test_ml_config.cpp
@@ -70,6 +73,9 @@ add_executable(engines_tests
     tests/test_circular_bp.cpp
     tests/test_mamba_ssm.cpp
     tests/test_unified_benchmarks.cpp
+    tests/test_logic_types.cpp
+    tests/test_symbolic_logic.cpp
+    tests/test_predicate_system.cpp
 )
 
 target_link_libraries(engines_tests
