@@ -83,9 +83,10 @@ auto LogicFormula::clone() const -> std::unique_ptr<LogicFormula> {
                 return nullptr;
             }
 
+            cloned_term.release(); // Transfer ownership to var_ptr
             return std::make_unique<LogicFormula>(
                 operator_,
-                std::unique_ptr<Variable>(static_cast<Variable*>(cloned_term.release())),
+                std::unique_ptr<Variable>(var_ptr),
                 operands_[0]->clone());
         }
     }
@@ -299,7 +300,10 @@ auto Unifier::apply_substitution(const Term& term, const Substitution& subst)
             return it->second->clone();
         }
     } else if (term.get_type() == TermType::COMPOUND) {
-        const auto* compound = static_cast<const CompoundTerm*>(&term);
+        const auto* compound = dynamic_cast<const CompoundTerm*>(&term);
+        if (!compound) {
+            return term.clone(); // Type safety fallback
+        }
         std::vector<std::unique_ptr<Term>> new_args;
         new_args.reserve(compound->get_arguments().size());
 
@@ -364,8 +368,12 @@ auto Unifier::unify_terms_recursive(const Term& term1, const Term& term2, Substi
 
     // Compound term unification
     if (term1.get_type() == TermType::COMPOUND && term2.get_type() == TermType::COMPOUND) {
-        const auto* compound1 = static_cast<const CompoundTerm*>(&term1);
-        const auto* compound2 = static_cast<const CompoundTerm*>(&term2);
+        const auto* compound1 = dynamic_cast<const CompoundTerm*>(&term1);
+        const auto* compound2 = dynamic_cast<const CompoundTerm*>(&term2);
+        
+        if (!compound1 || !compound2) {
+            return false; // Type safety fallback
+        }
 
         if (compound1->get_functor() != compound2->get_functor() ||
             compound1->get_arity() != compound2->get_arity()) {
@@ -391,7 +399,10 @@ auto Unifier::occurs_check(SymbolId var_id, const Term& term) -> bool {
     if (term.get_type() == TermType::VARIABLE) {
         return term.get_id() == var_id;
     } else if (term.get_type() == TermType::COMPOUND) {
-        const auto* compound = static_cast<const CompoundTerm*>(&term);
+        const auto* compound = dynamic_cast<const CompoundTerm*>(&term);
+        if (!compound) {
+            return false; // Type safety fallback
+        }
         for (const auto& arg : compound->get_arguments()) {
             if (occurs_check(var_id, *arg)) {
                 return true;
@@ -497,9 +508,10 @@ auto InferenceRules::existential_generalization(const LogicFormula& formula,
     }
 
     // For now, return a simple existential quantification
+    cloned_term.release(); // Transfer ownership to var_ptr
     return Ok(std::make_unique<LogicFormula>(
         LogicOperator::EXISTS,
-        std::unique_ptr<Variable>(static_cast<Variable*>(cloned_term.release())),
+        std::unique_ptr<Variable>(var_ptr),
         formula.clone()));
 }
 
