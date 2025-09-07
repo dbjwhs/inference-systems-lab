@@ -165,6 +165,48 @@ class GradientContext {
     static constexpr std::size_t MAX_STORED_VALUES = 1000;
 
     /**
+     * @brief Default constructor
+     */
+    GradientContext() = default;
+
+    /**
+     * @brief Copy constructor
+     */
+    GradientContext(const GradientContext& other) : stored_values_(other.stored_values_) {}
+
+    /**
+     * @brief Move constructor
+     */
+    GradientContext(GradientContext&& other) noexcept : stored_values_(std::move(other.stored_values_)) {}
+
+    /**
+     * @brief Copy assignment operator
+     */
+    GradientContext& operator=(const GradientContext& other) {
+        if (this != &other) {
+            stored_values_ = other.stored_values_;
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Move assignment operator
+     */
+    GradientContext& operator=(GradientContext&& other) noexcept {
+        if (this != &other) {
+            stored_values_ = std::move(other.stored_values_);
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Destructor with automatic cleanup
+     */
+    ~GradientContext() {
+        clear();  // Ensure proper RAII cleanup
+    }
+
+    /**
      * @brief Store value for gradient computation
      * @param key Identifier for the value
      * @param value Value to store
@@ -254,6 +296,39 @@ inline float clamp_gradient(float gradient) noexcept {
     }
     
     return gradient;
+}
+
+/**
+ * @brief Safely compute gradient with intermediate value checking
+ * @param base Base gradient value
+ * @param factor Multiplication factor (checked for safety)
+ * @return Safely computed and clamped gradient
+ */
+inline float safe_gradient_multiply(float base, float factor) noexcept {
+    // Check for problematic factor values first
+    if (std::isnan(factor) || std::isinf(factor) || std::abs(factor) > 1e6f) {
+        return clamp_gradient(base);  // Fall back to base value only
+    }
+    
+    // Compute intermediate result
+    float intermediate = base * factor;
+    
+    // Check intermediate result before final clamping
+    if (std::isnan(intermediate) || std::isinf(intermediate)) {
+        return clamp_gradient(base);  // Fall back to base value
+    }
+    
+    return clamp_gradient(intermediate);
+}
+
+/**
+ * @brief Safely compute complex gradient expression
+ * @param output_grad Base output gradient
+ * @param expr Complex expression result
+ * @return Safely computed and clamped gradient
+ */
+inline float safe_gradient_expression(float output_grad, float expr) noexcept {
+    return safe_gradient_multiply(output_grad, expr);
 }
 
 /**
@@ -351,7 +426,7 @@ class DifferentiableSigmoid
         auto input_grad = TensorType::zeros();
         for (std::size_t i = 0; i < TensorType::size; ++i) {
             // Gradient: σ'(x) = σ(x)(1 - σ(x))
-            input_grad[i] = gradient_utils::clamp_gradient(output_grad[i] * output[i] * (1.0f - output[i]));
+            input_grad[i] = gradient_utils::safe_gradient_expression(output_grad[i], output[i] * (1.0f - output[i]));
         }
         return input_grad;
     }
@@ -465,8 +540,8 @@ class DifferentiableOr
 
         for (std::size_t i = 0; i < TensorType::size; ++i) {
             // ∂(x + y - xy)/∂x = 1 - y, ∂(x + y - xy)/∂y = 1 - x
-            grad1[i] = gradient_utils::clamp_gradient(output_grad[i] * (1.0f - input2[i]));
-            grad2[i] = gradient_utils::clamp_gradient(output_grad[i] * (1.0f - input1[i]));
+            grad1[i] = gradient_utils::safe_gradient_expression(output_grad[i], 1.0f - input2[i]);
+            grad2[i] = gradient_utils::safe_gradient_expression(output_grad[i], 1.0f - input1[i]);
         }
 
         return std::make_tuple(grad1, grad2);
@@ -527,8 +602,8 @@ class DifferentiableImplies
             float x = input1[i];
             float y = input2[i];
 
-            grad1[i] = gradient_utils::clamp_gradient(output_grad[i] * (y - 1.0f + x * y));
-            grad2[i] = gradient_utils::clamp_gradient(output_grad[i] * (1.0f - x));
+            grad1[i] = gradient_utils::safe_gradient_expression(output_grad[i], y - 1.0f + x * y);
+            grad2[i] = gradient_utils::safe_gradient_expression(output_grad[i], 1.0f - x);
         }
 
         return std::make_tuple(grad1, grad2);

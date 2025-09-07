@@ -86,6 +86,23 @@
 namespace inference_lab::engines::neuro_symbolic {
 
 // ================================================================================================
+// THREAD-SAFE UTILITIES
+// ================================================================================================
+
+/**
+ * @brief Thread-safe random number generator
+ * 
+ * Provides a thread-safe way to get a random number generator instance.
+ * Each thread gets its own generator, avoiding race conditions during
+ * static initialization.
+ */
+inline std::mt19937& get_thread_generator() {
+    thread_local std::random_device rd;
+    thread_local std::mt19937 gen(rd());
+    return gen;
+}
+
+// ================================================================================================
 // LTN CONFIGURATION AND TYPES
 // ================================================================================================
 
@@ -141,9 +158,8 @@ struct Individual {
 
   private:
     void initialize_embedding_random() {
-        // Thread-safe random number generation
-        thread_local static std::random_device rd;
-        thread_local static std::mt19937 gen(rd());
+        // Use thread-safe random generator
+        auto& gen = get_thread_generator();
         std::normal_distribution<float> dist(0.0f, 0.1f);
         for (auto& val : embedding) {
             val = dist(gen);
@@ -181,9 +197,8 @@ struct Predicate {
 
   private:
     void initialize_weights_xavier(std::size_t weight_size) {
-        // Thread-safe random number generation
-        thread_local static std::random_device rd;
-        thread_local static std::mt19937 gen(rd());
+        // Use thread-safe random generator
+        auto& gen = get_thread_generator();
         float std_dev = std::sqrt(2.0f / static_cast<float>(weight_size));
         std::normal_distribution<float> weight_dist(0.0f, std_dev);
 
