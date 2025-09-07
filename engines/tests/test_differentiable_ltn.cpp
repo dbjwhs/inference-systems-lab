@@ -6,6 +6,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -178,12 +179,12 @@ class TensorFuzzyTest : public ::testing::Test {
         tensor2_ = TypedTensor<float, Shape<2, 2>>::from_data(std::move(data2));
     }
 
-    TypedTensor<float, Shape<2, 2>> tensor1_;
-    TypedTensor<float, Shape<2, 2>> tensor2_;
+    std::optional<TypedTensor<float, Shape<2, 2>>> tensor1_;
+    std::optional<TypedTensor<float, Shape<2, 2>>> tensor2_;
 };
 
 TEST_F(TensorFuzzyTest, TensorNegation) {
-    auto result = tensor_fuzzy_not(tensor1_);
+    auto result = tensor_fuzzy_not(*tensor1_);
 
     EXPECT_NEAR(result[0], 0.2f, 1e-6f);  // 1.0 - 0.8
     EXPECT_NEAR(result[1], 0.7f, 1e-6f);  // 1.0 - 0.3
@@ -192,7 +193,7 @@ TEST_F(TensorFuzzyTest, TensorNegation) {
 }
 
 TEST_F(TensorFuzzyTest, TensorConjunction) {
-    auto result = tensor_fuzzy_and(tensor1_, tensor2_);
+    auto result = tensor_fuzzy_and(*tensor1_, *tensor2_);
 
     EXPECT_NEAR(result[0], 0.48f, 1e-6f);  // 0.8 * 0.6
     EXPECT_NEAR(result[1], 0.21f, 1e-6f);  // 0.3 * 0.7
@@ -201,7 +202,7 @@ TEST_F(TensorFuzzyTest, TensorConjunction) {
 }
 
 TEST_F(TensorFuzzyTest, TensorDisjunction) {
-    auto result = tensor_fuzzy_or(tensor1_, tensor2_);
+    auto result = tensor_fuzzy_or(*tensor1_, *tensor2_);
 
     // Probabilistic sum: a + b - a*b
     EXPECT_NEAR(result[0], 0.92f, 1e-6f);  // 0.8 + 0.6 - 0.48
@@ -212,12 +213,12 @@ TEST_F(TensorFuzzyTest, TensorDisjunction) {
 
 TEST_F(TensorFuzzyTest, TensorQuantification) {
     // Universal quantification over all elements
-    FuzzyValue forall_result = tensor_fuzzy_forall(tensor1_);
+    FuzzyValue forall_result = tensor_fuzzy_forall(*tensor1_);
     FuzzyValue expected = 0.8f * 0.3f * 0.9f * 0.1f;  // Product of all
     EXPECT_NEAR(forall_result, expected, 1e-6f);
 
     // Existential quantification over all elements
-    FuzzyValue exists_result = tensor_fuzzy_exists(tensor1_);
+    FuzzyValue exists_result = tensor_fuzzy_exists(*tensor1_);
     FuzzyValue expected_exists = 1.0f - (0.2f * 0.7f * 0.1f * 0.9f);
     EXPECT_NEAR(exists_result, expected_exists, 1e-6f);
 }
@@ -243,8 +244,8 @@ class DifferentiableOpsTest : public ::testing::Test {
         input2_ = TypedTensor<float, Shape<3>>::from_data(std::move(data2));
     }
 
-    TypedTensor<float, Shape<3>> input1_;
-    TypedTensor<float, Shape<3>> input2_;
+    std::optional<TypedTensor<float, Shape<3>>> input1_;
+    std::optional<TypedTensor<float, Shape<3>>> input2_;
 };
 
 TEST_F(DifferentiableOpsTest, DifferentiableNot) {
@@ -394,18 +395,18 @@ class TensorLogicBridgeTest : public ::testing::Test {
         data[5] = 0.4f;
         tensor_ = TypedTensor<float, Shape<2, 3>>::from_data(std::move(data));
 
-        logical_ = LogicalTensor<float, Shape<2, 3>>::from_tensor(tensor_);
+        logical_ = LogicalTensor<float, Shape<2, 3>>::from_tensor(*tensor_);
     }
 
-    TypedTensor<float, Shape<2, 3>> tensor_;
-    LogicalTensor<float, Shape<2, 3>> logical_;
+    std::optional<TypedTensor<float, Shape<2, 3>>> tensor_;
+    std::optional<LogicalTensor<float, Shape<2, 3>>> logical_;
 };
 
 TEST_F(TensorLogicBridgeTest, ConstructionAndConversion) {
     // Test construction from tensor
-    auto logical1 = LogicalTensor<float, Shape<2, 3>>::from_tensor(tensor_);
+    auto logical1 = LogicalTensor<float, Shape<2, 3>>::from_tensor(*tensor_);
     for (std::size_t i = 0; i < 6; ++i) {
-        EXPECT_NEAR(logical1[i], tensor_[i], 1e-6f);
+        EXPECT_NEAR(logical1[i], (*tensor_)[i], 1e-6f);
     }
 
     // Test construction with clamping
@@ -432,22 +433,22 @@ TEST_F(TensorLogicBridgeTest, ConstructionAndConversion) {
 
 TEST_F(TensorLogicBridgeTest, PredicateOperations) {
     // Greater than predicate
-    auto gt_05 = logical_.greater_than(0.5f);
+    auto gt_05 = logical_->greater_than(0.5f);
     EXPECT_GT(gt_05[0], 0.5f);  // 0.8 > 0.5
     EXPECT_LT(gt_05[1], 0.5f);  // 0.3 < 0.5
     EXPECT_GT(gt_05[2], 0.5f);  // 0.9 > 0.5
 
     // Less than predicate
-    auto lt_05 = logical_.less_than(0.5f);
+    auto lt_05 = logical_->less_than(0.5f);
     EXPECT_LT(lt_05[0], 0.5f);  // 0.8 > 0.5, so result < 0.5
     EXPECT_GT(lt_05[1], 0.5f);  // 0.3 < 0.5, so result > 0.5
 
     // Approximately equal predicate
-    auto approx_06 = logical_.approximately_equal(0.6f, 0.1f);
+    auto approx_06 = logical_->approximately_equal(0.6f, 0.1f);
     EXPECT_GT(approx_06[4], approx_06[0]);  // 0.6 closer to 0.6 than 0.8
 
     // Custom predicate
-    auto is_high = logical_.predicate([](float x) { return x > 0.7f ? 1.0f : 0.0f; });
+    auto is_high = logical_->predicate([](float x) { return x > 0.7f ? 1.0f : 0.0f; });
     EXPECT_NEAR(is_high[0], 1.0f, 1e-6f);  // 0.8 > 0.7
     EXPECT_NEAR(is_high[1], 0.0f, 1e-6f);  // 0.3 < 0.7
     EXPECT_NEAR(is_high[2], 1.0f, 1e-6f);  // 0.9 > 0.7
@@ -465,30 +466,30 @@ TEST_F(TensorLogicBridgeTest, LogicalOperations) {
     auto other_logical = LogicalTensor<float, Shape<2, 3>>::from_tensor(std::move(other_tensor));
 
     // Logical NOT
-    auto not_result = logical_.logical_not();
+    auto not_result = logical_->logical_not();
     EXPECT_NEAR(not_result[0], 0.2f, 1e-6f);  // 1 - 0.8
     EXPECT_NEAR(not_result[1], 0.7f, 1e-6f);  // 1 - 0.3
 
     // Logical AND
-    auto and_result = logical_.logical_and(other_logical);
+    auto and_result = logical_->logical_and(other_logical);
     EXPECT_NEAR(and_result[0], 0.16f, 1e-6f);  // 0.8 * 0.2
     EXPECT_NEAR(and_result[1], 0.24f, 1e-6f);  // 0.3 * 0.8
 
     // Logical OR
-    auto or_result = logical_.logical_or(other_logical);
+    auto or_result = logical_->logical_or(other_logical);
     EXPECT_NEAR(or_result[0], 0.84f, 1e-6f);  // 0.8 + 0.2 - 0.16
     EXPECT_NEAR(or_result[1], 0.86f, 1e-6f);  // 0.3 + 0.8 - 0.24
 
     // Logical IMPLIES
-    auto implies_result = logical_.logical_implies(other_logical);
+    auto implies_result = logical_->logical_implies(other_logical);
     // x → y = ¬x ∨ y = (1-x) + xy
     float expected_0 = fuzzy_implies(0.8f, 0.2f);
     EXPECT_NEAR(implies_result[0], expected_0, 1e-6f);
 
     // Test operator overloads
-    auto and_operator = logical_ & other_logical;
-    auto or_operator = logical_ | other_logical;
-    auto not_operator = !logical_;
+    auto and_operator = (*logical_) & other_logical;
+    auto or_operator = (*logical_) | other_logical;
+    auto not_operator = !(*logical_);
 
     for (std::size_t i = 0; i < 6; ++i) {
         EXPECT_NEAR(and_operator[i], and_result[i], 1e-6f);
@@ -499,20 +500,20 @@ TEST_F(TensorLogicBridgeTest, LogicalOperations) {
 
 TEST_F(TensorLogicBridgeTest, QuantificationOperations) {
     // Universal quantification
-    FuzzyValue forall_result = logical_.forall();
+    FuzzyValue forall_result = logical_->forall();
     FuzzyValue expected_forall = 0.8f * 0.3f * 0.9f * 0.1f * 0.6f * 0.4f;
     EXPECT_NEAR(forall_result, expected_forall, 1e-6f);
 
     // Existential quantification
-    FuzzyValue exists_result = logical_.exists();
+    FuzzyValue exists_result = logical_->exists();
     // Product of complements: (1-0.8)(1-0.3)(1-0.9)(1-0.1)(1-0.6)(1-0.4)
     FuzzyValue complement_product = 0.2f * 0.7f * 0.1f * 0.9f * 0.4f * 0.6f;
     FuzzyValue expected_exists = 1.0f - complement_product;
     EXPECT_NEAR(exists_result, expected_exists, 1e-6f);
 
     // Smooth quantification
-    FuzzyValue smooth_forall = logical_.smooth_forall(10.0f);
-    FuzzyValue smooth_exists = logical_.smooth_exists(10.0f);
+    FuzzyValue smooth_forall = logical_->smooth_forall(10.0f);
+    FuzzyValue smooth_exists = logical_->smooth_exists(10.0f);
 
     EXPECT_GE(smooth_forall, 0.0f);
     EXPECT_LE(smooth_forall, 1.0f);
@@ -525,7 +526,7 @@ TEST_F(TensorLogicBridgeTest, QuantificationOperations) {
 }
 
 TEST_F(TensorLogicBridgeTest, StatisticalAnalysis) {
-    auto stats = logical_.statistics();
+    auto stats = logical_->statistics();
 
     // Check basic statistics
     EXPECT_GE(stats.mean, 0.0f);
@@ -544,10 +545,10 @@ TEST_F(TensorLogicBridgeTest, StatisticalAnalysis) {
     EXPECT_NEAR(stats.max_value, 0.9f, 1e-6f);
 
     // Truth counting
-    std::size_t true_count = logical_.count_true(0.5f);
+    std::size_t true_count = logical_->count_true(0.5f);
     EXPECT_EQ(true_count, 3u);  // 0.8, 0.9, 0.6 are >= 0.5
 
-    float truth_prop = logical_.truth_proportion(0.5f);
+    float truth_prop = logical_->truth_proportion(0.5f);
     EXPECT_NEAR(truth_prop, 0.5f, 1e-6f);  // 3/6 = 0.5
 }
 
