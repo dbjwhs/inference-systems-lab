@@ -252,7 +252,7 @@ TEST_F(DifferentiableOpsTest, DifferentiableNot) {
     DifferentiableNot<float, Shape<3>> diff_not;
 
     // Forward pass
-    auto output = diff_not.forward(input1_);
+    auto output = diff_not.forward(input1_.value());
     EXPECT_NEAR(output[0], 0.2f, 1e-6f);  // 1 - 0.8
     EXPECT_NEAR(output[1], 0.7f, 1e-6f);  // 1 - 0.3
     EXPECT_NEAR(output[2], 0.4f, 1e-6f);  // 1 - 0.6
@@ -305,7 +305,7 @@ TEST_F(DifferentiableOpsTest, DifferentiableAnd) {
     DifferentiableAnd<float, Shape<3>> diff_and;
 
     // Forward pass
-    auto inputs = std::make_tuple(input1_, input2_);
+    auto inputs = std::make_tuple(input1_.value(), input2_.value());
     auto output = diff_and.forward(inputs);
 
     // Check element-wise product
@@ -319,8 +319,8 @@ TEST_F(DifferentiableOpsTest, DifferentiableAnd) {
 
     // Gradients: ∂(xy)/∂x = y, ∂(xy)/∂y = x
     for (std::size_t i = 0; i < 3; ++i) {
-        EXPECT_NEAR(grad1[i], input2_[i], 1e-6f);
-        EXPECT_NEAR(grad2[i], input1_[i], 1e-6f);
+        EXPECT_NEAR(grad1[i], input2_.value()[i], 1e-6f);
+        EXPECT_NEAR(grad2[i], input1_.value()[i], 1e-6f);
     }
 
     EXPECT_EQ(diff_and.name(), "DifferentiableAnd");
@@ -330,7 +330,7 @@ TEST_F(DifferentiableOpsTest, DifferentiableOr) {
     DifferentiableOr<float, Shape<3>> diff_or;
 
     // Forward pass
-    auto inputs = std::make_tuple(input1_, input2_);
+    auto inputs = std::make_tuple(input1_.value(), input2_.value());
     auto output = diff_or.forward(inputs);
 
     // Check probabilistic sum: x + y - xy
@@ -344,8 +344,8 @@ TEST_F(DifferentiableOpsTest, DifferentiableOr) {
 
     // Gradients: ∂(x+y-xy)/∂x = 1-y, ∂(x+y-xy)/∂y = 1-x
     for (std::size_t i = 0; i < 3; ++i) {
-        EXPECT_NEAR(grad1[i], 1.0f - input2_[i], 1e-6f);
-        EXPECT_NEAR(grad2[i], 1.0f - input1_[i], 1e-6f);
+        EXPECT_NEAR(grad1[i], 1.0f - input2_.value()[i], 1e-6f);
+        EXPECT_NEAR(grad2[i], 1.0f - input1_.value()[i], 1e-6f);
     }
 
     EXPECT_EQ(diff_or.name(), "DifferentiableOr");
@@ -355,23 +355,23 @@ TEST_F(DifferentiableOpsTest, DifferentiableQuantifiers) {
     // Test differentiable forall
     DifferentiableForall<float, Shape<3>> diff_forall(5.0f);  // Lower temperature for testing
 
-    FuzzyValue forall_result = diff_forall.forward(input1_);
+    FuzzyValue forall_result = diff_forall.forward(input1_.value());
     EXPECT_GE(forall_result, 0.0f);
     EXPECT_LE(forall_result, 1.0f);
 
     // Should be less than simple product due to soft minimum
-    FuzzyValue simple_product = input1_[0] * input1_[1] * input1_[2];
+    FuzzyValue simple_product = input1_.value()[0] * input1_.value()[1] * input1_.value()[2];
     EXPECT_LE(forall_result, simple_product);
 
     // Test differentiable exists
     DifferentiableExists<float, Shape<3>> diff_exists(5.0f);
 
-    FuzzyValue exists_result = diff_exists.forward(input1_);
+    FuzzyValue exists_result = diff_exists.forward(input1_.value());
     EXPECT_GE(exists_result, 0.0f);
     EXPECT_LE(exists_result, 1.0f);
 
     // Should be greater than simple maximum due to soft maximum
-    FuzzyValue simple_max = std::max({input1_[0], input1_[1], input1_[2]});
+    FuzzyValue simple_max = std::max({input1_.value()[0], input1_.value()[1], input1_.value()[2]});
     EXPECT_GE(exists_result, simple_max);
 
     EXPECT_EQ(diff_forall.name(), "DifferentiableForall");
@@ -848,8 +848,6 @@ TEST_F(LTNErrorHandlingTest, ArityMismatches) {
     EXPECT_TRUE(result2.is_err());
     EXPECT_EQ(result2.unwrap_err(), LTNError::INVALID_CONFIGURATION);
 }
-
-}  // End of test namespace
 
 // ================================================================================================
 // MAIN TEST RUNNER

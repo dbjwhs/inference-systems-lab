@@ -135,9 +135,15 @@ struct Individual {
 
     Individual(std::string name, std::size_t id, std::size_t embedding_dim)
         : name(std::move(name)), id(id), embedding(embedding_dim, 0.0f) {
-        // Initialize embedding with small random values
-        std::random_device rd;
-        std::mt19937 gen(rd());
+        // Initialize embedding with small random values using thread-safe generator
+        initialize_embedding_random();
+    }
+
+  private:
+    void initialize_embedding_random() {
+        // Thread-safe random number generation
+        thread_local static std::random_device rd;
+        thread_local static std::mt19937 gen(rd());
         std::normal_distribution<float> dist(0.0f, 0.1f);
         for (auto& val : embedding) {
             val = dist(gen);
@@ -168,16 +174,22 @@ struct Predicate {
         weights.resize(weight_size);
         bias.resize(1);
 
-        // Xavier initialization
-        std::random_device rd;
-        std::mt19937 gen(rd());
+        // Xavier initialization with thread-safe random generation
+        initialize_weights_xavier(weight_size);
+        bias[0] = 0.0f;  // Initialize bias to zero
+    }
+
+  private:
+    void initialize_weights_xavier(std::size_t weight_size) {
+        // Thread-safe random number generation
+        thread_local static std::random_device rd;
+        thread_local static std::mt19937 gen(rd());
         float std_dev = std::sqrt(2.0f / static_cast<float>(weight_size));
         std::normal_distribution<float> weight_dist(0.0f, std_dev);
 
         for (auto& w : weights) {
             w = weight_dist(gen);
         }
-        bias[0] = 0.0f;  // Initialize bias to zero
     }
 };
 
