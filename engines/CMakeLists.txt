@@ -41,6 +41,7 @@ add_library(engines STATIC
     src/neuro_symbolic/logic_types.cpp
     src/neuro_symbolic/symbolic_logic.cpp
     src/neuro_symbolic/predicate_system.cpp
+    src/neuro_symbolic/logic_tensor_network.cpp
 )
 
 target_include_directories(engines PUBLIC
@@ -76,6 +77,7 @@ add_executable(engines_tests
     tests/test_logic_types.cpp
     tests/test_symbolic_logic.cpp
     tests/test_predicate_system.cpp
+    tests/test_differentiable_ltn.cpp
 )
 
 target_link_libraries(engines_tests
