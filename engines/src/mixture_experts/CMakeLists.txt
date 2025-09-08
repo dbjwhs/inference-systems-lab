@@ -158,13 +158,13 @@ if(BUILD_TESTING)
     )
 
     # Add individual test registration for CTest integration
-    add_test(NAME MoEEngineTests COMMAND moe_tests --gtest_filter=MoEEngineTest.*)
-    add_test(NAME ExpertRouterTests COMMAND moe_tests --gtest_filter=ExpertRouterTest.*)
-    add_test(NAME LoadBalancerTests COMMAND moe_tests --gtest_filter=LoadBalancerTest.*)
-    add_test(NAME MoEConfigTests COMMAND moe_tests --gtest_filter=MoEConfigTest.*)
-    add_test(NAME MoEIntegrationTests COMMAND moe_tests --gtest_filter=MoEIntegrationTest.*)
-    add_test(NAME SparseActivationTests COMMAND moe_tests --gtest_filter=SparseActivationTest.*)
-    add_test(NAME RequestTrackerTests COMMAND moe_tests --gtest_filter=RequestTrackerTest.*)
+    add_test(NAME MoEEngineTests COMMAND moe_tests --gtest_filter="MoEEngineTest.*")
+    add_test(NAME ExpertRouterTests COMMAND moe_tests --gtest_filter="ExpertRouterTest.*")
+    add_test(NAME LoadBalancerTests COMMAND moe_tests --gtest_filter="LoadBalancerTest.*")
+    add_test(NAME MoEConfigTests COMMAND moe_tests --gtest_filter="MoEConfigTest.*")
+    add_test(NAME MoEIntegrationTests COMMAND moe_tests --gtest_filter="MoEIntegrationTest.*")
+    add_test(NAME SparseActivationTests COMMAND moe_tests --gtest_filter="SparseActivationTest.*")
+    add_test(NAME RequestTrackerTests COMMAND moe_tests --gtest_filter="RequestTrackerTest.*")
 endif()
 
 # === Benchmark Suite ===
