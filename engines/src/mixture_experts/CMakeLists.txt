@@ -45,9 +45,8 @@ target_include_directories(mixture_experts
 # === Dependencies ===
 # Link with existing common library for Result<T,E> patterns
 target_link_libraries(mixture_experts
-    PUBLIC
-        common
     PRIVATE
+        common
         ${CMAKE_THREAD_LIBS_INIT}
 )
 
