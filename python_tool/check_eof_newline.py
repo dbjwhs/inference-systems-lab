@@ -22,6 +22,8 @@ Usage:
 Examples:
     python python_tool/check_eof_newline.py --check              # Check all files
     python python_tool/check_eof_newline.py --fix --backup      # Fix with backup
+    python python_tool/check_eof_newline.py --check --staged    # Check only staged files
+    python python_tool/check_eof_newline.py --fix --staged      # Fix only staged files
     python python_tool/check_eof_newline.py --check --filter "*.py"  # Check Python files only
     python python_tool/check_eof_newline.py --check --filter-from-file staged_files.txt
 """
@@ -29,6 +31,7 @@ Examples:
 import argparse
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
@@ -222,6 +225,8 @@ def main():
 Examples:
   %(prog)s --check                                    # Check all text files
   %(prog)s --fix --backup                            # Fix all files with backup
+  %(prog)s --check --staged                          # Check only staged files
+  %(prog)s --fix --staged                            # Fix only staged files
   %(prog)s --check --filter "*.py"                   # Check Python files only
   %(prog)s --check --filter "common/src/*"           # Check specific directory
   %(prog)s --fix --filter-from-file staged_files.txt # Fix files from list
@@ -238,6 +243,9 @@ Examples:
                       help="Fix missing EOF newlines automatically")
     
     # File selection options
+    parser.add_argument("--staged",
+                       action="store_true",
+                       help="Only check/fix files staged for commit")
     parser.add_argument("--filter",
                        help="Include only files matching this pattern (supports wildcards)")
     parser.add_argument("--filter-from-file",
@@ -280,8 +288,31 @@ Examples:
     include_patterns = [args.filter] if args.filter else None
     exclude_patterns = args.exclude.split(',') if args.exclude else None
     
-    # Handle file list input
-    if args.filter_from_file:
+    # Handle different file selection modes
+    if args.staged:
+        # Get staged files from git
+        try:
+            result = subprocess.run([
+                'git', 'diff', '--cached', '--name-only', '--diff-filter=ACM'
+            ], capture_output=True, text=True, cwd=project_root)
+            
+            if result.returncode != 0:
+                print(f"Error getting staged files: {result.stderr}")
+                sys.exit(1)
+            
+            staged_file_names = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+            
+            # Convert to absolute paths and filter for files that should be checked
+            files_to_check = []
+            for file_name in staged_file_names:
+                file_path = project_root / file_name
+                if file_path.exists() and checker.should_check_file(file_path):
+                    files_to_check.append(file_path)
+            
+        except Exception as e:
+            print(f"Error getting staged files: {e}")
+            sys.exit(1)
+    elif args.filter_from_file:
         try:
             with open(args.filter_from_file, 'r') as f:
                 file_list = [line.strip() for line in f if line.strip()]
@@ -304,6 +335,8 @@ Examples:
     
     if not args.quiet:
         print(f"Found {len(files_to_check)} files to check")
+        if args.staged:
+            print("Mode: Staged files only")
         if args.filter:
             print(f"Include pattern: {args.filter}")
         if args.filter_from_file:
