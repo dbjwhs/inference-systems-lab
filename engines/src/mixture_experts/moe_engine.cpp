@@ -36,6 +36,7 @@ auto MoEEngine::create(const MoEConfig& config)
     // Initialize core components
     RouterConfig router_config{};
     router_config.num_experts = config.num_experts;
+    router_config.input_dimension = config.input_dimension;
     router_config.top_k_experts = config.expert_capacity;
 
     auto router_result = ExpertRouter::create(router_config);

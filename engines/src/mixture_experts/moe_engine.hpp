@@ -35,6 +35,7 @@ enum class MoEError : std::uint8_t {
 struct MoEConfig {
     std::size_t num_experts = 8;
     std::size_t expert_capacity = 2;  // Number of experts to select per inference
+    std::size_t input_dimension = 8;  // Input feature dimension (default for test compatibility)
     float load_balancing_weight = 0.1f;
     bool enable_sparse_activation = true;
     std::size_t max_concurrent_requests = 100;
