@@ -30,6 +30,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <future>
 #include <random>
 #include <thread>
@@ -424,10 +425,10 @@ TEST_F(ConcurrentInferenceStressTest, ExtremeConcurrencyInference) {
     std::thread monitor([&]() {
         while (!stop_flag.load()) {
             std::this_thread::sleep_for(15s);
-            LOG_INFO_PRINT("Extreme test progress: {} inferences, {:.1f}/sec, {:.2f}% success",
+            LOG_INFO_PRINT("Extreme test progress: {} inferences, {}/sec, {}% success",
                            stats.total_inferences.load(),
-                           stats.get_throughput(),
-                           stats.get_success_rate() * 100);
+                           std::round(stats.get_throughput() * 10) / 10.0,
+                           std::round(stats.get_success_rate() * 1000) / 10.0);
         }
     });
 
@@ -575,9 +576,9 @@ TEST_F(BackendSwitchingStressTest, RapidBackendSwitching) {
     double usage_ratio = static_cast<double>(min_backend_usage) / max_backend_usage;
     EXPECT_GT(usage_ratio, 0.7) << "Backend usage should be reasonably balanced";
 
-    LOG_INFO_PRINT("Backend switching test completed: {:.1f} inferences/sec, {:.2f}% success",
-                   stats.get_throughput(),
-                   stats.get_success_rate() * 100);
+    LOG_INFO_PRINT("Backend switching test completed: {} inferences/sec, {}% success",
+                   std::round(stats.get_throughput() * 10) / 10.0,
+                   std::round(stats.get_success_rate() * 1000) / 10.0);
 }
 
 }  // namespace inference_lab::integration::test

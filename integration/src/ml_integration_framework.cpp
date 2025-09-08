@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <sstream>
 #include <thread>
 
@@ -466,9 +467,9 @@ auto MLIntegrationFramework::test_single_backend(
             result.error_messages.push_back("No successful inferences completed");
         }
 
-        LOG_INFO_PRINT("Single backend test completed: passed={}, throughput={:.1f}/sec",
+        LOG_INFO_PRINT("Single backend test completed: passed={}, throughput={}/sec",
                        result.passed,
-                       result.performance.throughput_inferences_per_sec);
+                       std::round(result.performance.throughput_inferences_per_sec * 10) / 10.0);
 
         return Ok(result);
 

@@ -157,12 +157,26 @@ class CTestRunner:
         start_time = time.time()
         
         try:
-            result = subprocess.run(
-                ctest_cmd,
-                capture_output=True,
-                text=True,
-                cwd=str(self.project_root)
-            )
+            if verbose:
+                # In verbose mode, let output stream to console
+                result = subprocess.run(
+                    ctest_cmd,
+                    cwd=str(self.project_root)
+                )
+                # Create a result-like object for compatibility
+                class VerboseResult:
+                    def __init__(self, returncode):
+                        self.returncode = returncode
+                        self.stdout = ""
+                        self.stderr = ""
+                result = VerboseResult(result.returncode)
+            else:
+                result = subprocess.run(
+                    ctest_cmd,
+                    capture_output=True,
+                    text=True,
+                    cwd=str(self.project_root)
+                )
             
             duration = time.time() - start_time
             
