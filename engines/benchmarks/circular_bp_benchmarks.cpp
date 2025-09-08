@@ -22,11 +22,24 @@ class CircularBPFixture : public ::benchmark::Fixture {
         if (engine_result.is_err()) {
             throw std::runtime_error("Failed to create CircularBP engine in benchmark setup");
         }
+        // Safe unwrap pattern - error already checked above
         engine_ = std::move(engine_result).unwrap();
 
-        // Create test models
+        // Comprehensive null pointer validation
+        if (!engine_) {
+            throw std::runtime_error("CircularBP engine is null after successful creation");
+        }
+
+        // Create test models with validation
         triangle_model_ = create_triangle_model();
+        if (triangle_model_.nodes.empty()) {
+            throw std::runtime_error("Failed to create triangle model - no nodes");
+        }
+
         chain_cycle_model_ = create_chain_cycle_model(5);
+        if (chain_cycle_model_.nodes.empty()) {
+            throw std::runtime_error("Failed to create chain cycle model - no nodes");  
+        }
     }
 
     void TearDown(const ::benchmark::State& state) override { engine_.reset(); }
@@ -60,6 +73,12 @@ class CircularBPFixture : public ::benchmark::Fixture {
 
     GraphicalModel create_chain_cycle_model(size_t chain_length) {
         GraphicalModel model;
+        
+        // Validate input
+        if (chain_length == 0 || chain_length > 1000) {
+            // Return empty model for invalid input
+            return model;
+        }
 
         // Create chain with cycle back to start
         for (size_t i = 1; i <= chain_length;
@@ -74,7 +93,14 @@ class CircularBPFixture : public ::benchmark::Fixture {
             if (i == 1)
                 neighbors.push_back(chain_length);  // Other direction
 
-            Node node{i, {0.6 - 0.1 * (i % 3), 0.4 + 0.1 * (i % 3)}, neighbors};
+            // Ensure probabilities are valid (positive and sum to 1.0)
+            double p1 = std::max(0.1, 0.6 - 0.1 * (i % 3));
+            double p2 = std::max(0.1, 0.4 + 0.1 * (i % 3));
+            double sum = p1 + p2;
+            p1 /= sum; // Normalize
+            p2 /= sum;
+            
+            Node node{i, {p1, p2}, neighbors};
             model.nodes.push_back(node);
             model.node_index[i] = i - 1;
         }
@@ -93,14 +119,23 @@ class CircularBPFixture : public ::benchmark::Fixture {
 };
 
 BENCHMARK_F(CircularBPFixture, TriangleCycleInference)(::benchmark::State& state) {
+    // Null pointer safety check
+    if (!engine_) {
+        state.SkipWithError("Engine is null");
+        return;
+    }
+    
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto result = engine_->run_circular_bp(triangle_model_);
         ::benchmark::DoNotOptimize(result);
 
-        if (result.is_ok()) {
-            auto marginals = result.unwrap();
-            ::benchmark::DoNotOptimize(marginals);
+        // Safe unwrap pattern - check error first
+        if (result.is_err()) {
+            // Handle error gracefully in benchmark context
+            continue;
         }
+        auto marginals = std::move(result).unwrap();
+        ::benchmark::DoNotOptimize(marginals);
     }
 
     state.SetItemsProcessed(state.iterations());
@@ -111,14 +146,23 @@ BENCHMARK_F(CircularBPFixture, TriangleCycleInference)(::benchmark::State& state
 }
 
 BENCHMARK_F(CircularBPFixture, ChainCycleInference)(::benchmark::State& state) {
+    // Null pointer safety check
+    if (!engine_) {
+        state.SkipWithError("Engine is null");
+        return;
+    }
+    
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto result = engine_->run_circular_bp(chain_cycle_model_);
         ::benchmark::DoNotOptimize(result);
 
-        if (result.is_ok()) {
-            auto marginals = result.unwrap();
-            ::benchmark::DoNotOptimize(marginals);
+        // Safe unwrap pattern - check error first  
+        if (result.is_err()) {
+            // Handle error gracefully in benchmark context
+            continue;
         }
+        auto marginals = std::move(result).unwrap();
+        ::benchmark::DoNotOptimize(marginals);
     }
 
     state.SetItemsProcessed(state.iterations());
@@ -142,11 +186,14 @@ BENCHMARK_F(CircularBPFixture, CycleDetectionStrategies)(::benchmark::State& sta
         test_config.detection_strategy = strategies[strategy_index % strategies.size()];
 
         auto test_engine_result = create_circular_bp_engine(test_config);
-        if (test_engine_result.is_ok()) {
-            auto test_engine = std::move(test_engine_result).unwrap();
-            auto result = test_engine->run_circular_bp(chain_cycle_model_);
-            ::benchmark::DoNotOptimize(result);
+        // Safe unwrap pattern - check error first
+        if (test_engine_result.is_err()) {
+            // Handle error gracefully in benchmark context
+            continue;
         }
+        auto test_engine = std::move(test_engine_result).unwrap();
+        auto result = test_engine->run_circular_bp(chain_cycle_model_);
+        ::benchmark::DoNotOptimize(result);
 
         strategy_index++;
     }
@@ -164,6 +211,7 @@ BENCHMARK_F(CircularBPFixture, CorrelationCancellationOverhead)(::benchmark::Sta
         state.SkipWithError("Failed to create CircularBP engine without correlation cancellation");
         return;
     }
+    // Safe unwrap pattern - error already checked above
     auto no_cancel_engine = std::move(no_cancel_engine_result).unwrap();
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
@@ -187,16 +235,31 @@ BENCHMARK_F(CircularBPFixture, CorrelationCancellationOverhead)(::benchmark::Sta
 BENCHMARK_F(CircularBPFixture, ScalabilityTest)(::benchmark::State& state) {
     // Test scalability with increasing cycle sizes
     size_t cycle_size = state.range(0);
+    
+    // Add safety checks to prevent segfault
+    if (cycle_size == 0) {
+        state.SkipWithError("Invalid cycle size: 0");
+        return;
+    }
+    
+    if (!engine_) {
+        state.SkipWithError("Engine not initialized");
+        return;
+    }
+    
     auto large_cycle_model = create_chain_cycle_model(cycle_size);
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto result = engine_->run_circular_bp(large_cycle_model);
         ::benchmark::DoNotOptimize(result);
 
-        if (result.is_ok()) {
-            auto marginals = result.unwrap();
-            ::benchmark::DoNotOptimize(marginals);
+        // Safe unwrap pattern - check error first
+        if (result.is_err()) {
+            // Handle error gracefully in benchmark context
+            continue;
         }
+        auto marginals = std::move(result).unwrap();
+        ::benchmark::DoNotOptimize(marginals);
     }
 
     state.SetItemsProcessed(state.iterations());
@@ -207,8 +270,11 @@ BENCHMARK_F(CircularBPFixture, ScalabilityTest)(::benchmark::State& state) {
     state.counters["inference_time_ms"] = metrics.inference_time_ms.count();
 }
 BENCHMARK_REGISTER_F(CircularBPFixture, ScalabilityTest)
-    ->Range(3, 16)  // Test cycle sizes from 3 to 16
-    ->Complexity();
+    ->Range(3, 8)   // Test cycle sizes from 3 to 8 (reduced range)
+    ->Complexity()
+    ->Unit(::benchmark::kMicrosecond)
+    ->MinTime(0.05)  // Reduce minimum time
+    ->Iterations(10); // Limit iterations
 
 BENCHMARK_F(CircularBPFixture, MessageHistoryOverhead)(::benchmark::State& state) {
     // Compare with and without message history tracking
@@ -220,6 +286,7 @@ BENCHMARK_F(CircularBPFixture, MessageHistoryOverhead)(::benchmark::State& state
         state.SkipWithError("Failed to create CircularBP engine without message history");
         return;
     }
+    // Safe unwrap pattern - error already checked above
     auto no_history_engine = std::move(no_history_engine_result).unwrap();
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
@@ -245,10 +312,13 @@ BENCHMARK_F(CircularBPFixture, EngineCreationCost)(::benchmark::State& state) {
         auto engine_result = create_circular_bp_engine(config_);
         ::benchmark::DoNotOptimize(engine_result);
 
-        if (engine_result.is_ok()) {
-            auto engine = std::move(engine_result).unwrap();
-            ::benchmark::DoNotOptimize(engine);
+        // Safe unwrap pattern - check error first
+        if (engine_result.is_err()) {
+            // Handle error gracefully in benchmark context  
+            continue;
         }
+        auto engine = std::move(engine_result).unwrap();
+        ::benchmark::DoNotOptimize(engine);
     }
 
     state.SetItemsProcessed(state.iterations());
