@@ -125,10 +125,16 @@ class StaticAnalyzer:
         if Path(clang_tidy_path).exists():
             return clang_tidy_path
         
-        # Try macOS Homebrew path first
-        homebrew_path = "/opt/homebrew/Cellar/llvm/20.1.8/bin/clang-tidy"
-        if Path(homebrew_path).exists():
-            return homebrew_path
+        # Try macOS Homebrew paths (check multiple versions)
+        homebrew_paths = [
+            "/opt/homebrew/Cellar/llvm/21.1.0/bin/clang-tidy",
+            "/opt/homebrew/Cellar/llvm/20.1.8/bin/clang-tidy", 
+            "/opt/homebrew/bin/clang-tidy",
+        ]
+        
+        for homebrew_path in homebrew_paths:
+            if Path(homebrew_path).exists():
+                return homebrew_path
         
         # Try to find in PATH
         try:
