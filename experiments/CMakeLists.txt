@@ -11,7 +11,6 @@ add_executable(exp_rule_optimization
 target_link_libraries(exp_rule_optimization
     engines
     performance
-    common
 )
 
 # Experiment 2: Distributed consensus comparison
@@ -33,7 +32,6 @@ add_executable(exp_memory_inference
 target_link_libraries(exp_memory_inference
     engines
     performance
-    common
 )
 
 # Experiments tests (validation of experimental setups) - using placeholder for now
