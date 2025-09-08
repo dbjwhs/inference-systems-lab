@@ -51,6 +51,7 @@ target_include_directories(engines PUBLIC
 
 target_link_libraries(engines
     common
+    mixture_experts
     Threads::Threads
     ${SQLITE3_LIBRARIES}
 )
@@ -66,7 +67,7 @@ if(TARGET ML::Frameworks)
     message(STATUS "Engines library linked with ML frameworks")
 endif()
 
-# Engines tests - Comprehensive Phase 4.1 test suite + ML Config + Momentum-BP + Circular-BP + Mamba-SSM + Neuro-Symbolic tests
+# Engines tests - Comprehensive Phase 4.1 test suite + ML Config + Momentum-BP + Circular-BP + Mamba-SSM + Neuro-Symbolic + MoE Demo tests
 add_executable(engines_tests
     tests/test_engines_comprehensive.cpp
     tests/test_ml_config.cpp
@@ -78,6 +79,7 @@ add_executable(engines_tests
     tests/test_symbolic_logic.cpp
     tests/test_predicate_system.cpp
     tests/test_differentiable_ltn.cpp
+    tests/test_moe_demos.cpp
 )
 
 target_link_libraries(engines_tests
@@ -87,11 +89,12 @@ target_link_libraries(engines_tests
 
 add_test(NAME EnginesTests COMMAND engines_tests)
 
-# Engines benchmarks - Momentum-BP, Circular-BP, and Mamba-SSM performance tests
+# Engines benchmarks - Momentum-BP, Circular-BP, Mamba-SSM, and MoE Demo performance tests
 add_executable(engines_benchmarks
     benchmarks/momentum_bp_benchmarks.cpp
     benchmarks/circular_bp_benchmarks.cpp
     benchmarks/mamba_ssm_benchmarks.cpp
+    benchmarks/moe_demos_benchmarks.cpp
 )
 
 target_link_libraries(engines_benchmarks
@@ -182,6 +185,31 @@ target_link_libraries(onnx_inference_demo
 # target_link_libraries(ml_framework_benchmark
 #     engines
 # )
+
+# MoE demonstration applications - Phase 7C example applications
+add_executable(moe_text_classification_demo
+    examples/moe_text_classification_demo.cpp
+)
+
+target_link_libraries(moe_text_classification_demo
+    engines
+)
+
+add_executable(moe_computer_vision_demo
+    examples/moe_computer_vision_demo.cpp
+)
+
+target_link_libraries(moe_computer_vision_demo
+    engines
+)
+
+add_executable(moe_recommendation_demo
+    examples/moe_recommendation_demo.cpp
+)
+
+target_link_libraries(moe_recommendation_demo
+    engines
+)
 
 # Python bindings
 if(BUILD_PYTHON_BINDINGS)
