@@ -467,9 +467,9 @@ auto MLIntegrationFramework::test_single_backend(
             result.error_messages.push_back("No successful inferences completed");
         }
 
-        LOG_INFO_PRINT("Single backend test completed: passed={}, throughput={}/sec",
+        LOG_INFO_PRINT("Single backend test completed: passed={}, throughput={:.1f}/sec",
                        result.passed,
-                       std::round(result.performance.throughput_inferences_per_sec * 10) / 10.0);
+                       result.performance.throughput_inferences_per_sec);
 
         return Ok(result);
 
