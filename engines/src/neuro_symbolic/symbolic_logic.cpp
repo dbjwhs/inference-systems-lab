@@ -4,7 +4,9 @@
 #include "symbolic_logic.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace inference_lab::engines::neuro_symbolic {
@@ -54,8 +56,8 @@ auto LogicFormula::to_string() const -> std::string {
         }
 
         case Type::QUANTIFIED:
-            return neuro_symbolic::to_string(operator_) + quantified_var_->to_string() + " (" +
-                   operands_[0]->to_string() + ")";
+            return neuro_symbolic::to_string(operator_) + quantified_var_->to_string() + " " +
+                   operands_[0]->to_string();
     }
 
     return "INVALID_FORMULA";
@@ -83,11 +85,9 @@ auto LogicFormula::clone() const -> std::unique_ptr<LogicFormula> {
                 return nullptr;
             }
 
-            cloned_term.release(); // Transfer ownership to var_ptr
+            cloned_term.release();  // Transfer ownership to var_ptr
             return std::make_unique<LogicFormula>(
-                operator_,
-                std::unique_ptr<Variable>(var_ptr),
-                operands_[0]->clone());
+                operator_, std::unique_ptr<Variable>(var_ptr), operands_[0]->clone());
         }
     }
 
@@ -95,34 +95,52 @@ auto LogicFormula::clone() const -> std::unique_ptr<LogicFormula> {
 }
 
 auto LogicFormula::collect_variables() const -> std::unordered_set<SymbolId> {
-    std::unordered_set<SymbolId> variables;
+    // For the current implementation, we need to handle variable collection by name
+    // to properly deduplicate variables with the same name but different IDs
+    std::unordered_map<std::string, SymbolId> unique_vars_by_name;
 
-    switch (type_) {
-        case Type::ATOMIC: {
-            for (const auto& arg : predicate_->get_arguments()) {
-                if (arg->get_type() == TermType::VARIABLE) {
-                    variables.insert(arg->get_id());
+    std::function<void(const LogicFormula&)> collect_vars_by_name;
+    collect_vars_by_name = [&](const LogicFormula& formula) {
+        switch (formula.get_type()) {
+            case Type::ATOMIC: {
+                if (const auto* pred = formula.get_predicate()) {
+                    for (const auto& arg : pred->get_arguments()) {
+                        if (arg->get_type() == TermType::VARIABLE) {
+                            // Use the first occurrence of each variable name
+                            const std::string& var_name = arg->get_name();
+                            if (unique_vars_by_name.find(var_name) == unique_vars_by_name.end()) {
+                                unique_vars_by_name[var_name] = arg->get_id();
+                            }
+                        }
+                    }
                 }
+                break;
             }
-            break;
+            case Type::COMPOUND: {
+                for (const auto& operand : formula.get_operands()) {
+                    collect_vars_by_name(*operand);
+                }
+                break;
+            }
+            case Type::QUANTIFIED: {
+                const std::string& var_name = formula.get_quantified_variable()->get_name();
+                if (unique_vars_by_name.find(var_name) == unique_vars_by_name.end()) {
+                    unique_vars_by_name[var_name] = formula.get_quantified_variable()->get_id();
+                }
+                if (!formula.get_operands().empty()) {
+                    collect_vars_by_name(*formula.get_operands()[0]);
+                }
+                break;
+            }
         }
+    };
 
-        case Type::COMPOUND: {
-            for (const auto& operand : operands_) {
-                auto operand_vars = operand->collect_variables();
-                variables.insert(operand_vars.begin(), operand_vars.end());
-            }
-            break;
-        }
+    collect_vars_by_name(*this);
 
-        case Type::QUANTIFIED: {
-            variables.insert(quantified_var_->get_id());
-            if (!operands_.empty()) {
-                auto body_vars = operands_[0]->collect_variables();
-                variables.insert(body_vars.begin(), body_vars.end());
-            }
-            break;
-        }
+    // Convert to set of IDs (keeping one ID per unique name)
+    std::unordered_set<SymbolId> variables;
+    for (const auto& [name, id] : unique_vars_by_name) {
+        variables.insert(id);
     }
 
     return variables;
@@ -302,7 +320,7 @@ auto Unifier::apply_substitution(const Term& term, const Substitution& subst)
     } else if (term.get_type() == TermType::COMPOUND) {
         const auto* compound = dynamic_cast<const CompoundTerm*>(&term);
         if (!compound) {
-            return term.clone(); // Type safety fallback
+            return term.clone();  // Type safety fallback
         }
         std::vector<std::unique_ptr<Term>> new_args;
         new_args.reserve(compound->get_arguments().size());
@@ -370,9 +388,9 @@ auto Unifier::unify_terms_recursive(const Term& term1, const Term& term2, Substi
     if (term1.get_type() == TermType::COMPOUND && term2.get_type() == TermType::COMPOUND) {
         const auto* compound1 = dynamic_cast<const CompoundTerm*>(&term1);
         const auto* compound2 = dynamic_cast<const CompoundTerm*>(&term2);
-        
+
         if (!compound1 || !compound2) {
-            return false; // Type safety fallback
+            return false;  // Type safety fallback
         }
 
         if (compound1->get_functor() != compound2->get_functor() ||
@@ -401,7 +419,7 @@ auto Unifier::occurs_check(SymbolId var_id, const Term& term) -> bool {
     } else if (term.get_type() == TermType::COMPOUND) {
         const auto* compound = dynamic_cast<const CompoundTerm*>(&term);
         if (!compound) {
-            return false; // Type safety fallback
+            return false;  // Type safety fallback
         }
         for (const auto& arg : compound->get_arguments()) {
             if (occurs_check(var_id, *arg)) {
@@ -484,9 +502,49 @@ auto InferenceRules::universal_instantiation(const LogicFormula& universal_formu
         return Err(LogicError::INVALID_FORMULA);
     }
 
-    // Create substitution: variable -> constant
+    // Create substitution by matching variable names
+    // This handles the case where the quantified variable and body variables
+    // have the same name but different IDs (as created by the test)
     Substitution subst;
-    subst[quantified_var->get_id()] = constant.clone();
+
+    // Helper function to collect all variables from a formula with their terms
+    std::function<void(const LogicFormula&, std::unordered_map<SymbolId, const Term*>&)>
+        collect_var_terms;
+    collect_var_terms = [&](const LogicFormula& formula,
+                            std::unordered_map<SymbolId, const Term*>& var_map) {
+        switch (formula.get_type()) {
+            case LogicFormula::Type::ATOMIC:
+                if (const auto* pred = formula.get_predicate()) {
+                    for (const auto& arg : pred->get_arguments()) {
+                        if (arg->get_type() == TermType::VARIABLE) {
+                            var_map[arg->get_id()] = arg.get();
+                        }
+                    }
+                }
+                break;
+            case LogicFormula::Type::COMPOUND:
+                for (const auto& operand : formula.get_operands()) {
+                    collect_var_terms(*operand, var_map);
+                }
+                break;
+            case LogicFormula::Type::QUANTIFIED:
+                if (!formula.get_operands().empty()) {
+                    collect_var_terms(*formula.get_operands()[0], var_map);
+                }
+                break;
+        }
+    };
+
+    std::unordered_map<SymbolId, const Term*> body_var_terms;
+    collect_var_terms(*body, body_var_terms);
+
+    // Substitute all variables in body that have the same name as quantified variable
+    for (const auto& [var_id, var_term] : body_var_terms) {
+        if (var_term->get_name() == quantified_var->get_name()) {
+            auto cloned_term = constant.clone();
+            subst[var_id] = std::shared_ptr<Term>(cloned_term.release());
+        }
+    }
 
     return Ok(body->apply_substitution(subst));
 }
@@ -508,11 +566,9 @@ auto InferenceRules::existential_generalization(const LogicFormula& formula,
     }
 
     // For now, return a simple existential quantification
-    cloned_term.release(); // Transfer ownership to var_ptr
+    cloned_term.release();  // Transfer ownership to var_ptr
     return Ok(std::make_unique<LogicFormula>(
-        LogicOperator::EXISTS,
-        std::unique_ptr<Variable>(var_ptr),
-        formula.clone()));
+        LogicOperator::EXISTS, std::unique_ptr<Variable>(var_ptr), formula.clone()));
 }
 
 auto InferenceRules::is_implication(const LogicFormula& formula) -> bool {
