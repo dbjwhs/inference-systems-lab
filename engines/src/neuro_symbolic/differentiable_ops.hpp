@@ -1,8 +1,23 @@
 // MIT License
 // Copyright (c) 2025 dbjwhs
 //
-// This software is provided "as is" without warranty of any kind, express or implied.
-// The authors are not liable for any damages arising from the use of this software.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #pragma once
 
@@ -91,17 +106,13 @@ class DifferentiableOperation : public DifferentiableOperationBase {
      * @brief Get input type information
      * @return Type information for InputType
      */
-    auto input_type() const -> std::type_info const& override {
-        return typeid(InputType);
-    }
+    auto input_type() const -> std::type_info const& override { return typeid(InputType); }
 
     /**
      * @brief Get output type information
      * @return Type information for OutputType
      */
-    auto output_type() const -> std::type_info const& override {
-        return typeid(OutputType);
-    }
+    auto output_type() const -> std::type_info const& override { return typeid(OutputType); }
 };
 
 // ================================================================================================
@@ -134,7 +145,8 @@ class GradientContext {
     /**
      * @brief Move constructor
      */
-    GradientContext(GradientContext&& other) noexcept : stored_values_(std::move(other.stored_values_)) {}
+    GradientContext(GradientContext&& other) noexcept
+        : stored_values_(std::move(other.stored_values_)) {}
 
     /**
      * @brief Copy assignment operator
@@ -196,7 +208,7 @@ class GradientContext {
     /**
      * @brief Clear all stored values (memory cleanup)
      */
-    void clear() { 
+    void clear() {
         stored_values_.clear();
         stored_values_.reserve(0);  // Release memory
     }
@@ -238,7 +250,7 @@ inline float clamp_gradient(float gradient) noexcept {
     if (std::isnan(gradient) || std::isinf(gradient)) {
         return 0.0f;  // Replace NaN/inf with zero
     }
-    
+
     // Clamp to prevent explosion
     if (gradient > MAX_GRADIENT_MAGNITUDE) {
         return MAX_GRADIENT_MAGNITUDE;
@@ -246,12 +258,12 @@ inline float clamp_gradient(float gradient) noexcept {
     if (gradient < -MAX_GRADIENT_MAGNITUDE) {
         return -MAX_GRADIENT_MAGNITUDE;
     }
-    
+
     // Clamp to prevent vanishing (preserve sign)
     if (std::abs(gradient) < MIN_GRADIENT_MAGNITUDE) {
         return gradient < 0.0f ? -MIN_GRADIENT_MAGNITUDE : MIN_GRADIENT_MAGNITUDE;
     }
-    
+
     return gradient;
 }
 
@@ -266,15 +278,15 @@ inline float safe_gradient_multiply(float base, float factor) noexcept {
     if (std::isnan(factor) || std::isinf(factor) || std::abs(factor) > 1e6f) {
         return clamp_gradient(base);  // Fall back to base value only
     }
-    
+
     // Compute intermediate result
     float intermediate = base * factor;
-    
+
     // Check intermediate result before final clamping
     if (std::isnan(intermediate) || std::isinf(intermediate)) {
         return clamp_gradient(base);  // Fall back to base value
     }
-    
+
     return clamp_gradient(intermediate);
 }
 
@@ -383,7 +395,8 @@ class DifferentiableSigmoid
         auto input_grad = TensorType::zeros();
         for (std::size_t i = 0; i < TensorType::size; ++i) {
             // Gradient: σ'(x) = σ(x)(1 - σ(x))
-            input_grad[i] = gradient_utils::safe_gradient_expression(output_grad[i], output[i] * (1.0f - output[i]));
+            input_grad[i] = gradient_utils::safe_gradient_expression(
+                output_grad[i], output[i] * (1.0f - output[i]));
         }
         return input_grad;
     }
