@@ -1,13 +1,8 @@
-/**
- * @file test_advanced_containers.cpp
- * @brief Comprehensive tests for advanced ML-specific containers
- *
- * Tests the advanced container implementations added to containers.hpp:
- * - BatchContainer for ML inference batching
- * - RealtimeCircularBuffer for streaming data
- * - FeatureCache for ML feature caching
- * - SIMD operations for vectorized computations
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <algorithm>
 #include <chrono>

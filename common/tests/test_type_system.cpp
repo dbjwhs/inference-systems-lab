@@ -1,14 +1,8 @@
-/**
- * @file test_type_system.cpp
- * @brief Comprehensive tests for the ML type system with compile-time shape checking
- *
- * Tests the advanced type system implementation from type_system.hpp:
- * - Compile-time shape verification
- * - Strong type aliases for ML concepts
- * - TypedTensor operations with shape checking
- * - Layer composition and sequential models
- * - Automatic differentiation framework
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <limits>
 #include <type_traits>

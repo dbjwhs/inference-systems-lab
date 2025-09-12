@@ -1,19 +1,8 @@
-/**
- * @file moe_recommendation_demo.cpp
- * @brief Demonstration of Mixture of Experts for multi-context recommendation systems
- *
- * This example shows how to use the MoE system for recommendation tasks where
- * different experts specialize in different recommendation contexts: collaborative
- * filtering, content-based filtering, and demographic-based recommendations.
- * The router learns to select appropriate experts based on user and item features.
- *
- * Key Features Demonstrated:
- * - Context-aware expert specialization (user preferences, content, demographics)
- * - Dynamic expert selection based on available user/item data
- * - Real-time recommendation generation with load balancing
- * - A/B testing framework for recommendation quality
- * - Integration with existing Result<T,E> patterns
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <algorithm>
 #include <chrono>

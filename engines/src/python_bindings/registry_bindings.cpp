@@ -1,10 +1,8 @@
-/**
- * @file registry_bindings.cpp
- * @brief Pybind11 bindings for ModelRegistry class
- *
- * Provides Python access to the C++ ModelRegistry implementation for unified
- * model lifecycle management across Python and C++ code.
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <pybind11/chrono.h>
 #include <pybind11/pybind11.h>

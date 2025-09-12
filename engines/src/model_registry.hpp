@@ -1,7 +1,8 @@
 // MIT License
-// Copyright (c) 2025 Inference Systems Laboratory
+// Copyright (c) 2025 dbjwhs
 //
-// Model Registry C++ Interface - Unified model management across Python and C++
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #pragma once
 

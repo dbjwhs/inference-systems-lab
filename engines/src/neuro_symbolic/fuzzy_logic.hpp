@@ -1,44 +1,8 @@
-/**
- * @file fuzzy_logic.hpp
- * @brief Fuzzy logic operations with continuous truth values for differentiable reasoning
- *
- * This file implements fuzzy logic operations that serve as the foundation for
- * Logic Tensor Networks (LTNs). Unlike traditional boolean logic, fuzzy logic
- * operates on continuous truth values in [0,1], making it naturally compatible
- * with neural networks and gradient-based optimization.
- *
- * Key Features:
- * - Continuous truth values enabling differentiable logic operations
- * - T-norm and T-conorm operators (product, Lukasiewicz, Gödel)
- * - Fuzzy quantifiers (∀, ∃) with aggregation functions
- * - Smooth approximations ensuring gradient flow
- * - Integration with existing TypedTensor system for efficient computation
- *
- * Mathematical Foundation:
- * Fuzzy logic extends classical logic by replacing boolean values {0,1} with
- * continuous values in [0,1]. This enables:
- * - Gradual membership in sets/predicates
- * - Smooth logical connectives suitable for optimization
- * - Probabilistic interpretation of logical statements
- *
- * Example Usage:
- * @code
- * // Fuzzy truth values
- * FuzzyValue p = 0.8f;    // "mostly true"
- * FuzzyValue q = 0.3f;    // "somewhat false"
- *
- * // Fuzzy logical operations
- * auto conjunction = fuzzy_and(p, q);    // T-norm: 0.24 (product)
- * auto disjunction = fuzzy_or(p, q);     // T-conorm: 0.86
- * auto negation = fuzzy_not(p);          // 0.2
- * auto implication = fuzzy_implies(p, q); // 0.375
- *
- * // Fuzzy quantification over tensors
- * TypedTensor<float, Shape<10>> truth_values = ...;
- * auto forall_result = fuzzy_forall(truth_values);
- * auto exists_result = fuzzy_exists(truth_values);
- * @endcode
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #pragma once
 

@@ -1,68 +1,8 @@
-/**
- * @file logic_tensor_network.hpp
- * @brief Logic Tensor Networks (LTN) - Core differentiable logic programming system
- *
- * This file implements Logic Tensor Networks, a neural-symbolic framework that
- * enables end-to-end learning of logical reasoning. LTNs combine the expressiveness
- * of first-order logic with the learning capabilities of neural networks through
- * continuous relaxations of logical operations.
- *
- * Key Features:
- * - Real Logic Implementation: Convert FOL formulas to computational graphs
- * - Differentiable Learning: End-to-end gradient-based optimization
- * - Fuzzy Semantics: Continuous truth values enabling smooth optimization
- * - Symbol Grounding: Learn mappings between symbols and neural representations
- * - Knowledge Integration: Incorporate prior knowledge as logical constraints
- * - Scalable Inference: Efficient tensor operations for large-scale reasoning
- *
- * Scientific Foundation:
- * Based on "Logic Tensor Networks: Deep Learning and Logical Reasoning from Data
- * and Knowledge" (Serafini & Garcez, 2016) and subsequent extensions. LTNs provide
- * a principled framework for neuro-symbolic AI by:
- *
- * 1. Grounding: Map symbols to points in a vector space
- * 2. Logic: Define logical formulas using fuzzy semantics
- * 3. Learning: Optimize both groundings and formulas via gradient descent
- * 4. Reasoning: Perform inference through continuous logical operations
- *
- * Architecture Overview:
- * @code
- *   Symbolic Knowledge     Neural Networks      Differentiable Logic
- *   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
- *   │ ∀x: Human(x) →  │   │ Symbol          │   │ Fuzzy Operations│
- *   │     Mortal(x)   │──►│ Embeddings      │──►│ ∧, ∨, ¬, →     │
- *   │                 │   │                 │   │ ∀, ∃ (smooth)  │
- *   │ ∃x: Bird(x) ∧   │   │ Feature         │   │ Gradient Flow   │
- *   │     Flies(x)    │   │ Extraction      │   │ Learning        │
- *   └─────────────────┘   └─────────────────┘   └─────────────────┘
- * @endcode
- *
- * Example Usage:
- * @code
- * // Define LTN with symbol embeddings
- * LTNConfig config;
- * config.embedding_dim = 64;
- * config.learning_rate = 0.01f;
- * auto ltn = LogicTensorNetwork::create(config);
- *
- * // Add predicates and relations
- * auto human = ltn->add_predicate("Human", 1);  // Unary predicate
- * auto mortal = ltn->add_predicate("Mortal", 1);
- * auto likes = ltn->add_relation("Likes", 2);   // Binary relation
- *
- * // Define logical formulas as constraints
- * ltn->add_formula("mortality_rule",
- *     ltn->forall("x", ltn->implies(human("x"), mortal("x"))));
- *
- * // Learn from data and knowledge
- * std::vector<Example> examples = load_examples();
- * ltn->train(examples, 100);  // epochs
- *
- * // Perform inference
- * auto socrates = ltn->get_individual("Socrates");
- * float truth_value = ltn->query(human(socrates));
- * @endcode
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #pragma once
 

@@ -1,10 +1,8 @@
-/**
- * @file result_bindings.cpp
- * @brief Python bindings for Result<T, E> error handling types
- *
- * Provides Python wrappers for the C++ Result<T, E> pattern, enabling
- * Rust-style error handling in Python with zero-overhead abstractions.
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <functional>
 

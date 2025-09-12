@@ -1,19 +1,8 @@
-/**
- * @file moe_text_classification_demo.cpp
- * @brief Demonstration of Mixture of Experts for multi-domain text classification
- *
- * This example shows how to use the MoE system to build a text classifier that
- * automatically routes different types of text (news, reviews, technical docs)
- * to specialized expert networks. Each expert is trained on a specific domain
- * and provides better accuracy than a single monolithic model.
- *
- * Key Features Demonstrated:
- * - Domain-specific expert networks with different architectures
- * - Automatic routing based on text characteristics
- * - Load balancing across experts for optimal performance
- * - Real-time inference with performance monitoring
- * - Comparison with single-model baseline
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <algorithm>
 #include <chrono>

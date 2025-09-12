@@ -1,10 +1,8 @@
-/**
- * @file logging_bindings.cpp
- * @brief Python bindings for the logging system
- *
- * Bridges the C++ structured logging system with Python logging,
- * enabling unified log handling across the Python-C++ boundary.
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>

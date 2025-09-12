@@ -1,19 +1,8 @@
-/**
- * @file moe_computer_vision_demo.cpp
- * @brief Demonstration of Mixture of Experts for multi-task computer vision
- *
- * This example shows how to use the MoE system for computer vision tasks where
- * different experts specialize in different visual tasks: object detection,
- * scene classification, and facial recognition. The router learns to direct
- * images to the appropriate expert based on visual features.
- *
- * Key Features Demonstrated:
- * - Task-specific CNN-style expert networks
- * - Visual feature extraction and routing
- * - Multi-task learning with specialized experts
- * - Performance comparison with single-model baseline
- * - Real-time inference with load balancing
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <algorithm>
 #include <chrono>

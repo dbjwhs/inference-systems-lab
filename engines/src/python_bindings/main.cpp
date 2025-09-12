@@ -1,10 +1,8 @@
-/**
- * @file main.cpp
- * @brief Main pybind11 module entry point for Inference Systems Laboratory
- *
- * This file serves as the primary entry point for the Python bindings of the
- * Inference Systems Laboratory. It aggregates all bindings from submodules.
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>

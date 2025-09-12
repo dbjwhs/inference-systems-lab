@@ -1,13 +1,8 @@
-/**
- * @file unified_benchmark_config.hpp
- * @brief Configuration constants for unified POC benchmarking suite
- *
- * This header provides centralized configuration for all benchmarking parameters
- * to ensure consistent behavior across different techniques and datasets.
- *
- * @author Generated with Claude Code
- * @date Phase 7A Weeks 5-6 Implementation
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #pragma once
 

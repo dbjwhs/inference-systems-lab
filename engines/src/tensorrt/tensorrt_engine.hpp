@@ -45,16 +45,24 @@
  *
  * TensorRT Workflow:
  * @code
- *   ┌─────────────┐  load_model()   ┌─────────────────┐       ONNX Parser ┌─────────────────┐ │
- * ONNX Model  │ ──────────────▶ │ TensorRT Engine │ ───────────────────────▶ │ Optimized       │ │
- * (.onnx)     │                 │ Builder         │                          │ GPU Engine      │
- *   └─────────────┘                 └─────────────────┘                          │ (.trt) │ │ │
- * └─────────────────┘ │ Model Loading                   │ Engine Building │ ▼ ▼ ▼ ┌─────────────┐
- * allocate_buffers()  ┌─────────────────┐     enqueue()       ┌─────────────────┐ │ GPU Memory  │
- * ◄─────────────────── │ CUDA Context    │ ──────────────────▶ │ Inference       │ │ Input/Output│
- * │ & Execution     │                     │ Execution       │ │ Buffers     │ │ Context         │
- * │ (GPU Kernels)   │ └─────────────┘                      └─────────────────┘ └─────────────────┘
- *          ▲                                                                             │
+ *   ┌─────────────┐  load_model()   ┌─────────────────┐     ONNX Parser    ┌─────────────────┐
+ *   │ ONNX Model  │ ──────────────▶ │ TensorRT Engine │ ─────────────────▶ │ Optimized       │
+ *   │ (.onnx)     │                 │ Builder         │                    │ GPU Engine      │
+ *   └─────────────┘                 └─────────────────┘                    │ (.trt)          │
+ *        │                                     │                           └─────────────────┘
+ *        │                                     │                                     │
+ *        └──────── Model Loading ──────────────┴────── Engine Building ──────────────┘
+ *                                                                                    |
+ *                                                                                    ▼
+ *                                                                           ┌─────────────────┐
+ *                                                                           |                 ▼
+ *                                                                           ▼       ┌─────────────────┐
+ *   allocate_buffers()  ┌─────────────────┐      enqueue()      ┌─────────────────┐ │ GPU Memory      │
+ *   ◄────────────────── │ CUDA Context    │ ──────────────────▶ │ Inference       │ │ Input/Output    │
+ *          ▲            │ & Execution     │                     │ Execution       │ │ Buffers         │
+ *          │            │ Context         │                     │ (GPU Kernels)   │ └─────────────────┘
+ *          │            └─────────────────┘                     └─────────────────┘
+ *          │                                                                             │
  *          │ copy_from_host()                                             copy_to_host() │
  *          │                                                                             ▼
  *   ┌─────────────┐  InferenceRequest   ┌─────────────────┐  InferenceResponse  ┌─────────────────┐

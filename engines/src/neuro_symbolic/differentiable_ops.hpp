@@ -1,51 +1,8 @@
-/**
- * @file differentiable_ops.hpp
- * @brief Differentiable logical operations for gradient-based learning
- *
- * This file implements differentiable versions of logical operations that enable
- * gradient-based optimization of logical formulas. These operations bridge the gap
- * between symbolic logic and neural networks, allowing end-to-end training of
- * neuro-symbolic systems.
- *
- * Key Features:
- * - Gradient computation for logical operations (∧, ∨, ¬, →, ∀, ∃)
- * - Smooth approximations maintaining logical semantics
- * - Integration with automatic differentiation frameworks
- * - Numerically stable implementations avoiding gradient explosion/vanishing
- * - Support for batched operations over tensor collections
- *
- * Mathematical Foundation:
- * Traditional logical operations are non-differentiable due to discrete outputs.
- * This implementation uses continuous relaxations that:
- * - Preserve logical semantics in the limit
- * - Provide meaningful gradients for optimization
- * - Enable end-to-end training of logical reasoning systems
- *
- * Gradient Flow Architecture:
- * @code
- *   Input Tensors  ────────► Differentiable    ────────► Output Tensors
- *   (features)               Logic Ops               (truth values)
- *        │                      │                        │
- *        │                      │                        │
- *        ▼                      ▼                        ▼
- *   ∂Loss/∂Input ◄──────── ∂Loss/∂Ops ◄─────────── ∂Loss/∂Output
- *   (gradients)            (logical grad)          (truth grad)
- * @endcode
- *
- * Example Usage:
- * @code
- * // Differentiable logical conjunction
- * auto grad_and = DifferentiableAnd{};
- *
- * // Forward pass
- * TypedTensor<float, Shape<10>> pred1 = ...;  // [0.8, 0.3, 0.9, ...]
- * TypedTensor<float, Shape<10>> pred2 = ...;  // [0.6, 0.7, 0.2, ...]
- * auto result = grad_and.forward(pred1, pred2); // Element-wise AND
- *
- * // Backward pass (automatic differentiation)
- * auto [grad_pred1, grad_pred2] = grad_and.backward(output_grad);
- * @endcode
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #pragma once
 

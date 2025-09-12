@@ -1,10 +1,8 @@
-/**
- * @file tensor_bindings.cpp
- * @brief Python bindings for tensor types and operations
- *
- * Provides zero-copy integration between NumPy arrays and C++ tensor types,
- * enabling efficient data exchange for ML workloads.
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// This software is provided "as is" without warranty of any kind, express or implied.
+// The authors are not liable for any damages arising from the use of this software.
 
 #include <chrono>
 #include <functional>
