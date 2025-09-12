@@ -171,12 +171,13 @@ struct Individual {
 };
 
 /**
- * @brief Predicate definition with learnable parameters
+ * @brief LTN Predicate definition with learnable parameters
  *
  * Represents a logical predicate (e.g., "Human", "Mortal") with
  * associated neural network parameters for evaluation.
+ * Renamed from Predicate to avoid namespace collision with logic_types::Predicate.
  */
-struct Predicate {
+struct LTNPredicate {
     std::string name;            ///< Predicate name
     std::size_t arity;           ///< Number of arguments
     std::size_t id;              ///< Unique identifier
@@ -184,9 +185,9 @@ struct Predicate {
     std::vector<float> bias;     ///< Learnable bias vector
     bool is_trainable = true;    ///< Whether parameters can be updated
 
-    Predicate() = default;  // Default constructor for containers
+    LTNPredicate() = default;  // Default constructor for containers
 
-    Predicate(std::string name, std::size_t arity, std::size_t id, std::size_t embedding_dim)
+    LTNPredicate(std::string name, std::size_t arity, std::size_t id, std::size_t embedding_dim)
         : name(std::move(name)), arity(arity), id(id) {
         // Initialize weight matrix: (arity * embedding_dim) → 1
         std::size_t weight_size = arity * embedding_dim;
@@ -286,8 +287,9 @@ class LogicTensorNetwork {
      * @param name Predicate name
      * @return Result containing predicate reference or error
      */
-    auto get_predicate(const std::string& name) -> common::Result<Predicate*, LTNError>;
-    auto get_predicate(const std::string& name) const -> common::Result<const Predicate*, LTNError>;
+    auto get_predicate(const std::string& name) -> common::Result<LTNPredicate*, LTNError>;
+    auto get_predicate(const std::string& name) const
+        -> common::Result<const LTNPredicate*, LTNError>;
 
     // ============================================================================================
     // PREDICATE EVALUATION
@@ -665,7 +667,7 @@ class LogicTensorNetwork {
      * @param embeddings Input embeddings
      * @return Fuzzy truth value
      */
-    auto evaluate_neural_predicate(const Predicate& predicate,
+    auto evaluate_neural_predicate(const LTNPredicate& predicate,
                                    const std::vector<std::vector<float>>& embeddings) -> FuzzyValue;
 
     // Configuration and state
@@ -673,7 +675,7 @@ class LogicTensorNetwork {
 
     // Symbol management
     std::unordered_map<std::string, Individual> individuals_;
-    std::unordered_map<std::string, Predicate> predicates_;
+    std::unordered_map<std::string, LTNPredicate> predicates_;
     std::size_t next_individual_id_ = 0;
     std::size_t next_predicate_id_ = 0;
 
