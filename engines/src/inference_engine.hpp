@@ -37,7 +37,7 @@
  *
  * Architecture Flow:
  * @code
- *   ┌─────────────┐   create_engine()   ┌─────────────────┐
+ *   ┌─────────────┐   create_engine()  ┌─────────────────┐
  *   │ User Code   │ ─────────────────▶ │ Factory Method  │
  *   │             │                    │ Backend         │
  *   └─────────────┘                    │ Selection       │

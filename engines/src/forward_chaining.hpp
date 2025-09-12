@@ -38,10 +38,10 @@
  *   │ Ordered     │  conflict_resolve │ • Variable Bind │
  *   └─────────────┘                   │ • Rule Fire     │
  *          │                          │ • Cycle Detect  │
- *          │ new_facts_derived         └─────────────────┘
+ *          │ new_facts_derived        └─────────────────┘
  *          ▼                                   │
- *   ┌─────────────┐                          │ derived_facts
- *   │ Inference   │◄─────────────────────────┘
+ *   ┌─────────────┐                            │ derived_facts
+ *   │ Inference   │◄───────────────────────────┘
  *   │ Results     │
  *   └─────────────┘
  * @endcode
