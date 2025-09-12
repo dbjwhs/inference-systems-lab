@@ -73,7 +73,7 @@ auto LogicTensorNetwork::add_predicate(const std::string& name, std::size_t arit
     }
 
     try {
-        Predicate predicate(name, arity, next_predicate_id_++, config_.embedding_dim);
+        LTNPredicate predicate(name, arity, next_predicate_id_++, config_.embedding_dim);
         std::size_t id = predicate.id;
         predicates_[name] = std::move(predicate);
 
@@ -104,23 +104,23 @@ auto LogicTensorNetwork::get_individual(const std::string& name) const
 }
 
 auto LogicTensorNetwork::get_predicate(const std::string& name)
-    -> common::Result<Predicate*, LTNError> {
+    -> common::Result<LTNPredicate*, LTNError> {
     auto it = predicates_.find(name);
     if (it == predicates_.end()) {
         return common::Err<LTNError>(LTNError::UNDEFINED_PREDICATE);
     }
 
-    return common::Ok<Predicate*>(&it->second);
+    return common::Ok<LTNPredicate*>(&it->second);
 }
 
 auto LogicTensorNetwork::get_predicate(const std::string& name) const
-    -> common::Result<const Predicate*, LTNError> {
+    -> common::Result<const LTNPredicate*, LTNError> {
     auto it = predicates_.find(name);
     if (it == predicates_.end()) {
         return common::Err<LTNError>(LTNError::UNDEFINED_PREDICATE);
     }
 
-    return common::Ok<const Predicate*>(&it->second);
+    return common::Ok<const LTNPredicate*>(&it->second);
 }
 
 // ================================================================================================
@@ -208,7 +208,8 @@ auto LogicTensorNetwork::batch_evaluate_predicate(const std::string& predicate_n
 // ================================================================================================
 
 auto LogicTensorNetwork::evaluate_neural_predicate(
-    const Predicate& predicate, const std::vector<std::vector<float>>& embeddings) -> FuzzyValue {
+    const LTNPredicate& predicate, const std::vector<std::vector<float>>& embeddings)
+    -> FuzzyValue {
     // Concatenate all input embeddings
     std::vector<float> input;
     for (const auto& embedding : embeddings) {
