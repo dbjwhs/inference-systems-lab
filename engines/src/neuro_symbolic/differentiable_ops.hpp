@@ -1,51 +1,23 @@
-/**
- * @file differentiable_ops.hpp
- * @brief Differentiable logical operations for gradient-based learning
- *
- * This file implements differentiable versions of logical operations that enable
- * gradient-based optimization of logical formulas. These operations bridge the gap
- * between symbolic logic and neural networks, allowing end-to-end training of
- * neuro-symbolic systems.
- *
- * Key Features:
- * - Gradient computation for logical operations (∧, ∨, ¬, →, ∀, ∃)
- * - Smooth approximations maintaining logical semantics
- * - Integration with automatic differentiation frameworks
- * - Numerically stable implementations avoiding gradient explosion/vanishing
- * - Support for batched operations over tensor collections
- *
- * Mathematical Foundation:
- * Traditional logical operations are non-differentiable due to discrete outputs.
- * This implementation uses continuous relaxations that:
- * - Preserve logical semantics in the limit
- * - Provide meaningful gradients for optimization
- * - Enable end-to-end training of logical reasoning systems
- *
- * Gradient Flow Architecture:
- * @code
- *   Input Tensors  ────────► Differentiable    ────────► Output Tensors
- *   (features)               Logic Ops               (truth values)
- *        │                      │                        │
- *        │                      │                        │
- *        ▼                      ▼                        ▼
- *   ∂Loss/∂Input ◄──────── ∂Loss/∂Ops ◄─────────── ∂Loss/∂Output
- *   (gradients)            (logical grad)          (truth grad)
- * @endcode
- *
- * Example Usage:
- * @code
- * // Differentiable logical conjunction
- * auto grad_and = DifferentiableAnd{};
- *
- * // Forward pass
- * TypedTensor<float, Shape<10>> pred1 = ...;  // [0.8, 0.3, 0.9, ...]
- * TypedTensor<float, Shape<10>> pred2 = ...;  // [0.6, 0.7, 0.2, ...]
- * auto result = grad_and.forward(pred1, pred2); // Element-wise AND
- *
- * // Backward pass (automatic differentiation)
- * auto [grad_pred1, grad_pred2] = grad_and.backward(output_grad);
- * @endcode
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #pragma once
 
@@ -134,17 +106,13 @@ class DifferentiableOperation : public DifferentiableOperationBase {
      * @brief Get input type information
      * @return Type information for InputType
      */
-    auto input_type() const -> std::type_info const& override {
-        return typeid(InputType);
-    }
+    auto input_type() const -> std::type_info const& override { return typeid(InputType); }
 
     /**
      * @brief Get output type information
      * @return Type information for OutputType
      */
-    auto output_type() const -> std::type_info const& override {
-        return typeid(OutputType);
-    }
+    auto output_type() const -> std::type_info const& override { return typeid(OutputType); }
 };
 
 // ================================================================================================
@@ -177,7 +145,8 @@ class GradientContext {
     /**
      * @brief Move constructor
      */
-    GradientContext(GradientContext&& other) noexcept : stored_values_(std::move(other.stored_values_)) {}
+    GradientContext(GradientContext&& other) noexcept
+        : stored_values_(std::move(other.stored_values_)) {}
 
     /**
      * @brief Copy assignment operator
@@ -239,7 +208,7 @@ class GradientContext {
     /**
      * @brief Clear all stored values (memory cleanup)
      */
-    void clear() { 
+    void clear() {
         stored_values_.clear();
         stored_values_.reserve(0);  // Release memory
     }
@@ -281,7 +250,7 @@ inline float clamp_gradient(float gradient) noexcept {
     if (std::isnan(gradient) || std::isinf(gradient)) {
         return 0.0f;  // Replace NaN/inf with zero
     }
-    
+
     // Clamp to prevent explosion
     if (gradient > MAX_GRADIENT_MAGNITUDE) {
         return MAX_GRADIENT_MAGNITUDE;
@@ -289,12 +258,12 @@ inline float clamp_gradient(float gradient) noexcept {
     if (gradient < -MAX_GRADIENT_MAGNITUDE) {
         return -MAX_GRADIENT_MAGNITUDE;
     }
-    
+
     // Clamp to prevent vanishing (preserve sign)
     if (std::abs(gradient) < MIN_GRADIENT_MAGNITUDE) {
         return gradient < 0.0f ? -MIN_GRADIENT_MAGNITUDE : MIN_GRADIENT_MAGNITUDE;
     }
-    
+
     return gradient;
 }
 
@@ -309,15 +278,15 @@ inline float safe_gradient_multiply(float base, float factor) noexcept {
     if (std::isnan(factor) || std::isinf(factor) || std::abs(factor) > 1e6f) {
         return clamp_gradient(base);  // Fall back to base value only
     }
-    
+
     // Compute intermediate result
     float intermediate = base * factor;
-    
+
     // Check intermediate result before final clamping
     if (std::isnan(intermediate) || std::isinf(intermediate)) {
         return clamp_gradient(base);  // Fall back to base value
     }
-    
+
     return clamp_gradient(intermediate);
 }
 
@@ -426,7 +395,8 @@ class DifferentiableSigmoid
         auto input_grad = TensorType::zeros();
         for (std::size_t i = 0; i < TensorType::size; ++i) {
             // Gradient: σ'(x) = σ(x)(1 - σ(x))
-            input_grad[i] = gradient_utils::safe_gradient_expression(output_grad[i], output[i] * (1.0f - output[i]));
+            input_grad[i] = gradient_utils::safe_gradient_expression(
+                output_grad[i], output[i] * (1.0f - output[i]));
         }
         return input_grad;
     }

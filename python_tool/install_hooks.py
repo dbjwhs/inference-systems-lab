@@ -115,6 +115,7 @@ class GitHookManager:
 # This hook integrates:
 # - Code formatting (clang-format)
 # - Static analysis (clang-tidy) 
+# - License header checking
 # - Basic validation checks
 #
 # To bypass these checks (emergency commits only):
@@ -240,6 +241,29 @@ check_static_analysis() {{
         log_info "  python3 python_tool/check_static_analysis.py --fix --backup"
         log_info "To bypass this check (not recommended): git commit --no-verify"
         rm -f "$temp_filter_file"
+        return 1
+    fi
+}}
+
+# Check license headers on staged C++ files
+check_license_headers() {{
+    local staged_files=("$@")
+    
+    if [[ ${{#staged_files[@]}} -eq 0 ]]; then
+        log_info "No C++ files to check headers"
+        return 0
+    fi
+    
+    log_info "Checking license headers on ${{#staged_files[@]}} files..."
+    
+    if python3 "$PROJECT_ROOT/python_tool/check_headers.py" --staged --quiet; then
+        log_success "License header check passed"
+        return 0
+    else
+        log_error "License header check failed"
+        log_info "To fix header issues automatically, run:"
+        log_info "  python3 python_tool/check_headers.py --fix"
+        log_info "Then stage the changes and commit again."
         return 1
     fi
 }}
@@ -389,6 +413,15 @@ main() {{
         fi
     else
         log_info "Skipping static analysis due to formatting issues"
+    fi
+    
+    # Check license headers (only if formatting passed)
+    if [[ "$overall_success" == "true" ]]; then
+        if ! check_license_headers "${{staged_cpp_files[@]}}"; then
+            overall_success=false
+        fi
+    else
+        log_info "Skipping license header check due to previous failures"
     fi
     
     # Run EOF newline check

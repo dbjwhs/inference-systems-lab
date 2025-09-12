@@ -1,48 +1,23 @@
-/**
- * @file tensor_logic_bridge.hpp
- * @brief Bridge between TypedTensor system and logical operations
- *
- * This file provides the integration layer between the existing TypedTensor
- * infrastructure and the fuzzy logic/differentiable operations system. It enables
- * seamless conversion between numerical tensor representations and logical
- * truth values, supporting both forward inference and gradient-based learning.
- *
- * Key Features:
- * - Type-safe conversion between tensors and truth values
- * - Predicate evaluation over tensor data
- * - Integration with existing memory allocation and SIMD optimization
- * - Support for both static and dynamic tensor shapes
- * - Automatic broadcasting for element-wise logical operations
- * - Efficient batch processing of logical formulas
- *
- * Architecture Integration:
- * @code
- *   TypedTensor<float> ─────► LogicalTensor ─────► Differentiable Ops
- *   (numerical data)          (truth values)       (logical reasoning)
- *         ▲                        │                        │
- *         │                        │                        ▼
- *   Neural Networks ◄─────── Gradient Flow ◄───── Fuzzy Logic Results
- *   (backpropagation)        (optimization)        (continuous [0,1])
- * @endcode
- *
- * Example Usage:
- * @code
- * // Create logical tensor from neural network output
- * TypedTensor<float, Shape<10, 3>> features = neural_net.forward(input);
- * LogicalTensor<float, Shape<10, 3>> logical = LogicalTensor::from_tensor(features);
- *
- * // Define predicates over the tensor data
- * auto is_positive = logical.predicate([](float x) { return x > 0.0f; });
- * auto is_large = logical.predicate([](float x) { return x > 0.8f; });
- *
- * // Combine predicates with logical operations
- * auto complex_predicate = logical.logical_and(is_positive, is_large);
- *
- * // Quantify over dimensions
- * auto forall_features = complex_predicate.forall(1);  // ∀ over feature dim
- * auto exists_samples = forall_features.exists(0);     // ∃ over sample dim
- * @endcode
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #pragma once
 

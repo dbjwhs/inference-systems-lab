@@ -1,3 +1,24 @@
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include <benchmark/benchmark.h>
 
 #include "../src/circular_bp/circular_bp.hpp"
@@ -38,7 +59,7 @@ class CircularBPFixture : public ::benchmark::Fixture {
 
         chain_cycle_model_ = create_chain_cycle_model(5);
         if (chain_cycle_model_.nodes.empty()) {
-            throw std::runtime_error("Failed to create chain cycle model - no nodes");  
+            throw std::runtime_error("Failed to create chain cycle model - no nodes");
         }
     }
 
@@ -73,7 +94,7 @@ class CircularBPFixture : public ::benchmark::Fixture {
 
     GraphicalModel create_chain_cycle_model(size_t chain_length) {
         GraphicalModel model;
-        
+
         // Validate input
         if (chain_length == 0 || chain_length > 1000) {
             // Return empty model for invalid input
@@ -97,9 +118,9 @@ class CircularBPFixture : public ::benchmark::Fixture {
             double p1 = std::max(0.1, 0.6 - 0.1 * (i % 3));
             double p2 = std::max(0.1, 0.4 + 0.1 * (i % 3));
             double sum = p1 + p2;
-            p1 /= sum; // Normalize
+            p1 /= sum;  // Normalize
             p2 /= sum;
-            
+
             Node node{i, {p1, p2}, neighbors};
             model.nodes.push_back(node);
             model.node_index[i] = i - 1;
@@ -124,7 +145,7 @@ BENCHMARK_F(CircularBPFixture, TriangleCycleInference)(::benchmark::State& state
         state.SkipWithError("Engine is null");
         return;
     }
-    
+
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto result = engine_->run_circular_bp(triangle_model_);
         ::benchmark::DoNotOptimize(result);
@@ -151,12 +172,12 @@ BENCHMARK_F(CircularBPFixture, ChainCycleInference)(::benchmark::State& state) {
         state.SkipWithError("Engine is null");
         return;
     }
-    
+
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
         auto result = engine_->run_circular_bp(chain_cycle_model_);
         ::benchmark::DoNotOptimize(result);
 
-        // Safe unwrap pattern - check error first  
+        // Safe unwrap pattern - check error first
         if (result.is_err()) {
             // Handle error gracefully in benchmark context
             continue;
@@ -235,18 +256,18 @@ BENCHMARK_F(CircularBPFixture, CorrelationCancellationOverhead)(::benchmark::Sta
 BENCHMARK_F(CircularBPFixture, ScalabilityTest)(::benchmark::State& state) {
     // Test scalability with increasing cycle sizes
     size_t cycle_size = state.range(0);
-    
+
     // Add safety checks to prevent segfault
     if (cycle_size == 0) {
         state.SkipWithError("Invalid cycle size: 0");
         return;
     }
-    
+
     if (!engine_) {
         state.SkipWithError("Engine not initialized");
         return;
     }
-    
+
     auto large_cycle_model = create_chain_cycle_model(cycle_size);
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores) - benchmark loop variable
@@ -270,11 +291,11 @@ BENCHMARK_F(CircularBPFixture, ScalabilityTest)(::benchmark::State& state) {
     state.counters["inference_time_ms"] = metrics.inference_time_ms.count();
 }
 BENCHMARK_REGISTER_F(CircularBPFixture, ScalabilityTest)
-    ->Range(3, 8)   // Test cycle sizes from 3 to 8 (reduced range)
+    ->Range(3, 8)  // Test cycle sizes from 3 to 8 (reduced range)
     ->Complexity()
     ->Unit(::benchmark::kMicrosecond)
-    ->MinTime(0.05)  // Reduce minimum time
-    ->Iterations(10); // Limit iterations
+    ->MinTime(0.05)    // Reduce minimum time
+    ->Iterations(10);  // Limit iterations
 
 BENCHMARK_F(CircularBPFixture, MessageHistoryOverhead)(::benchmark::State& state) {
     // Compare with and without message history tracking
@@ -314,7 +335,7 @@ BENCHMARK_F(CircularBPFixture, EngineCreationCost)(::benchmark::State& state) {
 
         // Safe unwrap pattern - check error first
         if (engine_result.is_err()) {
-            // Handle error gracefully in benchmark context  
+            // Handle error gracefully in benchmark context
             continue;
         }
         auto engine = std::move(engine_result).unwrap();

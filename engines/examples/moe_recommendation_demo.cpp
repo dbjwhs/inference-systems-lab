@@ -1,19 +1,23 @@
-/**
- * @file moe_recommendation_demo.cpp
- * @brief Demonstration of Mixture of Experts for multi-context recommendation systems
- *
- * This example shows how to use the MoE system for recommendation tasks where
- * different experts specialize in different recommendation contexts: collaborative
- * filtering, content-based filtering, and demographic-based recommendations.
- * The router learns to select appropriate experts based on user and item features.
- *
- * Key Features Demonstrated:
- * - Context-aware expert specialization (user preferences, content, demographics)
- * - Dynamic expert selection based on available user/item data
- * - Real-time recommendation generation with load balancing
- * - A/B testing framework for recommendation quality
- * - Integration with existing Result<T,E> patterns
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #include <algorithm>
 #include <chrono>

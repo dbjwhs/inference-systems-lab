@@ -1,43 +1,23 @@
-/**
- * @file type_system.hpp
- * @brief Advanced type system for ML inference with compile-time shape checking
- *
- * This file provides a comprehensive type system specifically designed for ML workloads,
- * featuring compile-time shape verification, strong typing for tensor operations,
- * automatic differentiation support, and type-safe model definitions.
- *
- * Key Features:
- * - Compile-time tensor shape verification to catch dimension mismatches at build time
- * - Strong type aliases for different ML concepts (weights, biases, activations)
- * - Template metaprogramming for efficient generic algorithms
- * - Type-safe automatic differentiation framework
- * - Zero-overhead abstractions that compile to efficient machine code
- *
- * Design Philosophy:
- * This type system follows the principle of "make illegal states unrepresentable"
- * by encoding ML constraints in the type system. This prevents common ML bugs
- * like dimension mismatches, incorrect broadcasting, and type confusion between
- * different tensor types (weights vs activations vs gradients).
- *
- * Performance Characteristics:
- * - All type checking happens at compile time with zero runtime overhead
- * - Template specialization enables optimal code generation for specific types
- * - SFINAE and concepts ensure only valid operations are allowed
- * - Compile-time shape arithmetic prevents dynamic allocation in hot paths
- *
- * Example Usage:
- * @code
- * // Define model structure at compile time
- * using InputShape = Shape<1, 224, 224, 3>;  // NHWC format
- * using WeightShape = Shape<3, 3, 3, 64>;    // Filter: H×W×In×Out
- * using OutputShape = typename Conv2D<InputShape, WeightShape>::output_shape;
- *
- * // Type-safe tensor creation
- * Tensor<float, InputShape> input = load_image();
- * Weights<float, WeightShape> conv_weights = load_weights();
- * Tensor<float, OutputShape> output = conv2d(input, conv_weights);
- * @endcode
- */
+// MIT License
+// Copyright (c) 2025 dbjwhs
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #pragma once
 
