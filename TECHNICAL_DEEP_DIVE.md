@@ -50,89 +50,89 @@ This document assumes:
 ### High-Level Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                     User Application Layer                        │
-│  (Python Bindings, REST APIs, gRPC Services, CLI Tools)         │
-└────────────────┬─────────────────────────────┬──────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                     User Application Layer                   │
+│  (Python Bindings, REST APIs, gRPC Services, CLI Tools)      │
+└────────────────┬─────────────────────────┬───────────────────┘
                  │                             │
-┌────────────────▼──────────────┐ ┌───────────▼──────────────────┐
-│    Inference Engine Layer     │ │    ML Operations Layer       │
-│  • Unified Interface          │ │  • Model Management          │
-│  • Backend Selection          │ │  • Conversion Pipeline       │
-│  • Request Routing            │ │  • Performance Monitoring    │
-└────────────────┬──────────────┘ └───────────┬──────────────────┘
+┌────────────────▼──────────────┐ ┌───────────▼────────────────┐
+│    Inference Engine Layer     │ │    ML Operations Layer     │
+│  • Unified Interface          │ │  • Model Management        │
+│  • Backend Selection          │ │  • Conversion Pipeline     │
+│  • Request Routing            │ │  • Performance Monitoring  │
+└────────────────┬──────────────┘ └───────────┬────────────────┘
+                 │                            │
+┌────────────────▼────────────────────────────▼────────────────┐
+│                    Core Infrastructure Layer                 │
+│  ┌─────────────┐ ┌──────────────┐ ┌──────────────────────┐   │
+│  │ Result<T,E> │ │ Memory Pools │ │ Lock-Free Containers │   │
+│  │ Error       │ │ Allocators   │ │ Ring Buffers         │   │
+│  │ Handling    │ │ RAII Guards  │ │ Concurrent Queues    │   │
+│  └─────────────┘ └──────────────┘ └──────────────────────┘   │
+│  ┌─────────────┐ ┌──────────────┐ ┌──────────────────────┐   │
+│  │ Structured  │ │ Schema       │ │ Type System          │   │
+│  │ Logging     │ │ Evolution    │ │ TypedTensor          │   │
+│  │ Framework   │ │ Versioning   │ │ Compile-time Safety  │   │
+│  └─────────────┘ └──────────────┘ └──────────────────────┘   │
+└────────────────┬─────────────────────────────┬───────────────┘
                  │                             │
-┌────────────────▼──────────────────────────────▼─────────────────┐
-│                    Core Infrastructure Layer                     │
-│  ┌─────────────┐ ┌──────────────┐ ┌──────────────────────┐    │
-│  │ Result<T,E> │ │ Memory Pools │ │ Lock-Free Containers │    │
-│  │ Error       │ │ Allocators   │ │ Ring Buffers         │    │
-│  │ Handling    │ │ RAII Guards  │ │ Concurrent Queues    │    │
-│  └─────────────┘ └──────────────┘ └──────────────────────┘    │
-│  ┌─────────────┐ ┌──────────────┐ ┌──────────────────────┐    │
-│  │ Structured  │ │ Schema       │ │ Type System          │    │
-│  │ Logging     │ │ Evolution    │ │ TypedTensor          │    │
-│  │ Framework   │ │ Versioning   │ │ Compile-time Safety  │    │
-│  └─────────────┘ └──────────────┘ └──────────────────────┘    │
-└──────────────────────────────────────────────────────────────────┘
-                 │                             │
-┌────────────────▼──────────────┐ ┌───────────▼──────────────────┐
-│    Inference Backends         │ │    Advanced Algorithms       │
-│  • ONNX Runtime (Stub)        │ │  • Mixture of Experts       │
-│  • TensorRT (Interface)       │ │  • Momentum BP              │
-│  • Rule-Based Engine          │ │  • Circular BP              │
-│  • Neuro-Symbolic             │ │  • Mamba SSM                │
-└───────────────────────────────┘ └──────────────────────────────┘
+┌────────────────▼──────────────┐ ┌────────────▼───────────────┐
+│    Inference Backends         │ │    Advanced Algorithms     │
+│  • ONNX Runtime (Stub)        │ │  • Mixture of Experts      │
+│  • TensorRT (Interface)       │ │  • Momentum BP             │
+│  • Rule-Based Engine          │ │  • Circular BP             │
+│  • Neuro-Symbolic             │ │  • Mamba SSM               │
+└───────────────────────────────┘ └────────────────────────────┘
 ```
 
 ### Module Dependency Graph
 
 ```
-                    ┌─────────────┐
-                    │   common/   │
-                    │ (Foundation) │
-                    └──────┬──────┘
-                           │ depends on
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-┌───────▼──────┐   ┌───────▼──────┐  ┌───────▼──────┐
-│   engines/   │   │ performance/ │  │ distributed/ │
-│ (Inference)  │   │ (Profiling)  │  │ (Consensus)  │
-└──────┬───────┘   └──────────────┘  └──────────────┘
-       │
-┌──────▼───────┐
-│ integration/ │
-│   (Tests)    │
-└──────────────┘
+                       ┌─────────────┐
+                       │   common/   │
+                       │ (Foundation)│
+                       └──────┬──────┘
+                              │ depends on
+           ┌──────────────────┼─────────────────┐
+           │                  │                 │
+   ┌───────▼──────┐   ┌───────▼──────┐   ┌──────▼───────┐
+   │   engines/   │   │ performance/ │   │ distributed/ │
+   │ (Inference)  │   │ (Profiling)  │   │ (Consensus)  │
+   └──────┬───────┘   └──────────────┘   └──────────────┘
+          │
+   ┌──────▼───────┐
+   │ integration/ │
+   │   (Tests)    │
+   └──────────────┘
 ```
 
 ### Data Flow Architecture
 
 ```
-Request Flow:
-─────────────
-[Client Request] 
-    ↓
-[Request Validation & Sanitization]
-    ↓
-[Load Balancer & Request Router]
-    ↓
-[Backend Selection (Rule/ML/Hybrid)]
-    ↓
-[Memory Pool Allocation]
-    ↓
-[Tensor Preparation & Batching]
-    ↓
-[Inference Execution]
-    ├── GPU Path: TensorRT/CUDA (Interface Only)
-    ├── CPU Path: ONNX Runtime (Stub Implementation)
-    └── Logic Path: Forward Chaining
-    ↓
-[Result Aggregation]
-    ↓
-[Response Serialization]
-    ↓
-[Client Response]
+   Request Flow:
+   ─────────────
+   [Client Request]
+          ↓
+   [Request Validation & Sanitization]
+          ↓
+   [Load Balancer & Request Router]
+          ↓
+   [Backend Selection (Rule/ML/Hybrid)]
+          ↓
+   [Memory Pool Allocation]
+          ↓
+   [Tensor Preparation & Batching]
+          ↓
+   [Inference Execution]
+          ├── GPU Path: TensorRT/CUDA (Interface Only)
+          ├── CPU Path: ONNX Runtime (Stub Implementation)
+          └── Logic Path: Forward Chaining
+          ↓
+   [Result Aggregation]
+          ↓
+   [Response Serialization]
+          ↓
+   [Client Response]
 ```
 
 ### Threading Model
