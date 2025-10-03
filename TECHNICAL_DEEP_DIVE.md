@@ -53,8 +53,8 @@ This document assumes:
 ┌──────────────────────────────────────────────────────────────┐
 │                     User Application Layer                   │
 │  (Python Bindings, REST APIs, gRPC Services, CLI Tools)      │
-└────────────────┬─────────────────────────┬───────────────────┘
-                 │                             │
+└────────────────┬────────────────────────────┬────────────────┘
+                 │                            │
 ┌────────────────▼──────────────┐ ┌───────────▼────────────────┐
 │    Inference Engine Layer     │ │    ML Operations Layer     │
 │  • Unified Interface          │ │  • Model Management        │
