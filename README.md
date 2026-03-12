@@ -148,7 +148,7 @@ inference-systems-lab/
 │   │   └── test_unified_benchmarks.cpp    # Complete POC technique validation
 │   ├── benchmarks/           # COMPREHENSIVE - Unified benchmarking framework
 │   │   └── unified_inference_benchmarks.cpp # Comparative performance analysis
-│   ├── src/tensorrt/         # IMPLEMENTED - TensorRT GPU acceleration with CUDA optimization
+│   ├── src/tensorrt/         # API DESIGNED - TensorRT interface spec (header only, implementation pending)
 │   ├── src/forward_chaining/ # IMPLEMENTED - Traditional rule-based inference engines
 │   └── src/inference_engine.hpp # IMPLEMENTED - Unified inference interface
 ├── distributed/              # PLACEHOLDER - Future consensus algorithms
@@ -551,7 +551,7 @@ xdg-open docs/index.html  # Linux - uses committed docs
 
 **Key API Highlights:**
 - **[Result<T,E>](docs/html/classinference__lab_1_1common_1_1_result.html)** - Monadic error handling without exceptions
-- **[TensorRTEngine](docs/html/classinference__lab_1_1engines_1_1tensorrt_1_1_tensor_r_t_engine.html)** - GPU-accelerated inference engine
+- **[TensorRTEngine](docs/html/classinference__lab_1_1engines_1_1tensorrt_1_1_tensor_r_t_engine.html)** - GPU inference interface (API designed, implementation pending)
 - **[MemoryPool<T>](docs/html/classinference__lab_1_1common_1_1_memory_pool.html)** - High-performance custom allocator
 - **[LockFreeQueue<T>](docs/html/classinference__lab_1_1common_1_1_lock_free_queue.html)** - Multi-producer/consumer queue
 - **[SchemaEvolutionManager](docs/html/classinference__lab_1_1common_1_1_schema_evolution_manager.html)** - Version-aware serialization
