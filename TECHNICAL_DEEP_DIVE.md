@@ -23,7 +23,7 @@
 
 ## Executive Summary
 
-The Inference Systems Laboratory is a state-of-the-art C++17+ research and development platform that bridges traditional symbolic reasoning with modern deep learning inference systems. This codebase represents approximately 100,000+ lines of production-quality code implementing enterprise-grade machine learning infrastructure with a focus on performance, safety, and extensibility.
+The Inference Systems Laboratory is a state-of-the-art C++17+ research and development platform that bridges traditional symbolic reasoning with modern deep learning inference systems. This codebase represents approximately 60,000 lines of C++ (plus ~17K lines of Python tooling) implementing enterprise-grade machine learning infrastructure with a focus on performance, safety, and extensibility.
 
 ### Key Technical Achievements
 
@@ -71,7 +71,7 @@ This document assumes:
 │  └─────────────┘ └──────────────┘ └──────────────────────┘   │
 │  ┌─────────────┐ ┌──────────────┐ ┌──────────────────────┐   │
 │  │ Structured  │ │ Schema       │ │ Type System          │   │
-│  │ Logging     │ │ Evolution    │ │ TypedTensor          │   │
+│  │ Logging     │ │ Evolution    │ │ TypedTensor          │   │``
 │  │ Framework   │ │ Versioning   │ │ Compile-time Safety  │   │
 │  └─────────────┘ └──────────────┘ └──────────────────────┘   │
 └────────────────┬─────────────────────────────┬───────────────┘
@@ -2596,6 +2596,6 @@ This technical deep dive provides the foundation for understanding and contribut
 
 *Document Version: 1.0.0*  
 *Last Updated: December 2024*  
-*Total Lines of Code: ~100,000+*  
+*Total Lines of Code: ~60K C++ / ~17K Python tooling*  
 *Test Coverage: 87%+*  
 *Supported Platforms: Linux, macOS, Windows (WSL2)*
