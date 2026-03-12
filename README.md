@@ -1,6 +1,17 @@
 # Inference Systems Laboratory
 
-A modern C++17+ research and development platform focused on building robust, high-performance inference systems with enterprise-grade tooling. This project combines advanced error handling, comprehensive development automation, and foundational infrastructure for distributed inference engines.
+A modern C++17+ research and development platform focused on building robust, high-performance inference systems with enterprise-grade tooling. ~60K lines of C++ with 300+ tests, zero disabled, zero warnings.
+
+## Start Here — Highlights Worth Reading
+
+| File | What It Demonstrates | Lines |
+|------|---------------------|-------|
+| [`common/src/result.hpp`](common/src/result.hpp) | Rust-inspired `Result<T,E>` monad with monadic chaining, pattern matching, and zero-exception error handling | ~877 |
+| [`common/src/containers.hpp`](common/src/containers.hpp) | SIMD-optimized containers (AVX2/NEON), lock-free queue, memory pool with thread-safe allocation | ~1,900 |
+| [`engines/src/mixture_experts/`](engines/src/mixture_experts/) | Complete Mixture-of-Experts system with entropy-regularized routing and sparse activation | 8 files |
+| [`engines/src/forward_chaining/`](engines/src/forward_chaining/) | Classical AI rule engine — complete forward-chaining inference with conflict resolution | ~580 |
+| [`engines/src/momentum_bp/`](engines/src/momentum_bp/) | Belief propagation with adaptive learning rates and oscillation damping | ~800 |
+| [`engines/src/onnx/onnx_engine.cpp`](engines/src/onnx/onnx_engine.cpp) | ONNX Runtime integration with 7 execution providers and graceful fallbacks | ~707 |
 
 ## What is Inference and Why Does It Matter?
 
@@ -47,7 +58,7 @@ The system includes comprehensive error handling with `Result<T, E>` patterns, t
 - **Neuro-Symbolic Logic**: Differentiable logic operations with tensor-based reasoning (PR #29)
 - **Production Applications**: Complete demonstration suite with computer vision, NLP, and recommendation systems (PRs #30, #32)
 - **Jenkins CI Stability**: Critical infrastructure fixes achieving 100% test success rate (PRs #34, #35)
-- **Test Coverage**: 87%+ coverage with 178 tests across 25 test suites
+- **Test Coverage**: 87%+ coverage with 300+ tests across 45+ test suites, zero disabled
 
 ### Current Development Priorities
 - **Advanced ML Applications**: Real-world production deployment scenarios with monitoring and dashboards
