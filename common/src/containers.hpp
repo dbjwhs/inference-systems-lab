@@ -239,6 +239,9 @@ class MemoryPool {
     // Simple spinlock for structural modifications
     mutable std::atomic_flag modification_lock_ = ATOMIC_FLAG_INIT;
 
+    // Atomic block count for lock-free reads in find_free_block/deallocate
+    std::atomic<std::size_t> block_count_{0};
+
     /**
      * @brief Calculate aligned size for allocation
      * @param size Requested size in bytes
@@ -291,12 +294,14 @@ MemoryPool<ElementType>::MemoryPool(MemoryPool&& other) noexcept
       allocated_count_(other.allocated_count_.load()),
       peak_usage_(other.peak_usage_.load()),
       allocation_count_(other.allocation_count_.load()),
-      deallocation_count_(other.deallocation_count_.load()) {
+      deallocation_count_(other.deallocation_count_.load()),
+      block_count_(other.block_count_.load()) {
     other.free_list_head_ = nullptr;
     other.allocated_count_ = 0;
     other.peak_usage_ = 0;
     other.allocation_count_ = 0;
     other.deallocation_count_ = 0;
+    other.block_count_ = 0;
 }
 
 template <typename ElementType>
@@ -317,6 +322,7 @@ auto MemoryPool<ElementType>::operator=(MemoryPool&& other) noexcept -> MemoryPo
         peak_usage_ = other.peak_usage_.load();
         allocation_count_ = other.allocation_count_.load();
         deallocation_count_ = other.deallocation_count_.load();
+        block_count_ = other.block_count_.load();
 
         // Clear other
         other.free_list_head_ = nullptr;
@@ -324,6 +330,7 @@ auto MemoryPool<ElementType>::operator=(MemoryPool&& other) noexcept -> MemoryPo
         other.peak_usage_ = 0;
         other.allocation_count_ = 0;
         other.deallocation_count_ = 0;
+        other.block_count_ = 0;
     }
     return *this;
 }
@@ -382,14 +389,17 @@ void MemoryPool<ElementType>::deallocate(ElementType* ptr, std::size_t count) no
         return;
     }
 
+    // Use atomic block_count_ for safe iteration bound (matches find_free_block pattern)
+    auto current_size = block_count_.load(std::memory_order_acquire);
+
     // Find the block containing this pointer
-    for (auto& block_ptr : blocks_) {
-        auto* block = block_ptr.get();
+    for (std::size_t i = 0; i < current_size; ++i) {
+        auto* block = blocks_[i].get();
         if (block->data == ptr) {
             // Mark block as free
             block->in_use.store(false, std::memory_order_release);
 
-            // Update statistics
+            // Update statistics (atomics are sufficient)
             allocated_count_.fetch_sub(count, std::memory_order_relaxed);
             deallocation_count_.fetch_add(1, std::memory_order_relaxed);
             return;
@@ -482,24 +492,21 @@ auto MemoryPool<ElementType>::expand_pool(std::size_t min_size) -> bool {
         capacity_elements_ += actual_size;
     }
 
+    // Publish new block count atomically so lock-free readers see consistent state
+    block_count_.store(blocks_.size(), std::memory_order_release);
+
     return true;
 }
 
 template <typename ElementType>
 auto MemoryPool<ElementType>::find_free_block(std::size_t count) -> Block* {
     // Simple first-fit algorithm with atomic reservation
-    // In a production implementation, you might want best-fit or segregated lists
-
-    // Capture the current size to avoid accessing new blocks added during iteration
-    // This prevents accessing blocks that may be added concurrently
-    auto current_size = blocks_.size();
+    // Use atomic block_count_ to get a safe snapshot of how many blocks exist.
+    // expand_pool() updates block_count_ with release semantics after adding blocks,
+    // so acquire here ensures we see consistent block data.
+    auto current_size = block_count_.load(std::memory_order_acquire);
 
     for (std::size_t i = 0; i < current_size; ++i) {
-        // Check if index is still valid (defensive programming)
-        if (i >= blocks_.size()) {
-            break;
-        }
-
         auto* block = blocks_[i].get();
         if (block && block->size >= count) {
             // Atomically try to reserve this block
