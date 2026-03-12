@@ -258,7 +258,7 @@ The laboratory now includes production-ready machine learning inference capabili
 - **Multi-Provider Support**: CPU, CUDA, DirectML, CoreML, TensorRT execution providers
 - **Production Ready**: Enterprise-grade error handling with Result<T,E> patterns
 - **Working Demonstration**: Complete inference demo with performance benchmarking
-- **PIMPL Pattern**: Clean dependency management with stub implementations
+- **PIMPL Pattern**: Clean dependency management — full 707-line implementation when ONNX Runtime is available, graceful stub fallback when not (gated by `ENABLE_ONNX_RUNTIME`)
 
 #### TensorRT Integration (Planned)
 - **GPU Acceleration**: High-performance NVIDIA GPU inference for deep learning models
