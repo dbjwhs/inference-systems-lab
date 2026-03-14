@@ -60,11 +60,34 @@ The system includes comprehensive error handling with `Result<T, E>` patterns, t
 - **Jenkins CI Stability**: Critical infrastructure fixes achieving 100% test success rate (PRs #34, #35)
 - **Test Coverage**: 87%+ coverage with 300+ tests across 45+ test suites, zero disabled
 
+### Benchmark Results
+
+Measured on Apple M4 Pro (14 cores), macOS. Google Benchmark with `-O2`.
+
+#### Result&lt;T,E&gt; Error Handling
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| `is_ok()` check | 5 ns | Zero-cost in hot path |
+| `unwrap()` success | 12 ns | Value extraction |
+| `map()` transform | 54 ns | Monadic chaining |
+| `and_then()` chain | 56 ns | Bind operation |
+| Complex chain (map+and_then+map) | 212 ns | Full pipeline |
+| Exception throw+catch (error path) | 2,586 ns | **46x slower** than Result error path (67 ns) |
+| Vector processing (100K elements) | 63M items/s | Throughput under load |
+
+#### Inference Engines (4-node graph, CPU-only)
+
+| Engine | Small Binary | Medium Chain | Large Grid |
+|--------|-------------|-------------|------------|
+| Momentum-BP | 0.59 ms | 1.35 ms | 5.96 ms |
+| Circular-BP | 0.14 ms | 0.27 ms | 0.95 ms |
+| Mamba SSM | 9.34 ms | 12.1 ms | 21.8 ms |
+
 ### Current Development Priorities
-- **Advanced ML Applications**: Real-world production deployment scenarios with monitoring and dashboards
 - **Distributed Systems Integration**: Consensus algorithms, distributed state machines, and federated inference
 - **Performance Optimization**: GPU kernel optimization, quantization, and specialized hardware acceleration
-
+- **Advanced ML Applications**: Real-world production deployment scenarios with monitoring and dashboards
 
 ## Development Tooling Excellence
 
